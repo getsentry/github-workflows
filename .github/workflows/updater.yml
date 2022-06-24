@@ -24,7 +24,7 @@
 #      cocoa:
 #        uses: getsentry/github-workflows/.github/workflows/updater.yml@e180e13b5c0b9d453fb6b80fd34d1bd37ff5d492
 #        with:
-#          path: sentyr-cli.properties
+#          path: sentry-cli.properties
 #          name: CLI
 #        secrets:
 #          api_token: ${{ secrets.CI_DEPLOY_KEY }}
