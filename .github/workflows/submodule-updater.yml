@@ -166,7 +166,7 @@ jobs:
       - name: Update Changelog
         if: steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag
         run: |
-          $workflowScriptHash = 'feat/merge-changelog' # TODO replace with a git hash
+          $workflowScriptHash = '7f7002a6179ade1fd7b902505bf20d8555d86269'
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/getsentry/github-workflows/$workflowScriptHash/scripts/update-changelog.ps1" -OutFile '${{ runner.temp }}/update-changelog.ps1'
           pwsh '${{ runner.temp }}/update-changelog.ps1' `
             -Name '${{ inputs.name }}' `
