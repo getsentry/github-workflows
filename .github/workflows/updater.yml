@@ -139,6 +139,9 @@ jobs:
           Write-Host '::echo::on'
           Write-Host "::set-output name=number::$number"
 
+      - run: git --no-pager diff
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
@@ -192,6 +195,9 @@ jobs:
             -MainBranch '${{ steps.target.outputs.mainBranch }}' `
             -OldTag '${{ steps.target.outputs.originalTag }}' `
             -NewTag '${{ steps.target.outputs.latestTag }}'
+
+      - run: git --no-pager diff
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
 
       # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
       - name: Update the PR
