@@ -1,4 +1,4 @@
-# Allows updating dependencies to the latest published tag (submodules) or GitHub release (.properties file)
+# Allows updating dependencies to the latest published tag
 #
 # Example workflow definition:
 #    name: Update Dependencies
@@ -19,6 +19,7 @@
 #          name: Cocoa SDK
 #        secrets:
 #          api_token: ${{ secrets.CI_DEPLOY_KEY }}
+#
 #      # Update a properties file
 #      cocoa:
 #        uses: getsentry/github-workflows/.github/workflows/submodule-updater.yml@2dfb8af1cd2c45a8e81635d2cb8da5997518cab4
@@ -88,23 +89,7 @@ jobs:
 
       - name: Update to the latest version
         id: target
-        working-directory: ${{ inputs.path }}
-        run: |
-          git fetch --tags
-          $originalTag = $(git describe --tags)
-          $latestTagCommit = $(git rev-list --tags --max-count=1)
-          $latestTag = $(git describe --tags $latestTagCommit)
-          $latestTagNice = ($latestTag -match "^[0-9]") ? "v$latestTag" : $latestTag
-          $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
-          $url = $(git remote get-url origin) -replace '\.git$',''
-          git checkout $latestTagCommit
-          Write-Host '::echo::on'
-          Write-Host "::set-output name=originalTag::$originalTag"
-          Write-Host "::set-output name=latestTag::$latestTag"
-          Write-Host "::set-output name=latestTagCommit::$latestTagCommit"
-          Write-Host "::set-output name=latestTagNice::$latestTagNice"
-          Write-Host "::set-output name=url::$url"
-          Write-Host "::set-output name=mainBranch::$mainBranch"
+        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}'
 
       - name: Get the base repo info
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
@@ -191,12 +176,9 @@ jobs:
         with:
           ssh-key: ${{ secrets.api_token }}
 
-      - name: 'After new PR: update to the latest version'
+      - name: 'After new PR: redo the update'
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
-        run: |
-          git submodule update --init --no-fetch --single-branch '${{ inputs.path }}'
-          cd '${{ inputs.path }}'
-          git checkout '${{ steps.target.outputs.latestTagCommit }}'
+        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }} -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
