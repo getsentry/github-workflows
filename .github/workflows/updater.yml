@@ -79,13 +79,15 @@ jobs:
           ssh-key: ${{ secrets.api_token }}
 
       - name: Check out workflow scripts
-        uses: actions/checkout@v3
-        with:
-          repository: getsentry/github-workflows
-          path: ${{ runner.temp }}/ghwf/
-          ref: feat/cli-updater  # TODO hash
-
-      - run: git submodule update --init --no-fetch --single-branch '${{ inputs.path }}'
+        # Note: cannot use `actions/checkout` at the moment because you can't clone outside of the repo root.
+        #       Follow https://github.com/actions/checkout/issues/197
+        run: |
+          mkdir -p ${{ runner.temp }}/ghwf
+          cd ${{ runner.temp }}/ghwf
+          git init
+          git remote add origin https://github.com/getsentry/github-workflows.git
+          git fetch --depth 1 origin feat/cli-updater  # TODO hash
+          git checkout FETCH_HEAD
 
       - name: Update to the latest version
         id: target
@@ -178,7 +180,7 @@ jobs:
 
       - name: 'After new PR: redo the update'
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
-        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }} -Tag '${{ steps.target.outputs.latestTag }}'
+        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
