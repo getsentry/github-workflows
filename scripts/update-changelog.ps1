@@ -88,18 +88,52 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     }
 }
 
+# What line we want to insert at - the empty line at the end of the currently unreleased Features section.
+$sectionEnd = $i
+
 $tagAnchor = $NewTag.Replace('.', '')
 $newTagNice = ($NewTag -match "^[0-9]") ? "v$NewTag" : $NewTag
-$entry = @("- Bump $Name to $newTagNice ([#$PR](https://github.com/getsentry/sentry-unity/pull/$PR))",
-    "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
-    "  - [diff]($RepoUrl/compare/$OldTag...$NewTag)",
-    "")
 
-Write-Host "Adding a changelog entry at line $($i):"
-foreach ($line in $entry)
+# First check if an existing entry for the same dependency exists among unreleased features - if so, update it instead of adding a new one.
+$updated = $false
+for ($i = 0; $i -lt $sectionEnd - 2; $i++)
 {
-    Write-Host $line
+    if (($lines[$i] -match "^- Bump $Name to") -and `
+        ($lines[$i + 1] -match "^  - \[changelog\]\($RepoUrl") -and `
+        ($lines[$i + 2] -match "^  - \[diff\]\($RepoUrl"))
+    {
+        Write-Host "Found an existing changelog entry at $($i):"
+        Write-Host "  ", $lines[$i]
+        Write-Host "  ", $lines[$i + 1]
+        Write-Host "  ", $lines[$i + 2]
+
+        $lines[$i] = $lines[$i] -replace "Bump $Name to .* \(", "Bump $Name to $newTagNice ("
+        $lines[$i] = $lines[$i] -replace "\)$", ", [#$PR](https://github.com/getsentry/sentry-unity/pull/$PR))"
+        $lines[$i + 1] = "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)"
+        $lines[$i + 2] = $lines[$i + 2] -replace "\.\.\..*\)$", "...$NewTag)"
+
+        Write-Host "Updating the entry to: "
+        Write-Host "  ", $lines[$i]
+        Write-Host "  ", $lines[$i + 1]
+        Write-Host "  ", $lines[$i + 2]
+        $updated = $true
+        break;
+    }
 }
 
-$lines = $lines[0..($i - 2)] + $entry + $lines[$i..($lines.Count - 1)]
+if (!$updated)
+{
+    $entry = @("- Bump $Name to $newTagNice ([#$PR](https://github.com/getsentry/sentry-unity/pull/$PR))",
+        "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
+        "  - [diff]($RepoUrl/compare/$OldTag...$NewTag)",
+        "")
+
+    Write-Host "Adding a changelog entry at line $($sectionEnd):"
+    foreach ($line in $entry)
+    {
+        Write-Host "  ", $line
+    }
+    $lines = $lines[0..($sectionEnd - 2)] + $entry + $lines[$sectionEnd..($lines.Count - 1)]
+}
+
 $lines | Out-File $file
