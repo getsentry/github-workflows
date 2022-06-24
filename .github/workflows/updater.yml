@@ -78,6 +78,7 @@ jobs:
         with:
           ssh-key: ${{ secrets.api_token }}
 
+      # In order to run scripts from this repo, we need to check it out manually, doesn't seem available locally.
       - name: Check out workflow scripts
         # Note: cannot use `actions/checkout` at the moment because you can't clone outside of the repo root.
         #       Follow https://github.com/actions/checkout/issues/197
@@ -86,7 +87,8 @@ jobs:
           cd ${{ runner.temp }}/ghwf
           git init
           git remote add origin https://github.com/getsentry/github-workflows.git
-          git fetch --depth 1 origin feat/cli-updater  # TODO hash
+          # Note: update the ref here when making changes to scripts
+          git fetch --depth 1 origin e180e13b5c0b9d453fb6b80fd34d1bd37ff5d492
           git checkout FETCH_HEAD
 
       - name: Update to the latest version
