@@ -87,8 +87,8 @@ jobs:
           cd ${{ runner.temp }}/ghwf
           git init
           git remote add origin https://github.com/getsentry/github-workflows.git
-          # Note: update the ref here when making changes to scripts
-          git fetch --depth 1 origin e180e13b5c0b9d453fb6b80fd34d1bd37ff5d492
+          # Note: update the ref here when making breaking changes to scripts
+          git fetch --depth 1 origin v1
           git checkout FETCH_HEAD
 
       - name: Update to the latest version
