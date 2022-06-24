@@ -1,4 +1,33 @@
-# Note: we're using a reusable workflow instead of a custom action to have a clean checkout on every run.
+# Allows updating dependencies to the latest published tag
+#
+# Example workflow definition:
+#    name: Update Dependencies
+#    on:
+#      # Run every day.
+#      schedule:
+#        - cron: '0 3 * * *'
+#      # And on on every PR merge so we get the updated dependencies ASAP, and to make sure the changelog doesn't conflict.
+#      push:
+#        branches:
+#          - main
+#    jobs:
+#      # Update a git submodule
+#      cocoa:
+#        uses: getsentry/github-workflows/.github/workflows/updater.yml@e180e13b5c0b9d453fb6b80fd34d1bd37ff5d492
+#        with:
+#          path: modules/sentry-cocoa
+#          name: Cocoa SDK
+#        secrets:
+#          api_token: ${{ secrets.CI_DEPLOY_KEY }}
+#
+#      # Update a properties file
+#      cocoa:
+#        uses: getsentry/github-workflows/.github/workflows/updater.yml@e180e13b5c0b9d453fb6b80fd34d1bd37ff5d492
+#        with:
+#          path: sentry-cli.properties
+#          name: CLI
+#        secrets:
+#          api_token: ${{ secrets.CI_DEPLOY_KEY }}
 on:
   workflow_call:
     inputs:
@@ -22,7 +51,7 @@ jobs:
           access_token: ${{ github.token }}
 
   # What we need to accomplish:
-  # * update the submodule to the latest tag
+  # * update to the latest tag
   # * create a PR
   # * update changelog (including the link to the just created PR)
   #
@@ -49,39 +78,34 @@ jobs:
         with:
           ssh-key: ${{ secrets.api_token }}
 
-      - run: git submodule update --init --no-fetch --single-branch '${{ inputs.path }}'
-
-      - name: Check out the latest submodule version
-        id: submodule
-        working-directory: ${{ inputs.path }}
+      # In order to run scripts from this repo, we need to check it out manually, doesn't seem available locally.
+      - name: Check out workflow scripts
+        # Note: cannot use `actions/checkout` at the moment because you can't clone outside of the repo root.
+        #       Follow https://github.com/actions/checkout/issues/197
         run: |
-          git fetch --tags
-          $originalTag = $(git describe --tags)
-          $latestTagCommit = $(git rev-list --tags --max-count=1)
-          $latestTag = $(git describe --tags $latestTagCommit)
-          $latestTagNice = ($latestTag -match "^[0-9]") ? "v$latestTag" : $latestTag
-          $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
-          $url = $(git remote get-url origin) -replace '\.git$',''
-          git checkout $latestTagCommit
-          Write-Host '::echo::on'
-          Write-Host "::set-output name=originalTag::$originalTag"
-          Write-Host "::set-output name=latestTag::$latestTag"
-          Write-Host "::set-output name=latestTagCommit::$latestTagCommit"
-          Write-Host "::set-output name=latestTagNice::$latestTagNice"
-          Write-Host "::set-output name=url::$url"
-          Write-Host "::set-output name=mainBranch::$mainBranch"
+          mkdir -p ${{ runner.temp }}/ghwf
+          cd ${{ runner.temp }}/ghwf
+          git init
+          git remote add origin https://github.com/getsentry/github-workflows.git
+          # Note: update the ref here when making changes to scripts
+          git fetch --depth 1 origin e180e13b5c0b9d453fb6b80fd34d1bd37ff5d492
+          git checkout FETCH_HEAD
+
+      - name: Update to the latest version
+        id: target
+        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}'
 
       - name: Get the base repo info
-        if: steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         id: root
         run: |
           $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
           Write-Host '::echo::on'
           Write-Host "::set-output name=baseBranch::$mainBranch"
-          Write-Host "::set-output name=prBranch::deps/${{ inputs.path }}/${{ steps.submodule.outputs.latestTag }}"
+          Write-Host "::set-output name=prBranch::deps/${{ inputs.path }}/${{ steps.target.outputs.latestTag }}"
 
       - name: Fetch an existing PR
-        if: steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         uses: octokit/request-action@971ad48f9c40ed001c41c2671b1e6e8e8165d5af
         id: existing-pr-request
         with:
@@ -92,7 +116,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Parse the existing PR number
-        if: steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         id: existing-pr
         run: |
           $data = @'
@@ -117,9 +141,12 @@ jobs:
           Write-Host '::echo::on'
           Write-Host "::set-output name=number::$number"
 
+      - run: git --no-pager diff
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
-        if: ${{ ( steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
         uses: peter-evans/create-pull-request@f22a7da129c901513876a2380e2dae9f8e145330
         id: create-pr
         with:
@@ -127,11 +154,11 @@ jobs:
           branch: ${{ steps.root.outputs.prBranch }}
           add-paths: '${{ inputs.path }}'
           author: 'GitHub <noreply@github.com>'
-          title: 'chore(deps): update ${{ inputs.name }} to ${{ steps.submodule.outputs.latestTagNice }}'
+          title: 'chore(deps): update ${{ inputs.name }} to ${{ steps.target.outputs.latestTagNice }}'
           # draft: true
 
       - name: Verify we have a PR
-        if: steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         id: pr
         run: |
           Write-Host '::echo::on'
@@ -151,43 +178,41 @@ jobs:
       # If we had to create a new PR, we must do a clean checkout & update the submodule again.
       # If we didn't do this, the new PR would only have a changelog...
       - name: 'After new PR: restore repo'
-        if: ${{ ( steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
         uses: actions/checkout@v3
         with:
           ssh-key: ${{ secrets.api_token }}
 
-      - name: 'After new PR: checkout submodule'
-        if: ${{ ( steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
-        run: |
-          git submodule update --init --no-fetch --single-branch '${{ inputs.path }}'
-          cd '${{ inputs.path }}'
-          git checkout '${{ steps.submodule.outputs.latestTagCommit }}'
+      - name: 'After new PR: redo the update'
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
-        if: steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         run: |
-          $workflowScriptHash = '7f7002a6179ade1fd7b902505bf20d8555d86269'
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/getsentry/github-workflows/$workflowScriptHash/scripts/update-changelog.ps1" -OutFile '${{ runner.temp }}/update-changelog.ps1'
-          pwsh '${{ runner.temp }}/update-changelog.ps1' `
+          ${{ runner.temp }}/ghwf/scripts/update-changelog.ps1 `
             -Name '${{ inputs.name }}' `
             -PR ${{ steps.pr.outputs.number }} `
-            -RepoUrl '${{ steps.submodule.outputs.url }}' `
-            -MainBranch '${{ steps.submodule.outputs.mainBranch }}' `
-            -OldTag '${{ steps.submodule.outputs.originalTag }}' `
-            -NewTag '${{ steps.submodule.outputs.latestTag }}'
+            -RepoUrl '${{ steps.target.outputs.url }}' `
+            -MainBranch '${{ steps.target.outputs.mainBranch }}' `
+            -OldTag '${{ steps.target.outputs.originalTag }}' `
+            -NewTag '${{ steps.target.outputs.latestTag }}'
+
+      - run: git --no-pager diff
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
 
       # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
       - name: Update the PR
-        if: steps.submodule.outputs.latestTag != steps.submodule.outputs.originalTag
+        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         uses: peter-evans/create-pull-request@f22a7da129c901513876a2380e2dae9f8e145330
         with:
           base: ${{ steps.root.outputs.baseBranch }}
           branch: ${{ steps.root.outputs.prBranch }}
-          commit-message: 'chore: update ${{ inputs.path }} to ${{ steps.submodule.outputs.latestTag }}'
+          commit-message: 'chore: update ${{ inputs.path }} to ${{ steps.target.outputs.latestTag }}'
           author: 'GitHub <noreply@github.com>'
-          title: 'chore(deps): update ${{ inputs.name }} to ${{ steps.submodule.outputs.latestTagNice }}'
+          title: 'chore(deps): update ${{ inputs.name }} to ${{ steps.target.outputs.latestTagNice }}'
           body: |
-            Bumps ${{ inputs.path }} from ${{ steps.submodule.outputs.originalTag }} to ${{ steps.submodule.outputs.latestTag }}.
+            Bumps ${{ inputs.path }} from ${{ steps.target.outputs.originalTag }} to ${{ steps.target.outputs.latestTag }}.
 
             Auto-generated by a submodule dependency updater.
           labels: dependencies
