@@ -1,0 +1,12 @@
+# This isn't a reusable workflow, but an actual CI action for this repo itself, to test the scripts.
+name: Tests
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: make test
