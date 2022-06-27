@@ -21,11 +21,20 @@
 #          api_token: ${{ secrets.CI_DEPLOY_KEY }}
 #
 #      # Update a properties file
-#      cocoa:
+#      cli:
 #        uses: getsentry/github-workflows/.github/workflows/updater.yml@v1
 #        with:
 #          path: sentry-cli.properties
 #          name: CLI
+#        secrets:
+#          api_token: ${{ secrets.CI_DEPLOY_KEY }}
+#
+#      # Update using a custom shell script, see scripts/update-dependency.ps1 for the required arguments
+#      agp:
+#        uses: getsentry/github-workflows/.github/workflows/updater.yml@v1
+#        with:
+#          path: script.ps1
+#          name: Gradle Plugin
 #        secrets:
 #          api_token: ${{ secrets.CI_DEPLOY_KEY }}
 on:
