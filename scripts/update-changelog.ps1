@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string] $Name,
-    [Parameter(Mandatory = $true)][Int32] $PR,
+    [Parameter(Mandatory = $true)][string] $PR,
     [Parameter(Mandatory = $true)][string] $RepoUrl,
     [Parameter(Mandatory = $true)][string] $MainBranch,
     [Parameter(Mandatory = $true)][string] $OldTag,
@@ -93,6 +93,8 @@ $sectionEnd = $i
 $tagAnchor = $NewTag.Replace('.', '')
 $newTagNice = ($NewTag -match "^[0-9]") ? "v$NewTag" : $NewTag
 
+$PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
+
 # First check if an existing entry for the same dependency exists among unreleased features - if so, update it instead of adding a new one.
 $updated = $false
 for ($i = 0; $i -lt $sectionEnd - 2; $i++)
@@ -107,7 +109,7 @@ for ($i = 0; $i -lt $sectionEnd - 2; $i++)
         Write-Host "  ", $lines[$i + 2]
 
         $lines[$i] = $lines[$i] -replace "Bump $Name to .* \(", "Bump $Name to $newTagNice ("
-        $lines[$i] = $lines[$i] -replace "\)$", ", [#$PR](https://github.com/getsentry/sentry-unity/pull/$PR))"
+        $lines[$i] = $lines[$i] -replace "\)$", ", $PullRequestMD)"
         $lines[$i + 1] = "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)"
         $lines[$i + 2] = $lines[$i + 2] -replace "\.\.\..*\)$", "...$NewTag)"
 
@@ -122,7 +124,7 @@ for ($i = 0; $i -lt $sectionEnd - 2; $i++)
 
 if (!$updated)
 {
-    $entry = @("- Bump $Name to $newTagNice ([#$PR](https://github.com/getsentry/sentry-unity/pull/$PR))",
+    $entry = @("- Bump $Name to $newTagNice ($PullRequestMD)",
         "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
         "  - [diff]($RepoUrl/compare/$OldTag...$NewTag)",
         "")

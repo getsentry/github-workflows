@@ -115,7 +115,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Parse the existing PR number
+      - name: Parse the existing PR URL
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         id: existing-pr
         run: |
@@ -125,28 +125,27 @@ jobs:
 
           $prCount = $($data | jq '. | length')
 
+          Write-Host '::echo::on'
           if ($prCount -eq '0')
           {
-              $number = ''
+              Write-Host "::set-output name=url::"
           }
           elseif ($prCount -eq '1')
           {
-              $number = $($data | Select-String '"number": +([0-9]+)').Matches[0].Groups[1].Value
+              $url = $($data | Select-String '"html_url": +"(.*/pull/.*)"').Matches[0].Groups[1].Value
+              Write-Host "::set-output name=url::$url"
           }
           else
           {
               throw "Unexpected number of PRs matched: $prCount"
           }
 
-          Write-Host '::echo::on'
-          Write-Host "::set-output name=number::$number"
-
       - run: git --no-pager diff
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
 
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
         uses: peter-evans/create-pull-request@f22a7da129c901513876a2380e2dae9f8e145330
         id: create-pr
         with:
@@ -162,13 +161,13 @@ jobs:
         id: pr
         run: |
           Write-Host '::echo::on'
-          if ('${{ steps.create-pr.outputs.pull-request-number }}' -ne '')
+          if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
           {
-              Write-Host "::set-output name=number::${{ steps.create-pr.outputs.pull-request-number }}"
+              Write-Host "::set-output name=url::${{ steps.create-pr.outputs.pull-request-url }}"
           }
-          elseif ('${{ steps.existing-pr.outputs.number }}' -ne '')
+          elseif ('${{ steps.existing-pr.outputs.url }}' -ne '')
           {
-              Write-Host "::set-output name=number::${{ steps.existing-pr.outputs.number }}"
+              Write-Host "::set-output name=url::${{ steps.existing-pr.outputs.url }}"
           }
           else
           {
@@ -178,13 +177,13 @@ jobs:
       # If we had to create a new PR, we must do a clean checkout & update the submodule again.
       # If we didn't do this, the new PR would only have a changelog...
       - name: 'After new PR: restore repo'
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
         uses: actions/checkout@v3
         with:
           ssh-key: ${{ secrets.api_token }}
 
       - name: 'After new PR: redo the update'
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.number == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
         run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
@@ -192,7 +191,7 @@ jobs:
         run: |
           ${{ runner.temp }}/ghwf/scripts/update-changelog.ps1 `
             -Name '${{ inputs.name }}' `
-            -PR ${{ steps.pr.outputs.number }} `
+            -PR '${{ steps.pr.outputs.url }}' `
             -RepoUrl '${{ steps.target.outputs.url }}' `
             -MainBranch '${{ steps.target.outputs.mainBranch }}' `
             -OldTag '${{ steps.target.outputs.originalTag }}' `
