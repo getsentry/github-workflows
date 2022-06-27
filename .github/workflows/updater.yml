@@ -160,7 +160,6 @@ jobs:
         with:
           base: ${{ steps.root.outputs.baseBranch }}
           branch: ${{ steps.root.outputs.prBranch }}
-          add-paths: '${{ inputs.path }}'
           author: 'GitHub <noreply@github.com>'
           title: 'chore(deps): update ${{ inputs.name }} to ${{ steps.target.outputs.latestTagNice }}'
           # draft: true
