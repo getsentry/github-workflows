@@ -23,3 +23,19 @@ function AssertEqual([string] $expected, [string] $actual)
         throw "AssertEqual failed"
     }
 }
+function AssertFailsWith([string] $substring, [scriptblock] $block)
+{
+    $e = $null
+    try
+    {
+        $block.Invoke()
+    }
+    catch
+    {
+        $e = $_
+    }
+    if (-not "$e".Contains($substring))
+    {
+        throw "AssertFailsWith failed - expected to find '$substring' in the error '$e'"
+    }
+}

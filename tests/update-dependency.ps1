@@ -2,7 +2,15 @@ Set-StrictMode -Version latest
 
 . "$PSScriptRoot/common/test-utils.ps1"
 
-$updateScript = "$PSScriptRoot/../scripts/update-dependency.ps1"
+function UpdateDependency([Parameter(Mandatory = $true)][string] $path)
+{
+    $result = & "$PSScriptRoot/../scripts/update-dependency.ps1" -Path $path
+    if (-not $?)
+    {
+        throw $result
+    }
+}
+
 $testDir = "$PSScriptRoot/testdata/dependencies"
 if (-not (Test-Path $testDir))
 {
@@ -15,7 +23,7 @@ $currentVersion = 'v1' # Note: this will change once there's a new tag in this r
 RunTest "properties-file" {
     $testFile = "$testDir/test.properties"
     @("repo=$repoUrl", "version  =   none") | Out-File $testFile
-    & $updateScript -Path $testFile
+    UpdateDependency $testFile
     AssertEqual @("repo=$repoUrl", "version  =   $currentVersion") (Get-Content $testFile)
 }
 
@@ -36,7 +44,7 @@ switch ($action)
     Default { throw "Unknown action $action" }
 }
 '@ | Out-File $testScript
-    & $updateScript -Path $testScript
+    UpdateDependency $testScript
     AssertEqual $currentVersion (Get-Content $testFile)
 }
 
@@ -64,6 +72,59 @@ set-version)
     ;;
 esac
 '@ | Out-File $testScript
-    & $updateScript -Path $testScript
+    UpdateDependency $testScript
     AssertEqual $currentVersion (Get-Content $testFile)
+}
+
+RunTest "script fails in get-version" {
+    $testScript = "$testDir/test.sh"
+    @'
+#!/usr/bin/env bash
+echo "Failure"
+exit 1
+'@ | Out-File $testScript
+
+    AssertFailsWith "get-version  | output: Failure" { UpdateDependency $testScript }
+}
+
+RunTest "script fails in get-repo" {
+    $testScript = "$testDir/test.sh"
+    @'
+#!/usr/bin/env bash
+case $1 in
+get-version)
+    ;;
+get-repo)
+    echo "Failure"
+    exit 1
+    ;;
+esac
+'@ | Out-File $testScript
+
+    AssertFailsWith "get-repo  | output: Failure" { UpdateDependency $testScript }
+}
+
+RunTest "script fails in set-version" {
+    $testFile = "$testDir/test.version"
+    '' | Out-File $testFile
+    $testScript = "$testDir/test.sh"
+    @'
+#!/usr/bin/env bash
+cd $(dirname "$0")
+case $1 in
+get-version)
+    cat test.version
+    ;;
+get-repo)
+    echo
+'@ + ' "' + $repoUrl + '"' + @'
+    ;;
+set-version)
+    echo "Failure"
+    exit 1
+    ;;
+esac
+'@ | Out-File $testScript
+
+    AssertFailsWith "set-version $currentVersion | output: Failure" { UpdateDependency $testScript }
 }

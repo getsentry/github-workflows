@@ -31,7 +31,12 @@ if (-not $isSubmodule)
             {
                 chmod +x $Path
             }
-            & $Path $action $value
+            $result = & $Path $action $value
+            if (-not $?)
+            {
+                throw "Script execution failed: $Path $action $value | output: $result"
+            }
+            return $result
         }
         else
         {
