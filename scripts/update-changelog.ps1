@@ -36,7 +36,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     # Next, we expect a header for the current version or "Unreleased".
     if (-not $line.StartsWith("#"))
     {
-        throw "Unexpected changelog line: $line"
+        throw "Unexpected changelog line - expecting a version header at this point, such as '## Unreleased', but found: '$line'"
     }
 
     # If it's an existing version instead of "Unreleased".
@@ -49,7 +49,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 }
 
 # Make sure that there's a `Features` header
-for ($i = 0; $i -lt $lines.Count; $i++)
+:outer for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
 
@@ -62,13 +62,25 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     # Next, we expect a header
     if (-not $line.StartsWith("#"))
     {
-        throw "Unexpected changelog line: $line"
+        throw "Unexpected changelog line - expecting a section header at this point, such as '### Features', but found: '$line'"
     }
 
-    # add Features as the first sub-header
     if (-not ($line -match "features"))
     {
-        Write-Host "Adding a new '### Features' section"
+        # If it's a version-specific section header but not "Features", skip all the items in this section
+        if ($line.StartsWith("###"))
+        {
+            for ($i = $i + 1; $i -lt $lines.Count - 1; $i++)
+            {
+                if ($lines[$i + 1].StartsWith("#"))
+                {
+                    continue outer
+                }
+            }
+        }
+
+        # add Features as the first sub-header
+        Write-Host "Adding a new '### Features' section at line $i"
         $lines = $lines[0..($i - 1)] + @("### Features", "", "") + $lines[$i..($lines.Count - 1)]
     }
     break
@@ -80,6 +92,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     $line = $lines[$i]
     if ($line -match "Features")
     {
+        Write-Host "Found a Features header at $i"
         # Find the next header and then go backward until we find a non-empty line
         for ($i++; $i -lt $lines.Count -and -not $lines[$i].StartsWith("#"); $i++) {}
         for ($i--; $i -gt 0 -and $lines[$i].Trim().Length -eq 0; $i++) {}
