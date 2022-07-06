@@ -40,12 +40,19 @@
 on:
   workflow_call:
     inputs:
-      path: # submodule path in the source repository
+      path:
+        description: Dependency path in the source repository, this can be either a submodule, a .properties file or a shell script
         type: string
         required: true
-      name: # Name used for a changelog entry
+      name:
+        description: Name used for a changelog entry
         type: string
         required: true
+      _workflow_version:
+        description: 'Internal: specify github-workflows tag to check out scripts from'
+        type: string
+        required: false
+        default: v1  # Note: update when publishing a new version
     secrets:
       api_token:
         required: true
@@ -96,8 +103,7 @@ jobs:
           cd ${{ runner.temp }}/ghwf
           git init
           git remote add origin https://github.com/getsentry/github-workflows.git
-          # Note: update the ref here when making breaking changes to scripts
-          git fetch --depth 1 origin v1
+          git fetch --depth 1 origin ${{ inputs._workflow_version }}
           git checkout FETCH_HEAD
 
       - name: Update to the latest version
