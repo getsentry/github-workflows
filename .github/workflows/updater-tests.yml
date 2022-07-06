@@ -1,0 +1,14 @@
+# This isn't a reusable workflow but an actual CI action for this repo itself - to test the updater workflow.
+name: Updater Tests
+
+on:
+  push:
+
+jobs:
+  test:
+    uses: ./.github/workflows/updater.yml
+    with:
+      path: tests/sentry-cli.properties
+      name: CLI
+    secrets:
+      api_token: ${{ github.token }}
