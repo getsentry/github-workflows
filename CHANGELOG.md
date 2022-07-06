@@ -1,3 +1,9 @@
+<!--- This file is only needed so that workflow tests can run (they update this changelog) -->
 # Changelog
 
-[comment]: <> (This file is only needed so that workflow tests can run (they update this changelog))
+## Unreleased
+
+### Features
+
+- n/a
+

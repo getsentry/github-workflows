@@ -147,7 +147,8 @@ if (!$updated)
     {
         Write-Host "  ", $line
     }
-    $lines = $lines[0..($sectionEnd - 2)] + $entry + $lines[$sectionEnd..($lines.Count - 1)]
+    $linesPost = $lines.Count -gt $sectionEnd ? $lines[$sectionEnd..($lines.Count - 1)] : @()
+    $lines = $lines[0..($sectionEnd - 2)] + $entry + $linesPost
 }
 
 $lines | Out-File $file
