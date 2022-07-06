@@ -95,7 +95,8 @@ for ($i = 0; $i -lt $lines.Count; $i++)
         Write-Host "Found a Features header at $i"
         # Find the next header and then go backward until we find a non-empty line
         for ($i++; $i -lt $lines.Count -and -not $lines[$i].StartsWith("#"); $i++) {}
-        for ($i--; $i -gt 0 -and $lines[$i].Trim().Length -eq 0; $i++) {}
+        for ($i--; $i -gt 0 -and $lines[$i].Trim().Length -eq 0; $i--) {}
+        $i += ($lines[$i] -match "Features") ? 2 : 1
         break
     }
 }
@@ -110,7 +111,7 @@ $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
 
 # First check if an existing entry for the same dependency exists among unreleased features - if so, update it instead of adding a new one.
 $updated = $false
-for ($i = 0; $i -lt $sectionEnd - 2; $i++)
+for ($i = 0; $i -lt $sectionEnd; $i++)
 {
     if (($lines[$i] -match "^- Bump $Name to") -and `
         ($lines[$i + 1] -match "^  - \[changelog\]\($RepoUrl") -and `
@@ -139,8 +140,7 @@ if (!$updated)
 {
     $entry = @("- Bump $Name to $newTagNice ($PullRequestMD)",
         "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
-        "  - [diff]($RepoUrl/compare/$OldTag...$NewTag)",
-        "")
+        "  - [diff]($RepoUrl/compare/$OldTag...$NewTag)")
 
     Write-Host "Adding a changelog entry at line $($sectionEnd):"
     foreach ($line in $entry)
@@ -148,7 +148,7 @@ if (!$updated)
         Write-Host "  ", $line
     }
     $linesPost = $lines.Count -gt $sectionEnd ? $lines[$sectionEnd..($lines.Count - 1)] : @()
-    $lines = $lines[0..($sectionEnd - 2)] + $entry + $linesPost
+    $lines = $lines[0..($sectionEnd - 1)] + $entry + $linesPost
 }
 
 $lines | Out-File $file
