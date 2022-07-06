@@ -19,7 +19,17 @@ function AssertEqual([string] $expected, [string] $actual)
     if ($null -ne $diff -and $diff.Count -ne 0)
     {
         Write-Host "Given strings are not equal:" -ForegroundColor Red
-        $diff | Format-Table | Out-String | Write-Host
+        Write-Host "========================================"
+        Write-Host "Expected:"
+        Write-Host "----------------------------------------"
+        Write-Host $expected
+        Write-Host "----------------------------------------"
+        Write-Host "Actual:"
+        Write-Host "----------------------------------------"
+        Write-Host $actual
+        Write-Host "========================================"
+        $diff.InputObject[0] | Write-Host
+        # $diff | Format-Table | Out-String | Write-Host
         throw "AssertEqual failed"
     }
 }

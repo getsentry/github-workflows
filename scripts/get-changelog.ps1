@@ -59,6 +59,8 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 
 $changelog = $changelog.Trim()
 if ($changelog.Length -gt 1) {
-    $changelog = "## Changelog`n" + $($changelog -replace "^#","##")
+    $changelog = "# Changelog`n$changelog"
+    $changelog = $changelog -replace "(#+) ",'$1# '
+    $changelog = $changelog -replace '@',''
 }
 $changelog
