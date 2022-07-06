@@ -1,5 +1,5 @@
-# This isn't a reusable workflow but an actual CI action for this repo itself - to test the scripts.
-name: Tests
+# This isn't a reusable workflow but an actual CI action for this repo itself - to test scripts.
+name: Script Tests
 
 on:
   push:
