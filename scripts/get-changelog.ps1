@@ -6,8 +6,8 @@ param(
 
 Set-StrictMode -Version latest
 
-$prefix = '^https://(www\.)?github.com/'
-if (-not ($RepoUrl -match $prefix)) {
+$prefix = 'https?://(www\.)?github.com/'
+if (-not ($RepoUrl -match "^$prefix")) {
     Write-Warning "Only github.com repositories are currently supported. Given RepoUrl doesn't look like one: $RepoUrl"
     return
 }
@@ -66,5 +66,7 @@ if ($changelog.Length -gt 1) {
     $changelog = $changelog -replace '@',''
     # Make PR/issue references into links to the original repository (unless they already are links).
     $changelog = $changelog -replace '(?<!\[)#([0-9]+)', ('[#$1](' + $RepoUrl + '/issues/$1)')
+    # Replace any links pointing to github.com so that the target PRs/Issues don't get na notification.
+    $changelog = $changelog -replace ('\('+$prefix),'(https://github-redirect.dependabot.com/'
 }
 $changelog

@@ -11,7 +11,7 @@ RunTest "get-changelog with existing versions" {
 
 This release removes the `user_id` and the `transaction` field from the dynamic sampling context data that is attached to outgoing requests as well as sent to Relay.
 
-- ref(tracing): Remove transaction name and user_id from DSC ([#5363](https://github.com/getsentry/sentry-javascript/issues/5363))
+- ref(tracing): Remove transaction name and user_id from DSC ([#5363](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5363))
 
 ### 7.5.0
 
@@ -20,10 +20,10 @@ When using performance monitoring capabilities of the SDK, it controls whether u
 This flag is set to `false` per default, and acts as an opt-in mechanism for sending potentially sensitive data.
 If you want to attach user IDs to Sentry transactions and traces, set this flag to `true` but keep in mind that this is potentially sensitive information.
 
-- feat(sdk): Add sendDefaultPii option to the JS SDKs ([#5341](https://github.com/getsentry/sentry-javascript/issues/5341))
-- fix(remix): Sourcemaps upload script is missing in the tarball ([#5356](https://github.com/getsentry/sentry-javascript/issues/5356))
-- fix(remix): Use cjs for main entry point ([#5352](https://github.com/getsentry/sentry-javascript/issues/5352))
-- ref(tracing): Only add `user_id` to DSC if `sendDefaultPii` is `true` ([#5344](https://github.com/getsentry/sentry-javascript/issues/5344))
+- feat(sdk): Add sendDefaultPii option to the JS SDKs ([#5341](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5341))
+- fix(remix): Sourcemaps upload script is missing in the tarball ([#5356](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5356))
+- fix(remix): Use cjs for main entry point ([#5352](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5352))
+- ref(tracing): Only add `user_id` to DSC if `sendDefaultPii` is `true` ([#5344](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5344))
 
 Work in this release contributed by jkcorrea and nfelger. Thank you for your contributions!
 
@@ -31,7 +31,7 @@ Work in this release contributed by jkcorrea and nfelger. Thank you for your con
 
 This release includes the first *published* version of `sentry/remix`.
 
-- build(remix): Make remix package public ([#5349](https://github.com/getsentry/sentry-javascript/issues/5349))
+- build(remix): Make remix package public ([#5349](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5349))
 '@
 
     AssertEqual $expected $actual
@@ -66,8 +66,8 @@ RunTest "get-changelog removes at-mentions" {
 
 #### Various fixes & improvements
 
-- feat: Compute and upload il2cpp line mappings ([#1248](https://github.com/getsentry/sentry-cli/issues/1248)) by loewenheim
-- ref: Skip protected zip files when uploading debug files ([#1245](https://github.com/getsentry/sentry-cli/issues/1245)) by kamilogorek
+- feat: Compute and upload il2cpp line mappings ([#1248](https://github-redirect.dependabot.com/getsentry/sentry-cli/issues/1248)) by loewenheim
+- ref: Skip protected zip files when uploading debug files ([#1245](https://github-redirect.dependabot.com/getsentry/sentry-cli/issues/1245)) by kamilogorek
 '@
 
     AssertEqual $expected $actual
@@ -82,13 +82,13 @@ RunTest "get-changelog removes doesn't duplicate PR links" {
 
 **Fixes**:
 
-- sentry-native now successfully builds when examples aren't included. ([#702](https://github.com/getsentry/sentry-native/pull/702))
+- sentry-native now successfully builds when examples aren't included. ([#702](https://github-redirect.dependabot.com/getsentry/sentry-native/pull/702))
 
 **Thank you**:
 
 Features, fixes and improvements in this release have been contributed by:
 
-- [AenBleidd](https://github.com/AenBleidd)
+- [AenBleidd](https://github-redirect.dependabot.com/AenBleidd)
 '@
 
     AssertEqual $expected $actual
