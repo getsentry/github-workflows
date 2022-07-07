@@ -77,57 +77,59 @@ if (-not $isSubmodule)
 
 if ("$Tag" -eq "")
 {
-    try
+    if ($isSubmodule)
     {
-        if ($isSubmodule)
+        git submodule update --init --no-fetch --single-branch $Path
+        Push-Location $Path
+        try
         {
-            git submodule update --init --no-fetch --single-branch $Path
-            Push-Location $Path
             $originalTag = $(git describe --tags)
+            git fetch --tags
+            [string[]]$tags = $(git tag --list)
             $url = $(git remote get-url origin)
+            $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
         }
-        else
+        finally
         {
-            $originalTag = DependencyConfig 'get-version'
-            $url = DependencyConfig 'get-repo'
-
-            # Check out to a temp directory to find out the tags.
-            # We could use GH APIs instead but we already had the code to do this with `git` command.
-            $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
-            Register-EngineEvent PowerShell.Exiting –Action { Remove-Item -Recurse -ErrorAction Continue -Path $tmpDir }
-            git clone --no-checkout --depth 1 $url $tmpDir
-            Push-Location $tmpDir
+            Pop-Location
         }
-
-        $url = $url -replace '\.git$', ''
-        git fetch --tags
-        [string[]]$tags = $(git tag --list)
-
-        if ("$Pattern" -eq '')
-        {
-            # Use a default pattern that excludes pre-releases
-            $Pattern = '^v?([0-9.]+)$'
-        }
-
-        Write-Host "Filtering tags with pattern '$Pattern'"
-        $tags = $tags -match $Pattern
-
-        if ($tags.Length -le 0)
-        {
-            throw "Found no tags matching pattern '$Pattern'"
-        }
-
-        $tags = & "$PSScriptRoot/sort-versions.ps1" $tags
-
-        Write-Host "Sorted tags: $tags"
-        $latestTag = $tags[-1]
-        $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
     }
-    finally
+    else
     {
-        Pop-Location
+        $originalTag = DependencyConfig 'get-version'
+        $url = DependencyConfig 'get-repo'
+
+        # Get tags for a repo without cloning.
+        [string[]]$tags = $(git ls-remote --refs --tags $url)
+        $tags = $tags | ForEach-Object { ($_ -split "\s+")[1] -replace '^refs/tags/', '' }
+
+        $headRef = ($(git ls-remote $url HEAD) -split "\s+")[0]
+        if ("$headRef" -eq '') {
+            throw "Couldn't determine repository head (no ref returned by ls-remote HEAD"
+        }
+        $mainBranch = (git ls-remote --heads $url | Where-Object { $_.StartsWith($headRef) }) -replace '.*\srefs/heads/', ''
     }
 
+    $url = $url -replace '\.git$', ''
+
+    if ("$Pattern" -eq '')
+    {
+        # Use a default pattern that excludes pre-releases
+        $Pattern = '^v?([0-9.]+)$'
+    }
+
+    Write-Host "Filtering tags with pattern '$Pattern'"
+    $tags = $tags -match $Pattern
+
+    if ($tags.Length -le 0)
+    {
+        throw "Found no tags matching pattern '$Pattern'"
+    }
+
+    $tags = & "$PSScriptRoot/sort-versions.ps1" $tags
+
+    Write-Host "Sorted tags: $tags"
+    $latestTag = $tags[-1]
     $latestTagNice = ($latestTag -match "^[0-9]") ? "v$latestTag" : $latestTag
 
     Write-Host '::echo::on'
