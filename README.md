@@ -3,7 +3,7 @@
 This repository contains reusable workflows and scripts to be used with GitHub Actions.
 
 For versioning, we're using a shifting tag strategy, with the current version tag - e.g. `v1` - being updated until
-there's a breaking change, at which point a it will stay as is and we start using a new tag, `v2`, etc...
+there's a breaking change, at which point it will stay as is and we start using a new tag, `v2`, etc...
 
 This allows consumers to be on the latest version of a compatible workflow. If you prefer, you can instead pin to a
 specific commit.
