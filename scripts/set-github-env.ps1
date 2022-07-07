@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string] $Name,
-    [Parameter(Mandatory = $true)][string] $Data
+    [string] $Data = ''
 )
 
 Set-StrictMode -Version latest
