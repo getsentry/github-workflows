@@ -7,7 +7,10 @@ param(
     #    * `get-repo` - return the repository url (e.g.  https://github.com/getsentry/dependency)
     #    * `set-version` - update the dependency version (passed as another string argument after this one)
     [Parameter(Mandatory = $true)][string] $Path,
-    [string] $Tag = ""
+    # RegEx pattern that will be matched against available versions when picking the latest one
+    [string] $Pattern = '',
+    # Specific version - if passed, no discovery is performed and the version is set directly
+    [string] $Tag = ''
 )
 
 Set-StrictMode -Version latest
@@ -98,8 +101,19 @@ if ("$Tag" -eq "")
 
         $url = $url -replace '\.git$', ''
         git fetch --tags
-        $latestTagCommit = $(git rev-list --tags --max-count=1)
-        $latestTag = $(git describe --tags $latestTagCommit)
+        [string[]]$tags = $(git -c 'versionsort.suffix=-' tag --list --sort=-v:refname)
+
+        if ("$pattern" -ne '')
+        {
+            Write-Host "Filtering tags with pattern '$pattern'"
+            $tags = $tags -match $Pattern
+        }
+
+        if ($tags.Length -le 0) {
+            throw ("$pattern" -eq '') ? 'No tags found' : "No tags match pattern '$pattern'"
+        }
+
+        $latestTag = $tags[0]
         $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
     }
     finally

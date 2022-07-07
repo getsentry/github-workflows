@@ -10,6 +10,7 @@ jobs:
     with:
       path: tests/sentry-cli.properties
       name: CLI
+      pattern: '^2\.0\.'
       _workflow_version: ${{ github.sha }}
     secrets:
       api_token: ${{ github.token }}
