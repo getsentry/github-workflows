@@ -35,6 +35,15 @@ RunTest "version pattern match" {
     AssertEqual @("repo=$repo", "version=0.28.0") (Get-Content $testFile)
 }
 
+# Note: without custom sorting, this would have yielded 'v1.7.31_gradle_plugin'
+RunTest "version sorting must work properly" {
+    $testFile = "$testDir/test.properties"
+    $repo = 'https://github.com/getsentry/sentry-java'
+    @("repo=$repo", "version=0") | Out-File $testFile
+    UpdateDependency $testFile '^v?[123].*$'
+    AssertEqual @("repo=$repo", "version=3.2.1") (Get-Content $testFile)
+}
+
 RunTest "powershell-script" {
     $testFile = "$testDir/test.version"
     '' | Out-File $testFile

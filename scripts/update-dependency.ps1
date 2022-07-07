@@ -101,19 +101,26 @@ if ("$Tag" -eq "")
 
         $url = $url -replace '\.git$', ''
         git fetch --tags
-        [string[]]$tags = $(git -c 'versionsort.suffix=-' tag --list --sort=-v:refname)
+        [string[]]$tags = $(git tag --list)
 
-        if ("$pattern" -ne '')
+        if ("$Pattern" -eq '')
         {
-            Write-Host "Filtering tags with pattern '$pattern'"
-            $tags = $tags -match $Pattern
+            # Use a default pattern that excludes pre-releases
+            $Pattern = '^v?([0-9.]+)$'
         }
 
-        if ($tags.Length -le 0) {
-            throw ("$pattern" -eq '') ? 'No tags found' : "No tags match pattern '$pattern'"
+        Write-Host "Filtering tags with pattern '$Pattern'"
+        $tags = $tags -match $Pattern
+
+        if ($tags.Length -le 0)
+        {
+            throw "Found no tags matching pattern '$Pattern'"
         }
 
-        $latestTag = $tags[0]
+        $tags = & "$PSScriptRoot/sort-versions.ps1" $tags
+
+        Write-Host "Sorted tags: $tags"
+        $latestTag = $tags[-1]
         $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
     }
     finally
