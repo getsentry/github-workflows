@@ -2,9 +2,9 @@ Set-StrictMode -Version latest
 
 . "$PSScriptRoot/common/test-utils.ps1"
 
-function UpdateDependency([Parameter(Mandatory = $true)][string] $path)
+function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string] $pattern = $null)
 {
-    $result = & "$PSScriptRoot/../scripts/update-dependency.ps1" -Path $path
+    $result = & "$PSScriptRoot/../scripts/update-dependency.ps1" -Path $path -Pattern $pattern
     if (-not $?)
     {
         throw $result
@@ -25,6 +25,14 @@ RunTest "properties-file" {
     @("repo=$repoUrl", "version  =   none") | Out-File $testFile
     UpdateDependency $testFile
     AssertEqual @("repo=$repoUrl", "version  =   $currentVersion") (Get-Content $testFile)
+}
+
+RunTest "version pattern match" {
+    $testFile = "$testDir/test.properties"
+    $repo = 'https://github.com/getsentry/sentry-cli'
+    @("repo=$repo", "version=0") | Out-File $testFile
+    UpdateDependency $testFile '^0\.'
+    AssertEqual @("repo=$repo", "version=0.28.0") (Get-Content $testFile)
 }
 
 RunTest "powershell-script" {

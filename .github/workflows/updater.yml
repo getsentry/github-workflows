@@ -17,6 +17,7 @@
 #        with:
 #          path: modules/sentry-cocoa
 #          name: Cocoa SDK
+#          pattern: '^1\.'  # Limit to major version '1'
 #        secrets:
 #          api_token: ${{ secrets.CI_DEPLOY_KEY }}
 #
@@ -48,6 +49,11 @@ on:
         description: Name used for a changelog entry
         type: string
         required: true
+      pattern:
+        description: RegEx pattern that will be matched against available versions when picking the latest one
+        type: string
+        required: false
+        default: ''
       _workflow_version:
         description: 'Internal: specify github-workflows tag to check out scripts from'
         type: string
@@ -108,7 +114,7 @@ jobs:
 
       - name: Update to the latest version
         id: target
-        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}'
+        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Pattern '${{ inputs.pattern }}'
 
       - name: Get the base repo info
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
