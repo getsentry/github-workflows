@@ -60,7 +60,11 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 $changelog = $changelog.Trim()
 if ($changelog.Length -gt 1) {
     $changelog = "# Changelog`n$changelog"
+    # Increase header level by one.
     $changelog = $changelog -replace "(#+) ",'$1# '
+    # Remove at-mentions.
     $changelog = $changelog -replace '@',''
+    # Make PR/issue references into links to the original repository (unless they already are links).
+    $changelog = $changelog -replace '(?<!\[)#([0-9]+)', ('[#$1](' + $RepoUrl + '/issues/$1)')
 }
 $changelog

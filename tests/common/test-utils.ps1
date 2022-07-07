@@ -28,8 +28,6 @@ function AssertEqual([string] $expected, [string] $actual)
         Write-Host "----------------------------------------"
         Write-Host $actual
         Write-Host "========================================"
-        $diff.InputObject[0] | Write-Host
-        # $diff | Format-Table | Out-String | Write-Host
         throw "AssertEqual failed"
     }
 }
