@@ -139,6 +139,9 @@ if ("$Tag" -eq "")
     Write-Host "::set-output name=url::$url"
     Write-Host "::set-output name=mainBranch::$mainBranch"
 
+    if ("$originalTag" -eq "$latestTag") {
+        return
+    }
     $Tag = $latestTag
 }
 
