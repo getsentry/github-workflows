@@ -42,20 +42,25 @@ on:
   workflow_call:
     inputs:
       path:
-        description: Dependency path in the source repository, this can be either a submodule, a .properties file or a shell script
+        description: Dependency path in the source repository, this can be either a submodule, a .properties file or a shell script.
         type: string
         required: true
       name:
-        description: Name used for a changelog entry
+        description: Name used for a changelog entry.
         type: string
         required: true
       pattern:
-        description: RegEx pattern that will be matched against available versions when picking the latest one
+        description: RegEx pattern that will be matched against available versions when picking the latest one.
         type: string
         required: false
         default: ''
+      runs-on:
+        description: GitHub Actions virtual environment name to run the udpater job on.
+        type: string
+        required: false
+        default: 'ubuntu-latest'
       _workflow_version:
-        description: 'Internal: specify github-workflows tag to check out scripts from'
+        description: 'Internal: specify github-workflows (this repo) revision to use when checking out scripts.'
         type: string
         required: false
         default: v1  # Note: update when publishing a new version
@@ -90,7 +95,7 @@ jobs:
   # We do different approach on subsequent runs because otherwise we would spam users' mailboxes
   # with notifications about pushes to existing PRs. This way there is actually no push if not needed.
   update:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on }}
     timeout-minutes: 30
     defaults:
       run:
