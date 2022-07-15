@@ -5,7 +5,7 @@ on:
   push:
 
 jobs:
-  cli:
+  create-pr:
     uses: ./.github/workflows/updater.yml
     with:
       path: tests/sentry-cli.properties
@@ -15,7 +15,7 @@ jobs:
     secrets:
       api_token: ${{ github.token }}
 
-  args:
+  test-args:
     uses: ./.github/workflows/updater.yml
     with:
       path: tests/workflow-args.sh
