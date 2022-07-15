@@ -5,12 +5,21 @@ on:
   push:
 
 jobs:
-  test:
+  cli:
     uses: ./.github/workflows/updater.yml
     with:
       path: tests/sentry-cli.properties
       name: CLI
       pattern: '^2\.0\.'
+      _workflow_version: ${{ github.sha }}
+    secrets:
+      api_token: ${{ github.token }}
+
+  args:
+    uses: ./.github/workflows/updater.yml
+    with:
+      path: tests/workflow-args.sh
+      name: Workflow args test script
       runs-on: macos-latest
       _workflow_version: ${{ github.sha }}
     secrets:
