@@ -93,3 +93,18 @@ Features, fixes and improvements in this release have been contributed by:
 
     AssertEqual $expected $actual
 }
+
+RunTest "get-changelog truncates too long text" {
+    $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+        -RepoUrl "https://github.com/getsentry/sentry-cli" -OldTag "1.0.0" -NewTag "2.4.0"
+    if ($actual.Length -gt 61000)
+    {
+        throw "Expected the content to be truncated to less-than 61k characters, but got: $($actual.Length)"
+    }
+    $msg = "Changelog content truncated by [0-9]+ characters because it was over the limit \(60000\) and wouldn't fit into PR description."
+    if ("$actual" -notmatch $msg)
+    {
+        Write-Host $actual
+        throw "Expected changelog to contain message '$msg'"
+    }
+}
