@@ -24,3 +24,21 @@ jobs:
       _workflow_version: ${{ github.sha }}
     secrets:
       api_token: ${{ github.token }}
+
+  test-outputs:
+    runs-on: ubuntu-latest
+    needs:
+      - create-pr
+      - test-args
+    steps:
+      - run: "[[ '${{ needs.create-pr.outputs.baseBranch }}' == 'main' ]]"
+      - run: "[[ '${{ needs.create-pr.outputs.originalTag }}' == '2.0.0' ]]"
+      - run: "[[ '${{ needs.create-pr.outputs.latestTag }}' =~ ^[0-9.]+$ ]]"
+      - run: "[[ '${{ needs.create-pr.outputs.prUrl }}' =~ ^https://github.com/getsentry/github-workflows/pull/[0-9]+$ ]]"
+      - run: "[[ '${{ needs.create-pr.outputs.prBranch }}' == 'deps/tests/sentry-cli.properties/${{ needs.create-pr.outputs.latestTag }}' ]]"
+
+      - run: "[[ '${{ needs.test-args.outputs.baseBranch }}' == '' ]]"
+      - run: "[[ '${{ needs.test-args.outputs.originalTag }}' == 'v1' ]]"
+      - run: "[[ '${{ needs.test-args.outputs.latestTag }}' == 'v1' ]]"
+      - run: "[[ '${{ needs.test-args.outputs.prUrl }}' == '' ]]"
+      - run: "[[ '${{ needs.test-args.outputs.prBranch }}' == '' ]]"
