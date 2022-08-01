@@ -70,16 +70,16 @@ on:
     outputs:
       url:
         description: "The created/updated PRs url."
-        value: ${{ jobs.update.steps.pr.outputs.url }}
+        value: ${{ jobs.update.outputs.url }}
       branch_name:
         description: "The created/updated PRs branch name."
-        value: ${{ jobs.update.steps.root.outputs.prBranch }}
+        value: ${{ jobs.update.outputs.prBranch }}
       original_tag:
         description: "The original tag from which the dependency was updated from."
-        value: ${{ jobs.update.steps.target.outputs.originalTag }}
+        value: ${{ jobs.update.outputs.originalTag }}
       latest_tag:
         description: "The latest tag to which the dependency was updated to."
-        value: ${{ jobs.update.steps.target.outputs.latestTag }}
+        value: ${{ jobs.update.outputs.latestTag }}
 
 jobs:
   cancel-previous-run:
@@ -109,6 +109,12 @@ jobs:
   # with notifications about pushes to existing PRs. This way there is actually no push if not needed.
   update:
     runs-on: ${{ inputs.runs-on }}
+    # Map the job outputs to step outputs
+    outputs:
+      url: ${{ steps.pr.outputs.url }}
+      branch_name: ${{ steps.root.outputs.prBranch }}
+      original_tag: ${{ steps.target.outputs.originalTag }}
+      latest_tag: ${{ steps.target.outputs.latestTag }}
     timeout-minutes: 30
     defaults:
       run:
