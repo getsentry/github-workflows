@@ -68,9 +68,9 @@ on:
       api_token:
         required: true
     outputs:
-      url:
+      prUrl:
         description: "The created/updated PRs url."
-        value: ${{ jobs.update.outputs.url }}
+        value: ${{ jobs.update.outputs.prUrl }}
       baseBranch:
         description: "The base branch name."
         value: ${{ jobs.update.outputs.baseBranch }}
@@ -114,7 +114,7 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     # Map the job outputs to step outputs
     outputs:
-      url: ${{ steps.pr.outputs.url }}
+      prUrl: ${{ steps.pr.outputs.url }}
       baseBranch: ${{ steps.root.outputs.baseBranch }}
       prBranch: ${{ steps.root.outputs.prBranch }}
       originalTag: ${{ steps.target.outputs.originalTag }}
