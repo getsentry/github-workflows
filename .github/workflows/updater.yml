@@ -67,6 +67,19 @@ on:
     secrets:
       api_token:
         required: true
+    outputs:
+      url:
+        description: "The created/updated PRs url."
+        value: ${{ jobs.update.steps.pr.outputs.url }}
+      branch_name:
+        description: "The created/updated PRs branch name."
+        value: ${{ jobs.update.steps.root.outputs.prBranch }}
+      original_tag:
+        description: "The original tag from which the dependency was updated from."
+        value: ${{ jobs.update.steps.target.outputs.originalTag }}
+      latest_tag:
+        description: "The latest tag to which the dependency was updated to."
+        value: ${{ jobs.update.steps.target.outputs.latestTag }}
 
 jobs:
   cancel-previous-run:
