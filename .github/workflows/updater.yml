@@ -67,6 +67,22 @@ on:
     secrets:
       api_token:
         required: true
+    outputs:
+      prUrl:
+        description: "The created/updated PRs url."
+        value: ${{ jobs.update.outputs.prUrl }}
+      baseBranch:
+        description: "The base branch name."
+        value: ${{ jobs.update.outputs.baseBranch }}
+      prBranch:
+        description: "The created/updated pr branch name."
+        value: ${{ jobs.update.outputs.prBranch }}
+      originalTag:
+        description: "The original tag from which the dependency was updated from."
+        value: ${{ jobs.update.outputs.originalTag }}
+      latestTag:
+        description: "The latest tag to which the dependency was updated to."
+        value: ${{ jobs.update.outputs.latestTag }}
 
 jobs:
   cancel-previous-run:
@@ -96,6 +112,13 @@ jobs:
   # with notifications about pushes to existing PRs. This way there is actually no push if not needed.
   update:
     runs-on: ${{ inputs.runs-on }}
+    # Map the job outputs to step outputs
+    outputs:
+      prUrl: ${{ steps.pr.outputs.url }}
+      baseBranch: ${{ steps.root.outputs.baseBranch }}
+      prBranch: ${{ steps.root.outputs.prBranch }}
+      originalTag: ${{ steps.target.outputs.originalTag }}
+      latestTag: ${{ steps.target.outputs.latestTag }}
     timeout-minutes: 30
     defaults:
       run:
