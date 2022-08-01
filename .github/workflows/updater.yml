@@ -71,13 +71,16 @@ on:
       url:
         description: "The created/updated PRs url."
         value: ${{ jobs.update.outputs.url }}
-      branch_name:
-        description: "The created/updated PRs branch name."
+      baseBranch:
+        description: "The created/updated base branch name."
+        value: ${{ jobs.update.outputs.baseBranch }}
+      prBranch:
+        description: "The created/updated pr branch name."
         value: ${{ jobs.update.outputs.prBranch }}
-      original_tag:
+      originalTag:
         description: "The original tag from which the dependency was updated from."
         value: ${{ jobs.update.outputs.originalTag }}
-      latest_tag:
+      latestTag:
         description: "The latest tag to which the dependency was updated to."
         value: ${{ jobs.update.outputs.latestTag }}
 
@@ -112,9 +115,10 @@ jobs:
     # Map the job outputs to step outputs
     outputs:
       url: ${{ steps.pr.outputs.url }}
-      branch_name: ${{ steps.root.outputs.prBranch }}
-      original_tag: ${{ steps.target.outputs.originalTag }}
-      latest_tag: ${{ steps.target.outputs.latestTag }}
+      baseBranch: ${{ steps.root.outputs.baseBranch }}
+      prBranch: ${{ steps.root.outputs.prBranch }}
+      originalTag: ${{ steps.target.outputs.originalTag }}
+      latestTag: ${{ steps.target.outputs.latestTag }}
     timeout-minutes: 30
     defaults:
       run:
