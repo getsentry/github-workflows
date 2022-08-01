@@ -72,7 +72,7 @@ on:
         description: "The created/updated PRs url."
         value: ${{ jobs.update.outputs.url }}
       baseBranch:
-        description: "The created/updated base branch name."
+        description: "The base branch name."
         value: ${{ jobs.update.outputs.baseBranch }}
       prBranch:
         description: "The created/updated pr branch name."
