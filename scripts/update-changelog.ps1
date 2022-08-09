@@ -105,6 +105,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 $sectionEnd = $i
 
 $tagAnchor = $NewTag.Replace('.', '')
+$oldTagNice = ($OldTag -match "^[0-9]") ? "v$OldTag" : $OldTag
 $newTagNice = ($NewTag -match "^[0-9]") ? "v$NewTag" : $NewTag
 
 $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
@@ -113,7 +114,7 @@ $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
 $updated = $false
 for ($i = 0; $i -lt $sectionEnd; $i++)
 {
-    if (($lines[$i] -match "^- Bump $Name to") -and `
+    if (($lines[$i] -match "^- Bump $Name.*to") -and `
         ($lines[$i + 1] -match "^  - \[changelog\]\($RepoUrl") -and `
         ($lines[$i + 2] -match "^  - \[diff\]\($RepoUrl"))
     {
@@ -122,7 +123,7 @@ for ($i = 0; $i -lt $sectionEnd; $i++)
         Write-Host "  ", $lines[$i + 1]
         Write-Host "  ", $lines[$i + 2]
 
-        $lines[$i] = $lines[$i] -replace "Bump $Name to .* \(", "Bump $Name to $newTagNice ("
+        $lines[$i] = $lines[$i] -replace "(Bump $Name.*)to .* \(", "`$1to $newTagNice ("
         $lines[$i] = $lines[$i] -replace "\)$", ", $PullRequestMD)"
         $lines[$i + 1] = "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)"
         $lines[$i + 2] = $lines[$i + 2] -replace "\.\.\..*\)$", "...$NewTag)"
@@ -138,7 +139,7 @@ for ($i = 0; $i -lt $sectionEnd; $i++)
 
 if (!$updated)
 {
-    $entry = @("- Bump $Name to $newTagNice ($PullRequestMD)",
+    $entry = @("- Bump $Name from $oldTagNice to $newTagNice ($PullRequestMD)",
         "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
         "  - [diff]($RepoUrl/compare/$OldTag...$NewTag)")
 
