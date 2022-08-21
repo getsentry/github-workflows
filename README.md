@@ -2,22 +2,75 @@
 
 This repository contains reusable workflows and scripts to be used with GitHub Actions.
 
-For versioning, we're using a shifting tag strategy, with the current version tag - e.g. `v1` - being updated until
-there's a breaking change, at which point it will stay as is and we start using a new tag, `v2`, etc...
+## Updater
 
-This allows consumers to be on the latest version of a compatible workflow. If you prefer, you can instead pin to a
-specific commit.
+Dependency updater - see [updater.yml](.github/workflows/updater.yml) - updates dependencies to the latest published git tag.
 
-## Contributing
+### Example workflow definition
 
-Note on versioning: Reusable workflows don't support version selection based on the major version specified
-by the user - instead, an exact ref is needed, that's why we have to shift the tag as needed.
+```yaml
+name: Update Dependencies
+on:
+  # Run every day.
+  schedule:
+    - cron: '0 3 * * *'
+  # And on on every PR merge so we get the updated dependencies ASAP, and to make sure the changelog doesn't conflict.
+  push:
+    branches:
+      - main
+jobs:
+  # Update a git submodule
+  cocoa:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: modules/sentry-cocoa
+      name: Cocoa SDK
+      pattern: '^1\.'  # Limit to major version '1'
+    secrets:
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
-To shift the tag to the current commit:
+  # Update a properties file
+  cli:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: sentry-cli.properties
+      name: CLI
+    secrets:
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
-```shell-script
-git push
-git tag -d v1
-git tag v1
-git push --tags --force
+  # Update using a custom shell script, see scripts/update-dependency.ps1 for the required arguments
+  agp:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: script.ps1
+      name: Gradle Plugin
+    secrets:
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
 ```
+
+### Inputs
+
+* `path`: Dependency path in the source repository, this can be either a submodule, a .properties file or a shell script.
+  * type: string
+  * required: true
+* `name`: Name used for a changelog entry.
+  * type: string
+  * required: true
+* `pattern`: RegEx pattern that will be matched against available versions when picking the latest one.
+  * type: string
+  * required: false
+  * default: ''
+* `changelog-section`: Section header to attach the changelog entry to.
+  * type: string
+  * required: false
+  * default: Dependencies
+* `runs-on`: GitHub Actions virtual environment name to run the udpater job on.
+  * type: string
+  * required: false
+  * default: ubuntu-latest
+
+### Secrets
+
+* `api-token`: GH authentication token to create PRs with & push.
+  If you provide the usual `${{ github.token }}`, no followup CI will run on the created PR.
+  If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.
