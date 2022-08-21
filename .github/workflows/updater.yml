@@ -1,43 +1,4 @@
 # Allows updating dependencies to the latest published tag
-#
-# Example workflow definition:
-#    name: Update Dependencies
-#    on:
-#      # Run every day.
-#      schedule:
-#        - cron: '0 3 * * *'
-#      # And on on every PR merge so we get the updated dependencies ASAP, and to make sure the changelog doesn't conflict.
-#      push:
-#        branches:
-#          - main
-#    jobs:
-#      # Update a git submodule
-#      cocoa:
-#        uses: getsentry/github-workflows/.github/workflows/updater.yml@v1
-#        with:
-#          path: modules/sentry-cocoa
-#          name: Cocoa SDK
-#          pattern: '^1\.'  # Limit to major version '1'
-#        secrets:
-#          api_token: ${{ secrets.CI_DEPLOY_KEY }}
-#
-#      # Update a properties file
-#      cli:
-#        uses: getsentry/github-workflows/.github/workflows/updater.yml@v1
-#        with:
-#          path: sentry-cli.properties
-#          name: CLI
-#        secrets:
-#          api_token: ${{ secrets.CI_DEPLOY_KEY }}
-#
-#      # Update using a custom shell script, see scripts/update-dependency.ps1 for the required arguments
-#      agp:
-#        uses: getsentry/github-workflows/.github/workflows/updater.yml@v1
-#        with:
-#          path: script.ps1
-#          name: Gradle Plugin
-#        secrets:
-#          api_token: ${{ secrets.CI_DEPLOY_KEY }}
 on:
   workflow_call:
     inputs:
@@ -70,7 +31,7 @@ on:
         required: false
         default: v1  # Note: update when publishing a new version
     secrets:
-      api_token:
+      api-token:
         required: true
     outputs:
       prUrl:
@@ -131,7 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ssh-key: ${{ secrets.api_token }}
+          ssh-key: ${{ secrets.api-token }}
 
       # In order to run scripts from this repo, we need to check it out manually, doesn't seem available locally.
       - name: Check out workflow scripts
@@ -249,7 +210,7 @@ jobs:
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
         uses: actions/checkout@v3
         with:
-          ssh-key: ${{ secrets.api_token }}
+          ssh-key: ${{ secrets.api-token }}
 
       - name: 'After new PR: redo the update'
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}

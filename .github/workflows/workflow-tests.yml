@@ -13,7 +13,7 @@ jobs:
       pattern: '^2\.0\.'
       _workflow_version: ${{ github.sha }}
     secrets:
-      api_token: ${{ github.token }}
+      api-token: ${{ github.token }}
 
   test-args:
     uses: ./.github/workflows/updater.yml
@@ -23,7 +23,7 @@ jobs:
       runs-on: macos-latest
       _workflow_version: ${{ github.sha }}
     secrets:
-      api_token: ${{ github.token }}
+      api-token: ${{ github.token }}
 
   test-outputs:
     runs-on: ubuntu-latest
