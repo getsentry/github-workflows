@@ -54,6 +54,11 @@ on:
         type: string
         required: false
         default: ''
+      changelog-section:
+        description: Section header to attach the changelog entry to.
+        type: string
+        required: false
+        default: Dependencies
       runs-on:
         description: GitHub Actions virtual environment name to run the udpater job on.
         type: string
@@ -259,7 +264,8 @@ jobs:
             -RepoUrl '${{ steps.target.outputs.url }}' `
             -MainBranch '${{ steps.target.outputs.mainBranch }}' `
             -OldTag '${{ steps.target.outputs.originalTag }}' `
-            -NewTag '${{ steps.target.outputs.latestTag }}'
+            -NewTag '${{ steps.target.outputs.latestTag }}' `
+            -Section '${{ inputs.changelog-section }}'
 
       - run: git --no-pager diff
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag

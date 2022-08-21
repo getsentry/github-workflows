@@ -7,7 +7,7 @@ $testCases = Get-ChildItem "$PSScriptRoot/testdata/changelog/"
 foreach ($testCase in $testCases)
 {
     RunTest $testCase {
-        cp "$testCase/CHANGELOG.md.original" "$testCase/CHANGELOG.md"
+        Copy-Item "$testCase/CHANGELOG.md.original" "$testCase/CHANGELOG.md"
 
         pwsh -WorkingDirectory $testCase -File "$PSScriptRoot/../scripts/update-changelog.ps1" `
             -Name 'Dependency' `
@@ -15,7 +15,8 @@ foreach ($testCase in $testCases)
             -RepoUrl 'https://github.com/getsentry/dependency' `
             -MainBranch 'main' `
             -OldTag '7.16.0' `
-            -NewTag '7.17.0'
+            -NewTag '7.17.0' `
+            -Section 'Dependencies'
 
         AssertEqual (Get-Content "$testCase/CHANGELOG.md.expected") (Get-Content "$testCase/CHANGELOG.md")
     }
