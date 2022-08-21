@@ -4,8 +4,9 @@
 
 ### Dependencies
 
-- Bump Dependency to v6.0.0 ([#100](https://github.com/getsentry/dependant/pulls/100))
-  - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#600)
+- Following items preserve their bullet points as-is even through an update
+* Bump Dependency to v6.0.0 ([#100](https://github.com/getsentry/dependant/pulls/100))
+  * [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#600)
   - [diff](https://github.com/getsentry/dependency/compare/5.0.0...6.0.0)
 
 ## 0.14.0

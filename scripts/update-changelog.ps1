@@ -49,7 +49,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     break
 }
 
-# Make sure that there's a the requested section header
+# Make sure that there's the requested section header
 :outer for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
@@ -115,9 +115,9 @@ $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
 $updated = $false
 for ($i = 0; $i -lt $sectionEnd; $i++)
 {
-    if (($lines[$i] -match "^- Bump $Name.*to") -and `
-        ($lines[$i + 1] -match "^  - \[changelog\]\($RepoUrl") -and `
-        ($lines[$i + 2] -match "^  - \[diff\]\($RepoUrl"))
+    if (($lines[$i] -match "^[-*] Bump $Name.*to") -and `
+        ($lines[$i + 1] -match "^  [-*] \[changelog\]\($RepoUrl") -and `
+        ($lines[$i + 2] -match "^  [-*] \[diff\]\($RepoUrl"))
     {
         Write-Host "Found an existing changelog entry at $($i):"
         Write-Host "  ", $lines[$i]
@@ -126,7 +126,7 @@ for ($i = 0; $i -lt $sectionEnd; $i++)
 
         $lines[$i] = $lines[$i] -replace "(Bump $Name.*)to .* \(", "`$1to $newTagNice ("
         $lines[$i] = $lines[$i] -replace "\)$", ", $PullRequestMD)"
-        $lines[$i + 1] = "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)"
+        $lines[$i + 1] = $lines[$i + 1] -replace "#.*\)", "#$tagAnchor)"
         $lines[$i + 2] = $lines[$i + 2] -replace "\.\.\..*\)$", "...$NewTag)"
 
         Write-Host "Updating the entry to: "
@@ -140,9 +140,13 @@ for ($i = 0; $i -lt $sectionEnd; $i++)
 
 if (!$updated)
 {
-    $entry = @("- Bump $Name from $oldTagNice to $newTagNice ($PullRequestMD)",
-        "  - [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
-        "  - [diff]($RepoUrl/compare/$OldTag...$NewTag)")
+    # Find what character is used as a bullet-point separator - look for the first bullet-point object that wasn't created by this script.
+    $bulletPoint = $lines | Where-Object { ($_ -match "^ *[-*] ") -and -not ($_ -match "(Bump .* to|\[changelog\]|\[diff\])") } | Select-Object -First 1
+    $bulletPoint = "$bulletPoint-"[0]
+
+    $entry = @("$bulletPoint Bump $Name from $oldTagNice to $newTagNice ($PullRequestMD)",
+        "  $bulletPoint [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
+        "  $bulletPoint [diff]($RepoUrl/compare/$OldTag...$NewTag)")
 
     Write-Host "Adding a changelog entry at line $($sectionEnd):"
     foreach ($line in $entry)
