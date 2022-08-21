@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### Features
+### Dependencies
 
 - Bump Dependency to v6.0.0 ([#100](https://github.com/getsentry/dependant/pulls/100))
   - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#600)
@@ -10,7 +10,7 @@
 
 ## 0.14.0
 
-### Features
+### Dependencies
 
 - Capture `Debug.LogError()` and `Debug.LogException()` also on background threads ([#673](https://github.com/getsentry/sentry-unity/pull/673))
 - Adding override for Sentry CLI URL ([#666](https://github.com/getsentry/sentry-unity/pull/666))

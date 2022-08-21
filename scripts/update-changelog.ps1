@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory = $true)][string] $RepoUrl,
     [Parameter(Mandatory = $true)][string] $MainBranch,
     [Parameter(Mandatory = $true)][string] $OldTag,
-    [Parameter(Mandatory = $true)][string] $NewTag
+    [Parameter(Mandatory = $true)][string] $NewTag,
+    [Parameter(Mandatory = $true)][string] $Section
 )
 
 Set-StrictMode -Version latest
@@ -48,7 +49,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     break
 }
 
-# Make sure that there's a `Features` header
+# Make sure that there's a the requested section header
 :outer for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
@@ -62,12 +63,12 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     # Next, we expect a header
     if (-not $line.StartsWith("#"))
     {
-        throw "Unexpected changelog line - expecting a section header at this point, such as '### Features', but found: '$line'"
+        throw "Unexpected changelog line - expecting a section header at this point, such as '### $Section', but found: '$line'"
     }
 
-    if (-not ($line -match "features"))
+    if (-not ($line -match $Section))
     {
-        # If it's a version-specific section header but not "Features", skip all the items in this section
+        # If it's a version-specific section header but not the requested section header, skip all the items in this section
         if ($line.StartsWith("###"))
         {
             for ($i = $i + 1; $i -lt $lines.Count - 1; $i++)
@@ -79,29 +80,29 @@ for ($i = 0; $i -lt $lines.Count; $i++)
             }
         }
 
-        # add Features as the first sub-header
-        Write-Host "Adding a new '### Features' section at line $i"
-        $lines = $lines[0..($i - 1)] + @("### Features", "", "") + $lines[$i..($lines.Count - 1)]
+        # add the section header as the first sub-header
+        Write-Host "Adding a new '### $Section' section at line $i"
+        $lines = $lines[0..($i - 1)] + @("### $Section", "", "") + $lines[$i..($lines.Count - 1)]
     }
     break
 }
 
-# Find the last point in the first `Features` header
+# Find the last point in the first requested section header
 for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
-    if ($line -match "Features")
+    if ($line -match $Section)
     {
-        Write-Host "Found a Features header at $i"
+        Write-Host "Found a $Section header at $i"
         # Find the next header and then go backward until we find a non-empty line
         for ($i++; $i -lt $lines.Count -and -not $lines[$i].StartsWith("#"); $i++) {}
         for ($i--; $i -gt 0 -and $lines[$i].Trim().Length -eq 0; $i--) {}
-        $i += ($lines[$i] -match "Features") ? 2 : 1
+        $i += ($lines[$i] -match $Section) ? 2 : 1
         break
     }
 }
 
-# What line we want to insert at - the empty line at the end of the currently unreleased Features section.
+# What line we want to insert at - the empty line at the end of the currently unreleased section.
 $sectionEnd = $i
 
 $tagAnchor = $NewTag.Replace('.', '')
@@ -110,7 +111,7 @@ $newTagNice = ($NewTag -match "^[0-9]") ? "v$NewTag" : $NewTag
 
 $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
 
-# First check if an existing entry for the same dependency exists among unreleased features - if so, update it instead of adding a new one.
+# First check if an existing entry for the same dependency exists among unreleased $Section - if so, update it instead of adding a new one.
 $updated = $false
 for ($i = 0; $i -lt $sectionEnd; $i++)
 {

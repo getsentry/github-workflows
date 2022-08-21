@@ -3,7 +3,7 @@
 
 ## Unreleased
 
-### Features
+### Dependencies
 
 - n/a
 
