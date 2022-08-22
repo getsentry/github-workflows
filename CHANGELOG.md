@@ -15,6 +15,7 @@
 ### Fixes
 
 - Preserve changelog bullet-point format ([#20](https://github.com/getsentry/github-workflows/pull/20))
+- Changelog section parsing when an entry text contains the section name in the text ([#25](https://github.com/getsentry/github-workflows/pull/25))
 
 ## 1.0.0
 
