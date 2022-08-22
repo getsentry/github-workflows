@@ -1,8 +1,10 @@
 .PHONY: test
 .SILENT: test
+.ONESHELL:
 
 test: tests/*.ps1
-	for file in $^ ; do \
-		echo "Running " $${file} ; \
-		pwsh $${file} ; \
+	@set -e
+	for file in $^ ; do
+		echo "Running " $${file} ;
+		pwsh $${file} ;
 	done
