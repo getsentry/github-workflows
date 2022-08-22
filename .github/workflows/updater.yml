@@ -37,7 +37,7 @@ on:
         description: 'Internal: specify github-workflows (this repo) revision to use when checking out scripts.'
         type: string
         required: false
-        default: v1  # Note: update when publishing a new version
+        default: v2  # Note: update when publishing a new version
     secrets:
       api-token:
         required: true

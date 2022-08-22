@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.0
+
 ### Changes
 
 - Rename `api_token` secret to `api-token` ([#21](https://github.com/getsentry/github-workflows/pull/21))

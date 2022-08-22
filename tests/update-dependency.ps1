@@ -18,7 +18,7 @@ if (-not (Test-Path $testDir))
 }
 
 $repoUrl = 'https://github.com/getsentry/github-workflows'
-$currentVersion = 'v1' # Note: this will change once there's a new tag in this repo
+$currentVersion = 'v2' # Note: this will change once there's a new tag in this repo
 
 RunTest "properties-file" {
     $testFile = "$testDir/test.properties"
