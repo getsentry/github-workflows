@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Dependencies
+
+- Bump Workflow args test script from v2 to v1 ([#28](https://github.com/getsentry/github-workflows/pull/28))
+  - [changelog](https://github.com/getsentry/github-workflows/blob/main/CHANGELOG.md#v1)
+  - [diff](https://github.com/getsentry/github-workflows/compare/v2...v1)
+
+## 2.0.0
+
 ### Changes
 
 - Rename `api_token` secret to `api-token` ([#21](https://github.com/getsentry/github-workflows/pull/21))
