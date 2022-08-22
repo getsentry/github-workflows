@@ -66,7 +66,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
         throw "Unexpected changelog line - expecting a section header at this point, such as '### $Section', but found: '$line'"
     }
 
-    if (-not ($line -match $Section))
+    if (-not ($line -match "### $Section"))
     {
         # If it's a version-specific section header but not the requested section header, skip all the items in this section
         if ($line.StartsWith("###"))
@@ -91,13 +91,13 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
-    if ($line -match $Section)
+    if ($line -match "### $Section")
     {
         Write-Host "Found a $Section header at $i"
         # Find the next header and then go backward until we find a non-empty line
         for ($i++; $i -lt $lines.Count -and -not $lines[$i].StartsWith("#"); $i++) {}
         for ($i--; $i -gt 0 -and $lines[$i].Trim().Length -eq 0; $i--) {}
-        $i += ($lines[$i] -match $Section) ? 2 : 1
+        $i += ($lines[$i] -match "### $Section") ? 2 : 1
         break
     }
 }
