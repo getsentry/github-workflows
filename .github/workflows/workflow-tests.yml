@@ -36,7 +36,7 @@ jobs:
       - run: "[[ '${{ needs.create-pr.outputs.originalTag }}' == '2.0.0' ]]"
       - run: "[[ '${{ needs.create-pr.outputs.latestTag }}' =~ ^[0-9.]+$ ]]"
       - run: "[[ '${{ needs.create-pr.outputs.prUrl }}' =~ ^https://github.com/getsentry/github-workflows/pull/[0-9]+$ ]]"
-      - run: "[[ '${{ needs.create-pr.outputs.prBranch }}' == 'deps/tests/sentry-cli.properties/${{ needs.create-pr.outputs.latestTag }}' ]]"
+      - run: "[[ '${{ needs.create-pr.outputs.prBranch }}' == 'deps/tests/sentry-cli.properties' ]]"
 
       - run: "[[ '${{ needs.test-args.outputs.baseBranch }}' == '' ]]"
       - run: "[[ '${{ needs.test-args.outputs.originalTag }}' == 'v1' ]]"
