@@ -18,7 +18,11 @@ if (-not (Test-Path $testDir))
 }
 
 $repoUrl = 'https://github.com/getsentry/github-workflows'
-$currentVersion = 'v2' # Note: this will change once there's a new tag in this repo
+
+# Find the latest latest version in this repo. We're intentionally using different code than `update-dependency.ps1`
+# script uses to be able to catch issues, if any.
+$currentVersion = (git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' $repoUrl `
+    | Select-Object -Last 1 | Select-String -Pattern 'refs/tags/(.*)$').Matches.Groups[1].Value
 
 RunTest "properties-file" {
     $testFile = "$testDir/test.properties"
