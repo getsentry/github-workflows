@@ -68,6 +68,11 @@ jobs:
   * type: string
   * required: false
   * default: ubuntu-latest
+* `pr-strategy`: How to handle PRs.
+  Can be either of the following:
+    * `create` (default) - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
+    * `update` - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
+
 
 ### Secrets
 

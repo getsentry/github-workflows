@@ -25,6 +25,14 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      pr-strategy:
+        description: |
+          How to handle PRs - can be either of the following:
+          * create - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
+          * update - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
+        type: string
+        required: false
+        default: create
       _workflow_version:
         description: 'Internal: specify github-workflows (this repo) revision to use when checking out scripts.'
         type: string
@@ -117,7 +125,13 @@ jobs:
           $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
           Write-Host '::echo::on'
           Write-Host "::set-output name=baseBranch::$mainBranch"
-          Write-Host "::set-output name=prBranch::deps/${{ inputs.path }}/${{ steps.target.outputs.latestTag }}"
+          $prBranch = switch ('${{ inputs.pr-strategy }}')
+          {
+              'create' { 'deps/${{ inputs.path }}/${{ steps.target.outputs.latestTag }}' }
+              'update' { 'deps/${{ inputs.path }}' }
+              default { throw "Unkown PR strategy '${{ inputs.pr-strategy }}'." }
+          }
+          Write-Host "::set-output name=prBranch::$prBranch"
 
       - name: Fetch an existing PR
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
