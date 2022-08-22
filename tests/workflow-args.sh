@@ -5,7 +5,7 @@ set -euo pipefail
 
 case $1 in
 get-version)
-    echo "v1"
+    echo "v2"
 
     # Run actual tests here.
     if [[ "$(uname)" != 'Darwin' ]]; then
