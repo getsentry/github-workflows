@@ -21,7 +21,7 @@ jobs:
             --volume ${{ runner.temp }}:/ghwf \
             --workdir /workspace \
             --user $UID \
-            --env-file <(env | grep XDG) \
+            --env-file <(env) \
             --env GITHUB_TOKEN="${{ github.token }}" \
             ghcr.io/danger/danger-js:11.1.2 \
             --failOnErrors --dangerfile ghwf/dangerfile.js

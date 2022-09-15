@@ -1,7 +1,8 @@
 # This isn't a reusable workflow but an actual CI action for this repo itself - to test the workflows.
 name: Danger Workflow Tests
 
-on: workflow_dispatch
+# on: workflow_dispatch
+on: push
 
 jobs:
   danger:
