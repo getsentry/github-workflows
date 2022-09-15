@@ -116,7 +116,7 @@ jobs:
 
       - name: Update to the latest version
         id: target
-        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Pattern '${{ inputs.pattern }}'
+        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Pattern '${{ inputs.pattern }}'
 
       - name: Get the base repo info
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
@@ -175,11 +175,11 @@ jobs:
       - name: Get target changelog
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         run: |
-          $changelog = ${{ runner.temp }}/ghwf/scripts/get-changelog.ps1 `
+          $changelog = ${{ runner.temp }}/ghwf/updater/scripts/get-changelog.ps1 `
             -RepoUrl '${{ steps.target.outputs.url }}' `
             -OldTag '${{ steps.target.outputs.originalTag }}' `
             -NewTag '${{ steps.target.outputs.latestTag }}'
-          ${{ runner.temp }}/ghwf/scripts/set-github-env.ps1 TARGET_CHANGELOG $changelog
+          ${{ runner.temp }}/ghwf/updater/scripts/set-github-env.ps1 TARGET_CHANGELOG $changelog
 
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
@@ -228,12 +228,12 @@ jobs:
 
       - name: 'After new PR: redo the update'
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
-        run: ${{ runner.temp }}/ghwf/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
+        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         run: |
-          ${{ runner.temp }}/ghwf/scripts/update-changelog.ps1 `
+          ${{ runner.temp }}/ghwf/updater/scripts/update-changelog.ps1 `
             -Name '${{ inputs.name }}' `
             -PR '${{ steps.pr.outputs.url }}' `
             -RepoUrl '${{ steps.target.outputs.url }}' `

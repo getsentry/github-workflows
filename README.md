@@ -38,7 +38,7 @@ jobs:
     secrets:
       api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
-  # Update using a custom shell script, see scripts/update-dependency.ps1 for the required arguments
+  # Update using a custom shell script, see updater/scripts/update-dependency.ps1 for the required arguments
   agp:
     uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
     with:
@@ -70,9 +70,8 @@ jobs:
   * default: ubuntu-latest
 * `pr-strategy`: How to handle PRs.
   Can be either of the following:
-    * `create` (default) - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
-    * `update` - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
-
+  * `create` (default) - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
+  * `update` - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
 
 ### Secrets
 
