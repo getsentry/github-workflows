@@ -1,0 +1,15 @@
+# Allows updating dependencies to the latest published tag
+on:
+  workflow_call
+
+jobs:
+  danger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: wget https://raw.githubusercontent.com/getsentry/github-workflows/feat/dangerjs/danger/dangerfile.js -P ${{ runner.temp }}
+      - run: npx danger ci --dangerfile {{ runner.temp }}/dangerfile.js
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
