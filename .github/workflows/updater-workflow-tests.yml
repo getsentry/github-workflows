@@ -8,7 +8,7 @@ jobs:
   create-pr:
     uses: ./.github/workflows/updater.yml
     with:
-      path: tests/sentry-cli.properties
+      path: updater/tests/sentry-cli.properties
       name: CLI
       pattern: '^2\.0\.'
       pr-strategy: update
@@ -19,7 +19,7 @@ jobs:
   test-args:
     uses: ./.github/workflows/updater.yml
     with:
-      path: tests/workflow-args.sh
+      path: updater/tests/workflow-args.sh
       name: Workflow args test script
       runs-on: macos-latest
       pattern: '.*'
