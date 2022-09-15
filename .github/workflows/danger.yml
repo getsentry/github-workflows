@@ -10,6 +10,6 @@ jobs:
         with:
           fetch-depth: 0
       - run: wget https://raw.githubusercontent.com/getsentry/github-workflows/feat/dangerjs/danger/dangerfile.js -P ${{ runner.temp }}
-      - run: npx danger ci --dangerfile ${{ runner.temp }}/dangerfile.js
+      - run: npx danger ci --failOnErrors --dangerfile ${{ runner.temp }}/dangerfile.js
         env:
           GITHUB_TOKEN: ${{ github.token }}
