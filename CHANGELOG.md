@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.1.0
+
 ### Features
 
 - New reusable workflow, `danger.yml`, to check Pull Requests with predefined rules ([#34](https://github.com/getsentry/github-workflows/pull/34))
