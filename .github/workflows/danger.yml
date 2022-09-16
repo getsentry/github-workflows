@@ -17,11 +17,11 @@ jobs:
       - name: Run DangerJS
         run: |
           docker run \
-            --volume ${{ github.workspace }}:/workspace \
-            --volume ${{ runner.temp }}:/ghwf \
-            --workdir /workspace \
+            --volume ${{ github.workspace }}:${{ github.workspace }} \
+            --volume ${{ runner.temp }}:${{ runner.temp }} \
+            --workdir ${{ github.workspace }} \
             --user $UID \
             --env-file <(env) \
             --env GITHUB_TOKEN="${{ github.token }}" \
             ghcr.io/danger/danger-js:11.1.2 \
-            --failOnErrors --dangerfile ghwf/dangerfile.js
+            --failOnErrors --dangerfile ${{ runner.temp }}/dangerfile.js
