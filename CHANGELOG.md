@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- New Danger reusable workflow to check Pull Requests ([#34](https://github.com/getsentry/github-workflows/pull/34))
+
 ## 2.0.0
 
 ### Changes
