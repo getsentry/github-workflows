@@ -26,11 +26,3 @@ jobs:
             -e DANGER_DISABLE_TRANSPILATION="true" \
             ghcr.io/danger/danger-js:11.1.2 \
             --failOnErrors --dangerfile ${{ runner.temp }}/dangerfile.js
-
-          # docker run
-          # --workdir /github/workspace --rm
-          # -v "/var/run/docker.sock":"/var/run/docker.sock"
-          # -v "/home/runner/work/_temp/_github_home":"/github/home"
-          # -v "/home/runner/work/_temp/_github_workflow":"/github/workflow"
-          # -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands"
-          # -v "/home/runner/work/github-workflows/github-workflows":"/github/workspace"
