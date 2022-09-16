@@ -78,3 +78,19 @@ jobs:
 * `api-token`: GH authentication token to create PRs with & push.
   If you provide the usual `${{ github.token }}`, no followup CI will run on the created PR.
   If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.
+
+## Danger
+
+Runs DangerJS on Pull Reqeusts in your repository. This uses custom set of rules defined in [this dangerfile](danger/dangerfile.js).
+
+```yaml
+name: Danger
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+jobs:
+  danger:
+    uses: getsentry/github-workflows/.github/workflows/danger.yml@v2
+```

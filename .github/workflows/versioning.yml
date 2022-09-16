@@ -1,4 +1,4 @@
-name: Keep the major version tags up-to-date
+name: Sync tags with releases
 
 on:
   release:
