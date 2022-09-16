@@ -1,4 +1,4 @@
-# Allows updating dependencies to the latest published tag
+# Runs DangerJS with a pre-configured set of rules on a Pull Request.
 on:
   workflow_call
 
