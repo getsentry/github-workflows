@@ -1,6 +1,12 @@
 # Runs DangerJS with a pre-configured set of rules on a Pull Request.
 on:
   workflow_call:
+    inputs:
+      _workflow_version:
+        description: 'Internal: specify github-workflows (this repo) revision to use when checking out scripts.'
+        type: string
+        required: false
+        default: v2  # Note: update when publishing a new version
     outputs:
       outcome:
         description: Whether the Danger run finished successfully. Possible values are success, failure, cancelled, or skipped.
@@ -17,7 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download dangerfile.js
-        run: wget https://raw.githubusercontent.com/getsentry/github-workflows/feat/dangerjs/danger/dangerfile.js -P ${{ runner.temp }}
+        run: wget https://raw.githubusercontent.com/getsentry/github-workflows/${{ inputs._workflow_version }}/danger/dangerfile.js -P ${{ runner.temp }}
 
       # Using a pre-built docker image in GitHub container registry instaed of NPM to reduce possible attack vectors.
       - name: Run DangerJS
