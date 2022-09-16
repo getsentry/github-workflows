@@ -8,3 +8,9 @@ on:
 jobs:
   danger:
     uses: ./.github/workflows/danger.yml
+
+  test-outputs:
+    runs-on: ubuntu-latest
+    needs: danger
+    steps:
+      - run: "[[ '${{ needs.danger.outputs.outcome }}' == 'success' ]]"

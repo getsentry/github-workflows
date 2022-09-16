@@ -1,5 +1,5 @@
 # This isn't a reusable workflow but an actual CI action for this repo itself - to test the workflows.
-name: Update Workflow Tests
+name: Updater Workflow Tests
 
 on:
   push:

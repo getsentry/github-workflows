@@ -1,6 +1,10 @@
 # Runs DangerJS with a pre-configured set of rules on a Pull Request.
 on:
-  workflow_call
+  workflow_call:
+    outputs:
+      outcome:
+        description: Whether the Danger run finished successfully. Possible values are success, failure, cancelled, or skipped.
+        value: ${{ jobs.danger.steps.danger.outcome }}
 
 jobs:
   danger:
@@ -15,6 +19,7 @@ jobs:
 
       # Using a pre-built docker image in GitHub container registry instaed of NPM to reduce possible attack vectors.
       - name: Run DangerJS
+        id: danger
         run: |
           docker run \
             --volume ${{ github.workspace }}:/github/workspace \

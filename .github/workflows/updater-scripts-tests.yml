@@ -1,5 +1,5 @@
 # This isn't a reusable workflow but an actual CI action for this repo itself - to test scripts.
-name: Update Script Tests
+name: Updater Script Tests
 
 on:
   push:
