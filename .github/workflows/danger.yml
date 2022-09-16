@@ -4,11 +4,13 @@ on:
     outputs:
       outcome:
         description: Whether the Danger run finished successfully. Possible values are success, failure, cancelled, or skipped.
-        value: ${{ jobs.danger.steps.danger.outcome }}
+        value: ${{ jobs.danger.outputs.outcome }}
 
 jobs:
   danger:
     runs-on: ubuntu-latest
+    outputs:
+      outcome: ${{ steps.danger.outcome }}
     steps:
       - uses: actions/checkout@v3
         with:
