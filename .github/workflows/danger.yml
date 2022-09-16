@@ -13,15 +13,21 @@ jobs:
       - name: Download dangerfile.js
         run: wget https://raw.githubusercontent.com/getsentry/github-workflows/feat/dangerjs/danger/dangerfile.js -P ${{ runner.temp }}
 
+      - uses: danger/danger-js@11.1.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --failOnErrors --dangerfile ${{ runner.temp }}/dangerfile.js
+
       # Using a pre-built docker image in GitHub container registry instaed of NPM to reduce possible attack vectors.
-      - name: Run DangerJS
-        run: |
-          docker run \
-            --volume ${{ github.workspace }}:${{ github.workspace }} \
-            --volume ${{ runner.temp }}:${{ runner.temp }} \
-            --workdir ${{ github.workspace }} \
-            --user $UID \
-            --env-file <(env) \
-            --env GITHUB_TOKEN="${{ github.token }}" \
-            ghcr.io/danger/danger-js:11.1.2 \
-            --failOnErrors --dangerfile ${{ runner.temp }}/dangerfile.js
+      # - name: Run DangerJS
+      #   run: |
+      #     docker run \
+      #       --volume ${{ github.workspace }}:${{ github.workspace }} \
+      #       --volume ${{ runner.temp }}:${{ runner.temp }} \
+      #       --workdir ${{ github.workspace }} \
+      #       --user $UID \
+      #       --env-file <(env) \
+      #       --env GITHUB_TOKEN="${{ github.token }}" \
+      #       ghcr.io/danger/danger-js:11.1.2 \
+      #       --failOnErrors --dangerfile ${{ runner.temp }}/dangerfile.js
