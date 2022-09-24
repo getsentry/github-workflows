@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.1.1
+
+### Fixes
+
+- Show GitHub annotations when running from forks - can't post a PR comment in that case ([#37](https://github.com/getsentry/github-workflows/pull/37))
+
 ## 2.1.0
 
 ### Features
