@@ -9,9 +9,9 @@ if (isFork) {
 
   // Override DangerJS default functions to print to console & create annotations instead.
   const log = function (type, message, file, line) {
-    message = message.replaceAll("%", "%25");
-    message = message.replaceAll("\n", "%0A");
-    message = message.replaceAll("\r", "%0D");
+    message = message.replace(/%/g, "%25");
+    message = message.replace(/\n/g, "%0A");
+    message = message.replace(/\r/g, "%0D");
     console.log(`::${type} file=${file},line=${line}::${message}`);
   };
 
