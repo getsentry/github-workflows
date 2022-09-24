@@ -1,8 +1,43 @@
+const headRepoName = danger.github.pr.head.repo.git_url;
+const baseRepoName = danger.github.pr.base.repo.git_url;
+const isFork = headRepoName != baseRepoName;
+
+if (isFork) {
+  console.log(
+    "::warning::Running from a forked repo. Danger won't be able to post comments and workflow status on the main repo, printing directly."
+  );
+
+  // Override DangerJS default functions to print to console & create annotations instead.
+  const log = function (type, message, file, line) {
+    message = message.replaceAll("%", "%25");
+    message = message.replaceAll("\n", "%0A");
+    message = message.replaceAll("\r", "%0D");
+    console.log(`::${type} file=${file},line=${line}::${message}`);
+  };
+
+  const dangerFail = fail;
+  fail = function (message, file, line) {
+    log("error", message, file, line);
+    dangerFail(message, file, line);
+  };
+
+  warn = function (message, file, line) {
+    log("warning", message, file, line);
+  };
+
+  message = function (message, file, line) {
+    log("notice", message, file, line);
+  };
+
+  markdown = function (message, file, line) {
+    log("notice", message, file, line);
+  };
+}
+
 // e.g. "feat" if PR title is "Feat : add more useful stuff"
 // or  "ci" if PR branch is "ci/update-danger"
-function getPrFlavor() {
+const prFlavor = (function () {
   if (danger.github && danger.github.pr) {
-    var separator = undefined;
     if (danger.github.pr.title) {
       const parts = danger.github.pr.title.split(":");
       if (parts.length > 1) {
@@ -17,10 +52,11 @@ function getPrFlavor() {
     }
   }
   return "";
-}
+})();
+console.log(`::debug:: PR Flavor: '${prFlavor}'`);
 
 async function checkDocs() {
-  if (getPrFlavor().startsWith("feat")) {
+  if (prFlavor.startsWith("feat")) {
     message(
       'Do not forget to update <a href="https://github.com/getsentry/sentry-docs">Sentry-docs</a> with your feature once the pull request gets approved.'
     );
@@ -31,13 +67,11 @@ async function checkChangelog() {
   const changelogFile = "CHANGELOG.md";
 
   // Check if skipped
-  if (danger.github && danger.github.pr) {
-    if (
-      ["ci", "chore(deps)"].includes(getPrFlavor()) ||
-      (danger.github.pr.body + "").includes("#skip-changelog")
-    ) {
-      return;
-    }
+  if (
+    ["ci", "chore(deps)"].includes(prFlavor) ||
+    (danger.github.pr.body + "").includes("#skip-changelog")
+  ) {
+    return;
   }
 
   // Check if current PR has an entry in changelog
@@ -69,7 +103,7 @@ async function checkChangelog() {
     `
 ### Instructions and example for changelog
 
-Please add an entry to \`CHANGELOG.md\` to the "Unreleased" section. Make sure the entry includes this PR's number.
+Please add an entry to \`${changelogFile}\` to the "Unreleased" section. Make sure the entry includes this PR's number.
 
 Example:
 
@@ -79,7 +113,8 @@ Example:
 - ${prTitleFormatted} ([#${danger.github.pr.number}](${danger.github.pr.html_url}))
 \`\`\`
 
-If none of the above apply, you can opt out of this check by adding \`#skip-changelog\` to the PR description.`.trim()
+If none of the above apply, you can opt out of this check by adding \`#skip-changelog\` to the PR description.`.trim(),
+    changelogFile
   );
 }
 
