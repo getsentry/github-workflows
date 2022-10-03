@@ -118,9 +118,70 @@ If none of the above apply, you can opt out of this check by adding \`#skip-chan
   );
 }
 
+async function checkActionsArePinned() {
+  const workflowFiles = danger.git.created_files
+    .concat(danger.git.modified_files)
+    .filter((path) => path.startsWith(".github/workflows/"));
+
+  if (workflowFiles.length == 0) {
+    return;
+  }
+
+  console.log(
+    `::debug:: Some workflow files have been changed - checking whether actions are pinned: ${workflowFiles}`
+  );
+
+  const usesRegex = /^\+? *uses:/;
+  const usesActionRegex =
+    /^\+? *uses: *(?<user>[^\/]+)\/(?<action>[^@]+)@(?<ref>.*)/;
+  const shaRegex = /^[a-f0-9]{40}$/;
+  const whitelistedUsers = ["getsentry", "actions"];
+
+  for (const path of workflowFiles) {
+    const diff = await danger.git.structuredDiffForFile(path);
+    for (const chunk of diff.chunks) {
+      for (const change of chunk.changes) {
+        if (change.add) {
+          const match = change.content.match(usesActionRegex);
+          // Example of `match.groups`:
+          // [Object: null prototype] {
+          //   user: 'getsentry',
+          //   action: 'action-prepare-release',
+          //   ref: 'v1'
+          // }
+          if (match && match.groups) {
+            if (!match.groups.ref.match(shaRegex)) {
+              if (whitelistedUsers.includes(match.groups.user)) {
+                message(
+                  "Consider pinning the action by specifying a commit SHA instead of a tag/branch.",
+                  path,
+                  change.ln
+                );
+              } else {
+                fail(
+                  "Please pin the action by specifying a commit SHA instead of a tag/branch.",
+                  path,
+                  change.ln
+                );
+              }
+            }
+          } else if (change.content.match(usesRegex)) {
+            warn(
+              "Couldn't parse 'uses:' declaration while checking for action pinning.",
+              path,
+              change.ln
+            );
+          }
+        }
+      }
+    }
+  }
+}
+
 async function checkAll() {
   await checkDocs();
   await checkChangelog();
+  await checkActionsArePinned();
 }
 
 schedule(checkAll);
