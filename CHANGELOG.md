@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 2.2.1
+
+### Fixes
+
+- Support comments when parsing pinned actions in Danger ([#40](https://github.com/getsentry/github-workflows/pull/40))
+
+
 ## 2.2.0
 
 ### Features
