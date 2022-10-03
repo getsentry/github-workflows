@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Danger - check for that actions are pinned to a commit ([#39](https://github.com/getsentry/github-workflows/pull/39))
+
 ## 2.1.1
 
 ### Fixes
