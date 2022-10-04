@@ -134,6 +134,7 @@ async function checkActionsArePinned() {
   const usesRegex = /^\+? *uses:/;
   const usesActionRegex =
     /^\+? *uses: *(?<user>[^\/]+)\/(?<action>[^@]+)@(?<ref>[^ ]*)/;
+  const usesLocalRegex = /^\+? *uses: *\.\//; // e.g. 'uses: ./.github/actions/something'
   const shaRegex = /^[a-f0-9]{40}$/;
   const whitelistedUsers = ["getsentry", "actions"];
 
@@ -142,7 +143,8 @@ async function checkActionsArePinned() {
     for (const chunk of diff.chunks) {
       for (const change of chunk.changes) {
         if (change.add) {
-          const match = change.content.match(usesActionRegex);
+          const line = change.content;
+          const match = line.match(usesActionRegex);
           // Example of `match.groups`:
           // [Object: null prototype] {
           //   user: 'getsentry',
@@ -151,13 +153,7 @@ async function checkActionsArePinned() {
           // }
           if (match && match.groups) {
             if (!match.groups.ref.match(shaRegex)) {
-              if (whitelistedUsers.includes(match.groups.user)) {
-                message(
-                  "Consider pinning the action by specifying a commit SHA instead of a tag/branch.",
-                  path,
-                  change.ln
-                );
-              } else {
+              if (!whitelistedUsers.includes(match.groups.user)) {
                 fail(
                   "Please pin the action by specifying a commit SHA instead of a tag/branch.",
                   path,
@@ -165,7 +161,7 @@ async function checkActionsArePinned() {
                 );
               }
             }
-          } else if (change.content.match(usesRegex)) {
+          } else if (line.match(usesRegex) && !line.match(usesLocalRegex)) {
             warn(
               "Couldn't parse 'uses:' declaration while checking for action pinning.",
               path,
