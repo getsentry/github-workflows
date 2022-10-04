@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.2.2
+
+### Fixes
+
+- Skip local actions when checking pinned actions in Danger ([#41](https://github.com/getsentry/github-workflows/pull/41))
+
 ## 2.2.1
 
 ### Fixes
