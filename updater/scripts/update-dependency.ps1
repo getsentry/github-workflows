@@ -20,7 +20,7 @@ if (-not (Test-Path $Path ))
     throw "Dependency $Path doesn't exit";
 }
 
-# If it's a directory, we consider it a submodule dependendency. Otherwise, it must a properties-style file
+# If it's a directory, we consider it a submodule dependendency. Otherwise, it must a properties-style file or a script.
 $isSubmodule = (Test-Path $Path -PathType Container)
 
 if (-not $isSubmodule)
@@ -104,7 +104,8 @@ if ("$Tag" -eq "")
         $tags = $tags | ForEach-Object { ($_ -split "\s+")[1] -replace '^refs/tags/', '' }
 
         $headRef = ($(git ls-remote $url HEAD) -split "\s+")[0]
-        if ("$headRef" -eq '') {
+        if ("$headRef" -eq '')
+        {
             throw "Couldn't determine repository head (no ref returned by ls-remote HEAD"
         }
         $mainBranch = (git ls-remote --heads $url | Where-Object { $_.StartsWith($headRef) }) -replace '.*\srefs/heads/', ''
@@ -139,7 +140,8 @@ if ("$Tag" -eq "")
     Write-Host "::set-output name=url::$url"
     Write-Host "::set-output name=mainBranch::$mainBranch"
 
-    if ("$originalTag" -eq "$latestTag") {
+    if ("$originalTag" -eq "$latestTag")
+    {
         return
     }
     $Tag = $latestTag
