@@ -53,13 +53,17 @@ jobs:
 * `path`: Dependency path in the source repository, this can be either a submodule, a .properties file or a shell script.
   * type: string
   * required: true
-* `name`: Name used for a changelog entry.
+* `name`: Name used in the PR title and the changelog entry.
   * type: string
   * required: true
 * `pattern`: RegEx pattern that will be matched against available versions when picking the latest one.
   * type: string
   * required: false
   * default: ''
+* `changelog-entry`: Whether to add a changelog entry for the update.
+  * type: boolean
+  * required: false
+  * default: true
 * `changelog-section`: Section header to attach the changelog entry to.
   * type: string
   * required: false
