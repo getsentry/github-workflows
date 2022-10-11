@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.3.0
+
+### Features
+
+- Updater - add `changelog-entry` option to disable adding a changelog entry ([#43](https://github.com/getsentry/github-workflows/pull/43))
 
 ## 2.2.2
 
