@@ -7,7 +7,7 @@ on:
         type: string
         required: true
       name:
-        description: Name used for a changelog entry.
+        description: Name used in the PR title and the changelog entry.
         type: string
         required: true
       pattern:
@@ -15,6 +15,11 @@ on:
         type: string
         required: false
         default: ''
+      changelog-entry:
+        description: Whether to add a changelog entry for the update.
+        type: boolean
+        required: false
+        default: true
       changelog-section:
         description: Section header to attach the changelog entry to.
         type: string
@@ -37,25 +42,25 @@ on:
         description: 'Internal: specify github-workflows (this repo) revision to use when checking out scripts.'
         type: string
         required: false
-        default: v2  # Note: update when publishing a new version
+        default: v2 # Note: update when publishing a new version
     secrets:
       api-token:
         required: true
     outputs:
       prUrl:
-        description: "The created/updated PRs url."
+        description: 'The created/updated PRs url.'
         value: ${{ jobs.update.outputs.prUrl }}
       baseBranch:
-        description: "The base branch name."
+        description: 'The base branch name.'
         value: ${{ jobs.update.outputs.baseBranch }}
       prBranch:
-        description: "The created/updated pr branch name."
+        description: 'The created/updated pr branch name.'
         value: ${{ jobs.update.outputs.prBranch }}
       originalTag:
-        description: "The original tag from which the dependency was updated from."
+        description: 'The original tag from which the dependency was updated from.'
         value: ${{ jobs.update.outputs.originalTag }}
       latestTag:
-        description: "The latest tag to which the dependency was updated to."
+        description: 'The latest tag to which the dependency was updated to.'
         value: ${{ jobs.update.outputs.latestTag }}
 
 jobs:
@@ -231,7 +236,7 @@ jobs:
         run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
-        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+        if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) }}
         run: |
           ${{ runner.temp }}/ghwf/updater/scripts/update-changelog.ps1 `
             -Name '${{ inputs.name }}' `

@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.3.0
+
+### Features
+
+- Updater - add `changelog-entry` option to disable adding a changelog entry ([#43](https://github.com/getsentry/github-workflows/pull/43))
 
 ## 2.2.2
 
@@ -13,7 +17,6 @@
 ### Fixes
 
 - Support comments when parsing pinned actions in Danger ([#40](https://github.com/getsentry/github-workflows/pull/40))
-
 
 ## 2.2.0
 
