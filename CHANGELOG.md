@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0
+
+### Features
+
+- Danger - check that a changelog entry is not added to an already released section ([#44](https://github.com/getsentry/github-workflows/pull/44))
+
 ## 2.3.0
 
 ### Features

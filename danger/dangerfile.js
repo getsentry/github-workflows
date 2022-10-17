@@ -79,19 +79,32 @@ async function checkChangelog() {
     changelogFile
   );
 
-  const hasChangelogEntry = RegExp(`#${danger.github.pr.number}\\b`).test(
+  const changelogMatch = RegExp(`^(.*)\n[^\n]+#${danger.github.pr.number}\\b`, 's').exec(
     changelogContents
   );
 
-  if (hasChangelogEntry) {
-    return;
+  // check if a changelog entry exists
+  if (!changelogMatch) {
+    return reportMissingChangelog(changelogFile);
   }
 
-  // Report missing changelog entry
-  fail(
-    "Please consider adding a changelog entry for the next release.",
-    changelogFile
-  );
+  // Check if the entry is added to an Unreleased section (or rather, check that it's not added to a released one)
+  const textBeforeEntry = changelogMatch[1]
+  const section = RegExp('^(## +v?[0-9.]+)([\-\n _]|$)', 'm').exec(textBeforeEntry)
+  if (section) {
+    const lineNr = 1 + textBeforeEntry.split(/\r\n|\r|\n/).length
+    fail(
+      `The changelog entry seems to be part of an already released section \`${section[1]}\`.
+      Consider moving the entry to the \`## Unreleased\` section, please.`,
+      changelogFile,
+      lineNr
+    );
+  }
+}
+
+/// Report missing changelog entry
+function reportMissingChangelog(changelogFile) {
+  fail("Please consider adding a changelog entry for the next release.", changelogFile);
 
   const prTitleFormatted = danger.github.pr.title
     .split(": ")
