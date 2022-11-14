@@ -5,7 +5,7 @@ Set-StrictMode -Version latest
 function NonBotCommits([Parameter(Mandatory = $true)][string] $branch)
 {
     $result = & "$PSScriptRoot/../scripts/nonbot-commits.ps1" `
-        -RepoUrl 'https://github.com/getsentry/github-workflows.git' -MainBranch "main" -PrBranch $branch
+        -RepoUrl 'https://github.com/getsentry/github-workflows' -MainBranch "main" -PrBranch $branch
     if (-not $?)
     {
         throw $result

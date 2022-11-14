@@ -7,6 +7,7 @@ param(
 
 Set-StrictMode -Version latest
 $ErrorActionPreference = "Stop"
+
 $bot = "<noreply@github.com>"
 $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
 

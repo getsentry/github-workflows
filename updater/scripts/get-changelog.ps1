@@ -14,6 +14,7 @@ if (-not ($RepoUrl -match "^$prefix"))
 }
 
 $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
+New-Item -ItemType Directory $tmpDir | Out-Null
 
 try
 {
