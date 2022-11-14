@@ -128,15 +128,14 @@ jobs:
         id: root
         run: |
           $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
-          Write-Host '::echo::on'
-          "baseBranch=$mainBranch" >> $env:GITHUB_OUTPUT
           $prBranch = switch ('${{ inputs.pr-strategy }}')
           {
               'create' { 'deps/${{ inputs.path }}/${{ steps.target.outputs.latestTag }}' }
               'update' { 'deps/${{ inputs.path }}' }
               default { throw "Unkown PR strategy '${{ inputs.pr-strategy }}'." }
           }
-          "prBranch=$prBranch" >> $env:GITHUB_OUTPUT
+          "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
+          "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
 
       - name: Fetch an existing PR
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
@@ -159,15 +158,14 @@ jobs:
 
           $prCount = $($data | jq '. | length')
 
-          Write-Host '::echo::on'
           if ($prCount -eq '0')
           {
-              "url=" >> $env:GITHUB_OUTPUT
+              "url=" | Tee-Object $env:GITHUB_OUTPUT -Append
           }
           elseif ($prCount -eq '1')
           {
               $url = $($data | Select-String '"html_url": +"(.*/pull/.*)"').Matches[0].Groups[1].Value
-              "url=$url" >> $env:GITHUB_OUTPUT
+              "url=$url" | Tee-Object $env:GITHUB_OUTPUT -Append
           }
           else
           {
@@ -209,14 +207,13 @@ jobs:
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         id: pr
         run: |
-          Write-Host '::echo::on'
           if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
           {
-              "url=${{ steps.create-pr.outputs.pull-request-url }}" >> $env:GITHUB_OUTPUT
+              "url=${{ steps.create-pr.outputs.pull-request-url }}" | Tee-Object $env:GITHUB_OUTPUT -Append
           }
           elseif ('${{ steps.existing-pr.outputs.url }}' -ne '')
           {
-              "url=${{ steps.existing-pr.outputs.url }}" >> $env:GITHUB_OUTPUT
+              "url=${{ steps.existing-pr.outputs.url }}" | Tee-Object $env:GITHUB_OUTPUT -Append
           }
           else
           {
