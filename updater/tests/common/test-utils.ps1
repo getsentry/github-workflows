@@ -1,5 +1,10 @@
-function RunTest ([string] $name, [ScriptBlock] $code)
+function RunTest ([string] $name, [ScriptBlock] $code, [string] $skipReason = "")
 {
+    if ($skipReason -ne "")
+    {
+        Write-Warning "Test $name - skipped $skipReason"
+        return
+    }
     try
     {
         Write-Host "Test $name - starting" -ForegroundColor Yellow
@@ -31,6 +36,19 @@ function AssertEqual([string] $expected, [string] $actual)
         throw "AssertEqual failed"
     }
 }
+
+function AssertContains([string[]] $list, [string] $value)
+{
+    if (-not ($list -contains $value))
+    {
+        Write-Host "Expected list to contain '$value':" -ForegroundColor Red
+        Write-Host "========================================"
+        Write-Host $list
+        Write-Host "========================================"
+        throw "AssertContains failed"
+    }
+}
+
 function AssertFailsWith([string] $substring, [scriptblock] $block)
 {
     $e = $null

@@ -23,6 +23,18 @@ if (-not (Test-Path $Path ))
 # If it's a directory, we consider it a submodule dependendency. Otherwise, it must a properties-style file or a script.
 $isSubmodule = (Test-Path $Path -PathType Container)
 
+function SetOutput([string] $name, $value)
+{
+    if (Test-Path env:GITHUB_OUTPUT)
+    {
+        "$name=$value" | Tee-Object $env:GITHUB_OUTPUT -Append
+    }
+    else
+    {
+        "$name=$value"
+    }
+}
+
 if (-not $isSubmodule)
 {
     $isScript = $Path -match '\.(ps1|sh)$'
@@ -34,8 +46,17 @@ if (-not $isSubmodule)
             {
                 chmod +x $Path
             }
-            $result = & $Path $action $value
-            if (-not $?)
+            try
+            {
+                $result = & $Path $action $value
+                $failed = -not $?
+            }
+            catch
+            {
+                $result = $_
+                $failed = $true
+            }
+            if ($failed)
             {
                 throw "Script execution failed: $Path $action $value | output: $result"
             }
@@ -133,11 +154,11 @@ if ("$Tag" -eq "")
     $latestTag = $tags[-1]
     $latestTagNice = ($latestTag -match "^[0-9]") ? "v$latestTag" : $latestTag
 
-    "originalTag=$originalTag" | Tee-Object $env:GITHUB_OUTPUT -Append
-    "latestTag=$latestTag" | Tee-Object $env:GITHUB_OUTPUT -Append
-    "latestTagNice=$latestTagNice" | Tee-Object $env:GITHUB_OUTPUT -Append
-    "url=$url" | Tee-Object $env:GITHUB_OUTPUT -Append
-    "mainBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
+    SetOutput "originalTag" $originalTag
+    SetOutput "latestTag" $latestTag
+    SetOutput "latestTagNice" $latestTagNice
+    SetOutput "url" $url
+    SetOutput "mainBranch" $mainBranch
 
     if ("$originalTag" -eq "$latestTag")
     {

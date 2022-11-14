@@ -6,8 +6,25 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.host }}
+    runs-on: ${{ matrix.host }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - ubuntu
+          - macos
+          - windows
     steps:
+      - run: git config --global core.autocrlf false
+
       - uses: actions/checkout@v3
+
+      - name: Install make
+        if: ${{ matrix.host == 'macos' }}
+        run: |
+          brew install make
+          echo "$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
+
       - run: make test
         working-directory: updater

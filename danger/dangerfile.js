@@ -68,7 +68,7 @@ async function checkChangelog() {
 
   // Check if skipped
   if (
-    ["ci", "chore(deps)", "build(deps)"].includes(prFlavor) ||
+    ["ci", "test", "deps", "chore(deps)", "build(deps)"].includes(prFlavor) ||
     (danger.github.pr.body + "").includes("#skip-changelog")
   ) {
     return;

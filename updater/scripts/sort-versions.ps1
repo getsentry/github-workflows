@@ -38,4 +38,3 @@ function GetComparableVersion([Parameter(Mandatory = $true)][string] $value)
 }
 
 $List | Sort-Object -Property @{Expression = { GetComparableVersion $_ } }
-
