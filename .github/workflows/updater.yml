@@ -138,7 +138,12 @@ jobs:
           "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
           $nonBotCommits = ${{ runner.temp }}/ghwf/updater/scripts/nonbot-commits.ps1 `
             -RepoUrl "$(git config --get remote.origin.url)" -PrBranch $prBranch -MainBranch $mainBranch
-          "changed=$($nonBotCommits.Length -gt 0 ? 'true' : 'false')" | Tee-Object $env:GITHUB_OUTPUT -Append
+          $changed = $nonBotCommits.Length -gt 0 ? 'true' : 'false'
+          "changed=$changed" | Tee-Object $env:GITHUB_OUTPUT -Append
+          if ($changed)
+          {
+              Write-Output "::warning::Target branch '$prBranch' has been changed manually - skipping updater to avoid overwriting these changes."
+          }
 
       - name: Fetch an existing PR
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
