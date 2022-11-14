@@ -1,5 +1,3 @@
-Set-StrictMode -Version latest
-
 . "$PSScriptRoot/common/test-utils.ps1"
 
 function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string] $pattern = $null)
@@ -63,7 +61,7 @@ RunTest "writes to env:GITHUB_OUTPUT" {
     $repo = 'https://github.com/getsentry/sentry-cli'
     @("repo=$repo", "version=0") | Out-File $testFile
     $outFile = "$testDir/outfile"
-    New-Item $outFile -ItemType File
+    New-Item $outFile -ItemType File | Out-Null
     try
     {
         $env:GITHUB_OUTPUT = $outFile
@@ -76,8 +74,8 @@ RunTest "writes to env:GITHUB_OUTPUT" {
     finally
     {
         # Delete the file and unser the env variable
-        Remove-Item $outFile
-        Remove-Item env:GITHUB_OUTPUT
+        Remove-Item $outFile | Out-Null
+        Remove-Item env:GITHUB_OUTPUT | Out-Null
     }
 }
 
@@ -117,6 +115,7 @@ RunTest "bash-script" {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
+set -euo pipefail
 cd $(dirname "$0")
 case $1 in
 get-version)
@@ -176,6 +175,7 @@ RunTest "bash-script fails in get-repo" {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
+set -euo pipefail
 case $1 in
 get-version)
     ;;
@@ -210,6 +210,7 @@ RunTest "bash-script fails in set-version" {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
+set -euo pipefail
 cd $(dirname "$0")
 case $1 in
 get-version)
