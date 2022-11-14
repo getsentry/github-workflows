@@ -140,7 +140,7 @@ jobs:
 
       - name: Fetch an existing PR
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
-        uses: octokit/request-action@971ad48f9c40ed001c41c2671b1e6e8e8165d5af
+        uses: octokit/request-action@89a1754fe82ca777b044ca8e79e9881a42f15a93 # v2.1.7
         id: existing-pr-request
         with:
           route: GET /repos/${{ github.repository }}/pulls?base={base}&head={head}
