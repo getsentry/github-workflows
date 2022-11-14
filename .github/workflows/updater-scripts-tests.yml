@@ -6,7 +6,15 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.host }}
+    runs-on: ${{ matrix.host }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - ubuntu
+          - macos
+          - windows
     steps:
       - uses: actions/checkout@v3
       - run: make test

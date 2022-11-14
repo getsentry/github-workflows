@@ -9,6 +9,7 @@ function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string]
     {
         throw $result
     }
+    $result
 }
 
 $testDir = "$PSScriptRoot/testdata/dependencies"
@@ -37,6 +38,47 @@ RunTest "version pattern match" {
     @("repo=$repo", "version=0") | Out-File $testFile
     UpdateDependency $testFile '^0\.'
     AssertEqual @("repo=$repo", "version=0.28.0") (Get-Content $testFile)
+}
+
+function _testOutput([string[]] $output)
+{
+    AssertContains $output 'originalTag=0'
+    AssertContains $output 'originalTag=0'
+    AssertContains $output 'latestTag=0.28.0'
+    AssertContains $output 'latestTagNice=v0.28.0'
+    AssertContains $output 'url=https://github.com/getsentry/sentry-cli'
+    AssertContains $output 'mainBranch=master'
+}
+
+RunTest "writes output" {
+    $testFile = "$testDir/test.properties"
+    $repo = 'https://github.com/getsentry/sentry-cli'
+    @("repo=$repo", "version=0") | Out-File $testFile
+    $stdout = UpdateDependency $testFile '^0\.'
+    _testOutput $stdout
+}
+
+RunTest "writes to env:GITHUB_OUTPUT" {
+    $testFile = "$testDir/test.properties"
+    $repo = 'https://github.com/getsentry/sentry-cli'
+    @("repo=$repo", "version=0") | Out-File $testFile
+    $outFile = "$testDir/outfile"
+    New-Item $outFile -ItemType File
+    try
+    {
+        $env:GITHUB_OUTPUT = $outFile
+        $stdout = UpdateDependency $testFile '^0\.'
+        Write-Host "Testing standard output"
+        _testOutput $stdout
+        Write-Host "Testing env:GITHUB_OUTPUT"
+        _testOutput (Get-Content $outFile)
+    }
+    finally
+    {
+        # Delete the file and unser the env variable
+        Remove-Item $outFile
+        Remove-Item env:GITHUB_OUTPUT
+    }
 }
 
 # Note: without custom sorting, this would have yielded 'v1.7.31_gradle_plugin'
@@ -95,9 +137,18 @@ esac
 '@ | Out-File $testScript
     UpdateDependency $testScript
     AssertEqual $currentVersion (Get-Content $testFile)
+} -skipReason ($IsWindows ? "on Windows" : '')
+
+RunTest "powershell-script fails in get-version" {
+    $testScript = "$testDir/test.ps1"
+    @'
+throw "Failure"
+'@ | Out-File $testScript
+
+    AssertFailsWith "get-version  | output: Failure" { UpdateDependency $testScript }
 }
 
-RunTest "script fails in get-version" {
+RunTest "bash-script fails in get-version" {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
@@ -106,9 +157,22 @@ exit 1
 '@ | Out-File $testScript
 
     AssertFailsWith "get-version  | output: Failure" { UpdateDependency $testScript }
+} -skipReason ($IsWindows ? "on Windows" : '')
+
+RunTest "powershell-script fails in get-repo" {
+    $testScript = "$testDir/test.ps1"
+    @'
+param([string] $action, [string] $value)
+if ($action -eq "get-repo")
+{
+    throw "Failure"
+}
+'@ | Out-File $testScript
+
+    AssertFailsWith "get-repo  | output: Failure" { UpdateDependency $testScript }
 }
 
-RunTest "script fails in get-repo" {
+RunTest "bash-script fails in get-repo" {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
@@ -118,23 +182,38 @@ get-version)
 get-repo)
     echo "Failure"
     exit 1
-    ;;
+;;
 esac
 '@ | Out-File $testScript
 
     AssertFailsWith "get-repo  | output: Failure" { UpdateDependency $testScript }
+} -skipReason ($IsWindows ? "on Windows" : '')
+
+RunTest "powershell-script fails in set-version" {
+    $testScript = "$testDir/test.ps1"
+    @'
+param([string] $action, [string] $value)
+switch ($action)
+{
+    "get-version" { '' }
+    "get-repo" {
+'@ + '"' + $repoUrl + '"' + @'
+    }
+    "set-version" { throw "Failure" }
+}
+'@ | Out-File $testScript
+
+    AssertFailsWith "set-version $currentVersion | output: Failure" { UpdateDependency $testScript }
 }
 
-RunTest "script fails in set-version" {
-    $testFile = "$testDir/test.version"
-    '' | Out-File $testFile
+RunTest "bash-script fails in set-version" {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
 cd $(dirname "$0")
 case $1 in
 get-version)
-    cat test.version
+    echo ""
     ;;
 get-repo)
     echo
@@ -148,4 +227,4 @@ esac
 '@ | Out-File $testScript
 
     AssertFailsWith "set-version $currentVersion | output: Failure" { UpdateDependency $testScript }
-}
+} -skipReason ($IsWindows ? "on Windows" : '')
