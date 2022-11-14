@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+### Fixes
+
 - Updater - update deprecated actions ([#48](https://github.com/getsentry/github-workflows/pull/48))
 
 ## 2.4.0
