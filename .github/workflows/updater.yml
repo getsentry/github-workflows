@@ -140,7 +140,7 @@ jobs:
             -RepoUrl "$(git config --get remote.origin.url)" -PrBranch $prBranch -MainBranch $mainBranch
           $changed = $nonBotCommits.Length -gt 0 ? 'true' : 'false'
           "changed=$changed" | Tee-Object $env:GITHUB_OUTPUT -Append
-          if ($changed)
+          if ("$changed" -eq "true")
           {
               Write-Output "::warning::Target branch '$prBranch' has been changed manually - skipping updater to avoid overwriting these changes."
           }
