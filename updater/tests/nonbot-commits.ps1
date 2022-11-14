@@ -10,6 +10,10 @@ function NonBotCommits([Parameter(Mandatory = $true)][string] $branch)
     {
         throw $result
     }
+    elseif ($LASTEXITCODE -ne 0)
+    {
+        throw "Script finished with exit code $LASTEXITCODE"
+    }
     $result
 }
 

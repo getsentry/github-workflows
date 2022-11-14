@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.1
+
+### Fixes
+
+- Updater - exit code in PR commit check if the PR doesn't exist yet ([#51](https://github.com/getsentry/github-workflows/pull/51))
+
 ## 2.5.0
 
 ### Features

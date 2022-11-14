@@ -9,12 +9,14 @@ Set-StrictMode -Version latest
 $ErrorActionPreference = "Stop"
 
 $bot = "<noreply@github.com>"
-$tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
 
+$tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
 New-Item -ItemType Directory $tmpDir | Out-Null
 Push-Location $tmpDir
 try
 {
+    Write-Host "Looking for commits on $RepoUrl branch '$PrBranch' that were made by someone else than $bot"
+
     git init | Out-Null
     git remote add origin $RepoUrl | Out-Host
     git fetch --depth 1 origin $MainBranch | Out-Host
@@ -37,3 +39,6 @@ finally
     Write-Host "Removing $tmpDir"
     Remove-Item -Recurse -Force -ErrorAction Continue -Path $tmpDir
 }
+
+# Don't propagate error exit code from git commands.
+exit 0
