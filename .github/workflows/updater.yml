@@ -129,14 +129,14 @@ jobs:
         run: |
           $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
           Write-Host '::echo::on'
-          Write-Host "::set-output name=baseBranch::$mainBranch"
+          "baseBranch=$mainBranch" >> $env:GITHUB_OUTPUT
           $prBranch = switch ('${{ inputs.pr-strategy }}')
           {
               'create' { 'deps/${{ inputs.path }}/${{ steps.target.outputs.latestTag }}' }
               'update' { 'deps/${{ inputs.path }}' }
               default { throw "Unkown PR strategy '${{ inputs.pr-strategy }}'." }
           }
-          Write-Host "::set-output name=prBranch::$prBranch"
+          "prBranch=$prBranch" >> $env:GITHUB_OUTPUT
 
       - name: Fetch an existing PR
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
@@ -162,12 +162,12 @@ jobs:
           Write-Host '::echo::on'
           if ($prCount -eq '0')
           {
-              Write-Host "::set-output name=url::"
+              "url=" >> $env:GITHUB_OUTPUT
           }
           elseif ($prCount -eq '1')
           {
               $url = $($data | Select-String '"html_url": +"(.*/pull/.*)"').Matches[0].Groups[1].Value
-              Write-Host "::set-output name=url::$url"
+              "url=$url" >> $env:GITHUB_OUTPUT
           }
           else
           {
@@ -212,11 +212,11 @@ jobs:
           Write-Host '::echo::on'
           if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
           {
-              Write-Host "::set-output name=url::${{ steps.create-pr.outputs.pull-request-url }}"
+              "url=${{ steps.create-pr.outputs.pull-request-url }}" >> $env:GITHUB_OUTPUT
           }
           elseif ('${{ steps.existing-pr.outputs.url }}' -ne '')
           {
-              Write-Host "::set-output name=url::${{ steps.existing-pr.outputs.url }}"
+              "url=${{ steps.existing-pr.outputs.url }}" >> $env:GITHUB_OUTPUT
           }
           else
           {

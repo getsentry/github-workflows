@@ -134,11 +134,11 @@ if ("$Tag" -eq "")
     $latestTagNice = ($latestTag -match "^[0-9]") ? "v$latestTag" : $latestTag
 
     Write-Host '::echo::on'
-    Write-Host "::set-output name=originalTag::$originalTag"
-    Write-Host "::set-output name=latestTag::$latestTag"
-    Write-Host "::set-output name=latestTagNice::$latestTagNice"
-    Write-Host "::set-output name=url::$url"
-    Write-Host "::set-output name=mainBranch::$mainBranch"
+    "originalTag=$originalTag" >> $env:GITHUB_OUTPUT
+    "latestTag=$latestTag" >> $env:GITHUB_OUTPUT
+    "latestTagNice=$latestTagNice" >> $env:GITHUB_OUTPUT
+    "url=$url" >> $env:GITHUB_OUTPUT
+    "mainBranch=$mainBranch" >> $env:GITHUB_OUTPUT
 
     if ("$originalTag" -eq "$latestTag")
     {
