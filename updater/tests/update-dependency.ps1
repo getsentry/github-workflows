@@ -1,5 +1,3 @@
-Set-StrictMode -Version latest
-
 . "$PSScriptRoot/common/test-utils.ps1"
 
 function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string] $pattern = $null)

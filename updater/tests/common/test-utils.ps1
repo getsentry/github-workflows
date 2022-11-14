@@ -1,3 +1,6 @@
+Set-StrictMode -Version latest
+$ErrorActionPreference = "Stop"
+
 function RunTest ([string] $name, [ScriptBlock] $code, [string] $skipReason = "")
 {
     if ($skipReason -ne "")

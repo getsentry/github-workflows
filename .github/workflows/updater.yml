@@ -136,9 +136,12 @@ jobs:
           }
           "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
           "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
+          $nonBotCommits = ${{ runner.temp }}/ghwf/updater/scripts/nonbot-commits.ps1 `
+            -RepoUrl "$(git config --get remote.origin.url)" -PrBranch $prBranch -MainBranch $mainBranch
+          "changed=$($nonBotCommits.Length -gt 0 ? true : false)" | Tee-Object $env:GITHUB_OUTPUT -Append
 
       - name: Fetch an existing PR
-        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         uses: octokit/request-action@89a1754fe82ca777b044ca8e79e9881a42f15a93 # v2.1.7
         id: existing-pr-request
         with:
@@ -149,7 +152,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Parse the existing PR URL
-        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         id: existing-pr
         run: |
           $data = @'
@@ -173,10 +176,10 @@ jobs:
           }
 
       - run: git --no-pager diff
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
 
       - name: Get target changelog
-        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         run: |
           $changelog = ${{ runner.temp }}/ghwf/updater/scripts/get-changelog.ps1 `
             -RepoUrl '${{ steps.target.outputs.url }}' `
@@ -186,7 +189,7 @@ jobs:
 
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7 # pin#v4
         id: create-pr
         with:
@@ -204,7 +207,7 @@ jobs:
           # draft: true
 
       - name: Verify we have a PR
-        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         id: pr
         run: |
           if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
@@ -223,13 +226,13 @@ jobs:
       # If we had to create a new PR, we must do a clean checkout & update the submodule again.
       # If we didn't do this, the new PR would only have a changelog...
       - name: 'After new PR: restore repo'
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
         uses: actions/checkout@v3
         with:
           ssh-key: ${{ secrets.api-token }}
 
       - name: 'After new PR: redo the update'
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') }}
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false')}}
         run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
@@ -245,11 +248,11 @@ jobs:
             -Section '${{ inputs.changelog-section }}'
 
       - run: git --no-pager diff
-        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
 
       # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
       - name: Update the PR
-        if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
         with:
           base: ${{ steps.root.outputs.baseBranch }}

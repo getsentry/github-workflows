@@ -1,5 +1,3 @@
-Set-StrictMode -Version latest
-
 . "$PSScriptRoot/common/test-utils.ps1"
 
 RunTest "get-changelog with existing versions" {

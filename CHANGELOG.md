@@ -2,13 +2,14 @@
 
 ## Unreleased
 
+### Features
+
+- Updater - don't update existing branches if there are manually added commits ([#50](https://github.com/getsentry/github-workflows/pull/50))
+- Danger - ignore "deps" and "test" PR flavors in changelog checks ([#49](https://github.com/getsentry/github-workflows/pull/49))
+
 ### Fixes
 
 - Updater - update deprecated actions ([#48](https://github.com/getsentry/github-workflows/pull/48))
-
-### Features
-
-- Danger - ignore "deps" and "test" PR flavors in changelog checks ([#49](https://github.com/getsentry/github-workflows/pull/49))
 
 ## 2.4.0
 
