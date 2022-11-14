@@ -17,5 +17,12 @@ jobs:
           - windows
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install make
+        if: ${{ matrix.host == 'macos' }}
+        run: |
+          brew install make
+          echo "$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
+
       - run: make test
         working-directory: updater
