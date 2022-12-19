@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.0
+
+- Updater - add option `java-version` input to set up the runner with a certain java version ([#53](https://github.com/getsentry/github-workflows/pull/53))
+
 ## 2.5.1
 
 ### Fixes
