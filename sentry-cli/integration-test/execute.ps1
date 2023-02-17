@@ -61,17 +61,37 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
         $result.stop = {}
     }.GetNewClosure()
 
-    # The process shouldn't finish by itself, if it did, there was an error, so let's check that
-    Start-Sleep -Second 1
-    if ($result.process.HasExited)
+    $stopwatch = [system.diagnostics.stopwatch]::StartNew()
+    $startupFailed = $false
+    while ($true)
+    {
+        Start-Sleep -Milliseconds 100
+        try
+        {
+            if ((Invoke-WebRequest -Uri "$Uri/_check" -SkipHttpErrorCheck -Method Head).StatusCode -eq 999)
+            {
+                break;
+            }
+        }
+        catch
+        {}
+        if ($stopwatch.ElapsedMilliseconds -gt 10000)
+        {
+            Write-Warning "Server startup timed out."
+            $startupFailed = $true;
+            break;
+        }
+        else
+        {
+            Write-Host "Waiting for server to become available..."
+        }
+    }
+
+    if ($result.process.HasExited -or $startupFailed)
     {
         Write-Host "Couldn't start the $ServerScript" -ForegroundColor Red
-        Write-Host "Standard Output:" -ForegroundColor Yellow
-        Get-Content $result.outFile
-        Write-Host "Standard Error:" -ForegroundColor Yellow
-        Get-Content $result.errFile
-        Remove-Item $result.outFile
-        Remove-Item $result.errFile
+        $result.stop.Invoke()
+        $result.dispose.Invoke()
         exit 1
     }
 

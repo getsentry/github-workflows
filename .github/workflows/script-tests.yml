@@ -1,5 +1,5 @@
 # This isn't a reusable workflow but a CI action for this repo itself - testing the contained workflows & scripts.
-name: Tests
+name: Script Tests
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
       matrix:
         host:
           - ubuntu
-          # TODO - macos
+          - macos
           - windows
     defaults:
       run:

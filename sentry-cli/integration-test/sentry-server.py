@@ -29,6 +29,14 @@ def registerUpload(name: str, chunks: int):
 class Handler(BaseHTTPRequestHandler):
     body = None
 
+    def do_HEAD(self):
+        if self.path == "/_check":
+            self.writeResponse(999, "text/plain", "")
+        else:
+            self.writeNoApiMatchesError()
+
+        self.flushLogs()
+
     def do_GET(self):
         self.start_response()
 

@@ -53,5 +53,3 @@ jobs:
       script-output-expected: sentry-cli/integration-test/tests/script-output.expected
       server-output-expected: sentry-cli/integration-test/tests/server-output.expected
       _workflow_version: ${{ github.sha }}
-    secrets:
-      api-token: ${{ github.token }}
