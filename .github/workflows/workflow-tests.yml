@@ -33,17 +33,17 @@ jobs:
       - updater-create-pr
       - updater-test-args
     steps:
-      - run: "[[ '${{ needs.create-pr.outputs.baseBranch }}' == 'main' ]]"
-      - run: "[[ '${{ needs.create-pr.outputs.originalTag }}' == '2.0.0' ]]"
-      - run: "[[ '${{ needs.create-pr.outputs.latestTag }}' =~ ^[0-9.]+$ ]]"
-      - run: "[[ '${{ needs.create-pr.outputs.prUrl }}' =~ ^https://github.com/getsentry/github-workflows/pull/[0-9]+$ ]]"
-      - run: "[[ '${{ needs.create-pr.outputs.prBranch }}' == 'deps/updater/tests/sentry-cli.properties' ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.baseBranch }}' == 'main' ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.originalTag }}' == '2.0.0' ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.latestTag }}' =~ ^[0-9.]+$ ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.prUrl }}' =~ ^https://github.com/getsentry/github-workflows/pull/[0-9]+$ ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.prBranch }}' == 'deps/updater/tests/sentry-cli.properties' ]]"
 
-      - run: "[[ '${{ needs.test-args.outputs.baseBranch }}' == '' ]]"
-      - run: "[[ '${{ needs.test-args.outputs.originalTag }}' == 'latest' ]]"
-      - run: "[[ '${{ needs.test-args.outputs.latestTag }}' == 'latest' ]]"
-      - run: "[[ '${{ needs.test-args.outputs.prUrl }}' == '' ]]"
-      - run: "[[ '${{ needs.test-args.outputs.prBranch }}' == '' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.baseBranch }}' == '' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.originalTag }}' == 'latest' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.latestTag }}' == 'latest' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.prUrl }}' == '' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.prBranch }}' == '' ]]"
 
   cli-test-args:
     uses: ./.github/workflows/sentry-cli-integration-test.yml
