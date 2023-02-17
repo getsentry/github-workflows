@@ -1,0 +1,60 @@
+# Tooling to test Sentry CLI integration & symbol upload.
+# Executes the script at the given path after starting a dummy Sentry server that collects and logs requests.
+# The script is given the server URL as a first argument. Server and script output are saved in `server-output.txt` and
+# `script-output.txt` respectively.
+on:
+  workflow_call:
+    inputs:
+      script:
+        description: Script to run.
+        type: string
+        required: true
+      server-output-expected:
+        description: If given, the server-produced output must match the file at this path.
+        type: string
+        required: false
+        default: ''
+      script-output-expected:
+        description: If given, the script-produced output must match the file at this path.
+        type: string
+        required: false
+        default: ''
+      runs-on:
+        description: GitHub Actions virtual environment name to run the udpater job on.
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+      _workflow_version:
+        description: 'Internal: specify github-workflows (this repo) revision to use when checking out scripts.'
+        type: string
+        required: false
+        default: v2 # Note: update when publishing a new version
+
+jobs:
+  cli-test:
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - uses: actions/checkout@v3
+
+      # In order to run scripts from this repo, we need to check it out manually, doesn't seem available locally.
+      - name: Check out workflow scripts
+        # Note: cannot use `actions/checkout` at the moment because you can't clone outside of the repo root.
+        #       Follow https://github.com/actions/checkout/issues/197
+        run: |
+          mkdir -p ${{ runner.temp }}/ghwf
+          cd ${{ runner.temp }}/ghwf
+          git init
+          git remote add origin https://github.com/getsentry/github-workflows.git
+          git fetch --depth 1 origin ${{ inputs._workflow_version }}
+          git checkout FETCH_HEAD
+
+      - name: Run ${{ inputs.script }}
+        run: pwsh ${{ runner.temp }}/ghwf/sentry-cli/integration-test/execute.ps1 ${{ inputs.script }}
+
+      - name: Check script-output.txt
+        run: git diff --no-index script-output.txt ${{ inputs.script-output-expected }}
+        if: ${{ inputs.script-output-expected }}
+
+      - name: Check server-output.txt
+        run: git diff --no-index server-output.txt ${{ inputs.server-output-expected }}
+        if: ${{ inputs.server-output-expected }}

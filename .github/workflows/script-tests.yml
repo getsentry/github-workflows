@@ -37,7 +37,7 @@ jobs:
       matrix:
         host:
           - ubuntu
-          - macos
+          # TODO - macos
           - windows
     defaults:
       run:

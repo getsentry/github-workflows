@@ -1,11 +1,11 @@
 # This isn't a reusable workflow but an actual CI action for this repo itself - to test the workflows.
-name: Updater Workflow Tests
+name: Workflow Tests
 
 on:
   push:
 
 jobs:
-  create-pr:
+  updater-create-pr:
     uses: ./.github/workflows/updater.yml
     with:
       path: updater/tests/sentry-cli.properties
@@ -16,7 +16,7 @@ jobs:
     secrets:
       api-token: ${{ github.token }}
 
-  test-args:
+  updater-test-args:
     uses: ./.github/workflows/updater.yml
     with:
       path: updater/tests/workflow-args.sh
@@ -27,11 +27,11 @@ jobs:
     secrets:
       api-token: ${{ github.token }}
 
-  test-outputs:
+  updater-test-outputs:
     runs-on: ubuntu-latest
     needs:
-      - create-pr
-      - test-args
+      - updater-create-pr
+      - updater-test-args
     steps:
       - run: "[[ '${{ needs.create-pr.outputs.baseBranch }}' == 'main' ]]"
       - run: "[[ '${{ needs.create-pr.outputs.originalTag }}' == '2.0.0' ]]"
@@ -44,3 +44,14 @@ jobs:
       - run: "[[ '${{ needs.test-args.outputs.latestTag }}' == 'latest' ]]"
       - run: "[[ '${{ needs.test-args.outputs.prUrl }}' == '' ]]"
       - run: "[[ '${{ needs.test-args.outputs.prBranch }}' == '' ]]"
+
+  cli-test-args:
+    uses: ./.github/workflows/sentry-cli-integration-test.yml
+    with:
+      script: sentry-cli/integration-test/tests/run-script
+      runs-on: windows-latest
+      script-output-expected: sentry-cli/integration-test/tests/script-output.expected
+      server-output-expected: sentry-cli/integration-test/tests/server-output.expected
+      _workflow_version: ${{ github.sha }}
+    secrets:
+      api-token: ${{ github.token }}
