@@ -1,0 +1,51 @@
+# This isn't a reusable workflow but a CI action for this repo itself - testing the contained workflows & scripts.
+name: Tests
+
+on:
+  push:
+
+jobs:
+  updater:
+    name: Updater @ ${{ matrix.host }}
+    runs-on: ${{ matrix.host }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - ubuntu
+          - macos
+          - windows
+    steps:
+      - run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v3
+
+      - name: Install make
+        if: ${{ matrix.host == 'macos' }}
+        run: |
+          brew install make
+          echo "$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
+
+      - run: make test
+        working-directory: updater
+
+  cli-integration:
+    name: CLI integration @ ${{ matrix.host }}
+    runs-on: ${{ matrix.host }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - ubuntu
+          - macos
+          - windows
+    defaults:
+      run:
+        working-directory: sentry-cli/integration-test
+    steps:
+      - run: git config --global core.autocrlf false
+        working-directory: .
+      - uses: actions/checkout@v3
+      - run: pwsh ./execute.ps1 tests/run-script.ps1
+      - run: git diff --no-index script-output.txt tests/script-output.expected
+      - run: git diff --no-index server-output.txt tests/server-output.expected
