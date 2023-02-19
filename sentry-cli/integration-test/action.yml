@@ -1,0 +1,42 @@
+name: Sentry CLI integration test
+
+description: |
+  Action to test Sentry CLI integration & symbol upload.
+  Executes the script at the given path after starting a dummy Sentry server that collects and logs requests.
+  The script is given the server URL as a first argument. Server and script output are saved in `server-output.txt` and
+  `script-output.txt` respectively.
+
+inputs:
+  script:
+    description: Script to run.
+    required: true
+  server-output-expected:
+    description: If given, the server-produced output must match the file at this path.
+    required: false
+    default: ''
+  script-output-expected:
+    description: If given, the script-produced output must match the file at this path.
+    required: false
+    default: ''
+  runs-on:
+    description: GitHub Actions virtual environment name to run the udpater job on.
+    required: false
+    default: 'ubuntu-latest'
+
+runs:
+  using: composite
+
+  steps:
+    - name: Run ${{ inputs.script }}
+      run: sentry-cli/integration-test/execute.ps1 ${{ inputs.script }}
+      shell: pwsh
+
+    - name: Check script-output.txt
+      run: git diff --no-index script-output.txt ${{ inputs.script-output-expected }}
+      if: ${{ inputs.script-output-expected }}
+      shell: bash
+
+    - name: Check server-output.txt
+      run: git diff --no-index server-output.txt ${{ inputs.server-output-expected }}
+      if: ${{ inputs.server-output-expected }}
+      shell: bash
