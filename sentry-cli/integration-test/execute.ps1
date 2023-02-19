@@ -118,6 +118,9 @@ function RunWithApiServer([ScriptBlock] $Callback)
 if (Get-Command 'chmod' -ErrorAction SilentlyContinue)
 {
     chmod +x $Script
+    if ($LastExitCode -ne 0) {
+        throw "chmod failed";
+    }
 }
 
 $serverOutput = RunWithApiServer -Callback {
