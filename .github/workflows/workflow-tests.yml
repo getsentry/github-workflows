@@ -48,7 +48,7 @@ jobs:
   cli-test-args:
     uses: ./.github/workflows/sentry-cli-integration-test.yml
     with:
-      script: sentry-cli/integration-test/tests/run-script
+      script: sentry-cli/integration-test/tests/run-script.ps1
       runs-on: windows-latest
       script-output-expected: sentry-cli/integration-test/tests/script-output.expected
       server-output-expected: sentry-cli/integration-test/tests/server-output.expected
