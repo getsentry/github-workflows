@@ -24,7 +24,7 @@ runs:
 
   steps:
     - name: Run ${{ inputs.script }}
-      run: sentry-cli/integration-test/execute.ps1 ${{ inputs.script }}
+      run: ${{ github.action_path }}/execute.ps1 ${{ inputs.script }}
       shell: pwsh
 
     - name: Check script-output.txt
