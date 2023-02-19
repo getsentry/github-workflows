@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Sentry-CLI integration test action ([#54](https://github.com/getsentry/github-workflows/pull/54))
+
 ## 2.6.0
 
 ### Features
