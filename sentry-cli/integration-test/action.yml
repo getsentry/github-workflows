@@ -18,10 +18,6 @@ inputs:
     description: If given, the script-produced output must match the file at this path.
     required: false
     default: ''
-  runs-on:
-    description: GitHub Actions virtual environment name to run the udpater job on.
-    required: false
-    default: 'ubuntu-latest'
 
 runs:
   using: composite
