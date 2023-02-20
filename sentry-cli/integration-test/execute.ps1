@@ -126,13 +126,23 @@ if (Get-Command 'chmod' -ErrorAction SilentlyContinue)
     }
 }
 
+function Append([string] $File, $Value)
+{
+    $info = Get-Item $file -ErrorAction SilentlyContinue
+    if ($null -ne $info -and $info.Length -gt 0)
+    {
+        "`n" | Out-File $file -Encoding utf8 -Append -NoNewline
+    }
+    $value | Out-File $file -Encoding utf8 -Append -NoNewline
+}
+
 $serverOutput = RunWithApiServer -Callback {
     try
     {
         Write-Host "Running $Script $ServerUri" -ForegroundColor DarkYellow
         & $Script $ServerUri | ForEach-Object {
             Write-Host "  $_"
-            $_ | Out-File $ScriptOutFile -Encoding utf8 -Append
+            Append -File $ScriptOutFile -Value $_
         }
         if (-not $?)
         {
@@ -141,12 +151,11 @@ $serverOutput = RunWithApiServer -Callback {
     }
     catch
     {
-        $_ | Out-File $ScriptOutFile -Encoding utf8 -Append
+        Append -File $ScriptOutFile -Value $_
         Write-Error "  $_"
     }
     Write-Host "Script finished successfully" -ForegroundColor Green
 }
 
-$serverOutput | Out-File $ServerOutFile -Encoding utf8 -NoNewline
-
+Append -File $ServerOutFile -Value $serverOutput
 Write-Host "Outputs written to '$ServerOutFile' and '$ScriptOutFile'" -ForegroundColor Green
