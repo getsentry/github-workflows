@@ -14,16 +14,6 @@ apiOrg = 'org'
 apiProject = 'project'
 version = '1.1.0'
 appIdentifier = 'app'
-uploads = {}
-
-
-def registerUpload(name: str, chunks: int):
-    if name not in uploads:
-        uploads[name] = \
-            {'count': 1, 'chunks': chunks}
-    else:
-        uploads[name]['count'] += 1
-        uploads[name]['chunks'] += chunks
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -46,11 +36,13 @@ class Handler(BaseHTTPRequestHandler):
             self.flushLogs()
             threading.Thread(target=self.server.shutdown).start()
 
+        elif self.isApi('api/0'):
+            self.writeJSON('{"version":"0","auth":null,"user":null}')
         elif self.isApi('api/0/organizations/{}/chunk-upload/'.format(apiOrg)):
             self.writeJSON('{"url":"' + uri.geturl() + self.path + '",'
                            '"chunkSize":8388608,"chunksPerRequest":64,"maxFileSize":2147483648,'
                            '"maxRequestSize":33554432,"concurrency":1,"hashAlgorithm":"sha1","compression":["gzip"],'
-                           '"accept":["debug_files","release_files","pdbs","sources","bcsymbolmaps"]}')
+                           '"accept":["debug_files","release_files","pdbs","sources","bcsymbolmaps","il2cpp","portablepdbs"]}')
         elif self.isApi('/api/0/organizations/{}/repos/?cursor='.format(apiOrg)):
             self.writeJSONFile("assets/repos.json")
         elif self.isApi('/api/0/organizations/{}/releases/{}@{}/previous-with-commits/'.format(apiOrg, appIdentifier, version)):
@@ -81,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
             for key, value in jsonRequest.items():
                 jsonResponse += '"{}"'.format(key)
                 jsonResponse += ':{"state":"ok","missingChunks":[]},'
-                registerUpload(value['name'], len(value['chunks']))
+                sys.stdout.write("     {}\n".format(value['name']))
             jsonResponse = jsonResponse.rstrip(',') + '}'
             self.writeJSON(jsonResponse)
         elif self.isApi('api/0/projects/{}/{}/releases/'.format(apiOrg, apiProject)):
@@ -91,11 +83,11 @@ class Handler(BaseHTTPRequestHandler):
         elif self.isApi('/api/0/projects/{}/{}/releases/{}@{}/files/'.format(apiOrg, apiProject, appIdentifier, version)):
             self.writeJSONFile("assets/artifact.json")
         elif self.isApi('/api/0/organizations/{}/releases/{}/assemble/'.format(apiOrg, version)):
-            self.writeJSONFile("assets/assemble-artifacts-response.json")
+            self.writeJSON('{"state":"ok","missingChunks":[],"detail":null}')
         elif self.isApi('/api/0/projects/{}/{}/files/dsyms/'.format(apiOrg, apiProject)):
             self.writeJSONFile("assets/debug-info-files.json")
         elif self.isApi('/api/0/projects/{}/{}/files/dsyms/associate/'.format(apiOrg, apiProject)):
-            self.writeJSONFile("assets/associate-dsyms-response.json")
+            self.writeJSONFile("assets/associate-dsyms.json")
         elif self.isApi('/api/0/projects/{}/{}/reprocessing/'.format(apiOrg, apiProject)):
             self.writeJSON('{ }')
         elif self.isApi('api/0/organizations/{}/chunk-upload/'.format(apiOrg)):
@@ -127,8 +119,8 @@ class Handler(BaseHTTPRequestHandler):
         log_line = self.requestline
         if size:
             log_line += " ({} bytes)".format(size)
-        if body:
-            log_line += self.body[0:min(1000, len(body))]
+        # if body:
+        #     log_line += "\n     " + self.body[0:min(1000, len(body))]
 
         log_line += '\n'
         sys.stdout.write(log_line)
@@ -146,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def isApi(self, api: str):
         if self.path.strip('/') == api.strip('/'):
-            sys.stdout.write("Matched API endpoint {}\n".format(api))
+            # sys.stdout.write("Matched API endpoint {}\n".format(api))
             return True
         return False
 
@@ -184,8 +176,3 @@ try:
     target = httpd.serve_forever()
 except KeyboardInterrupt:
     pass
-finally:
-    print('Upload stats:')
-    for k in sorted(uploads):
-        v = uploads[k]
-        print('  {}: count={} chunks={}'.format(k, v['count'], v['chunks']))

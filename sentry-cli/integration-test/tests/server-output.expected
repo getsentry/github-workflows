@@ -2,4 +2,3 @@ HTTP server listening on <ServerUri>
 To stop the server, execute a GET request to <ServerUri>/STOP
 GET /STOP HTTP/1.1
 HTTP server stopping!
-Upload stats:

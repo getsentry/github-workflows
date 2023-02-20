@@ -17,7 +17,9 @@ Remove-Item -Path $ScriptOutFile -ErrorAction SilentlyContinue
 function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
 {
     $result = "" | Select-Object -Property process, outFile, errFile, stop, output, dispose
-    Write-Host "Starting the $ServerScript on $Uri"
+    Write-Host "Starting the $ServerScript on $Uri" -ForegroundColor DarkYellow
+    $stopwatch = [system.diagnostics.stopwatch]::StartNew()
+
     $result.outFile = New-TemporaryFile
     $result.errFile = New-TemporaryFile
 
@@ -61,7 +63,6 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
         $result.stop = {}
     }.GetNewClosure()
 
-    $stopwatch = [system.diagnostics.stopwatch]::StartNew()
     $startupFailed = $false
     while ($true)
     {
@@ -70,6 +71,7 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
         {
             if ((Invoke-WebRequest -Uri "$Uri/_check" -SkipHttpErrorCheck -Method Head).StatusCode -eq 999)
             {
+                Write-Host "Server started successfully in $($stopwatch.ElapsedMilliseconds) ms." -ForegroundColor Green
                 break;
             }
         }
@@ -127,23 +129,22 @@ if (Get-Command 'chmod' -ErrorAction SilentlyContinue)
 $serverOutput = RunWithApiServer -Callback {
     try
     {
-        $scriptOutput = & $Script $ServerUri
-        $failed = -not $?
+        Write-Host "Running $Script $ServerUri" -ForegroundColor DarkYellow
+        & $Script $ServerUri | ForEach-Object {
+            Write-Host "  $_"
+            $_ | Out-File $ScriptOutFile -Encoding utf8 -Append
+        }
+        if (-not $?)
+        {
+            throw "Script execution failed"
+        }
     }
     catch
     {
-        $scriptOutput = $_
-        $failed = $true
+        $_ | Out-File $ScriptOutFile -Encoding utf8 -Append
+        Write-Error "  $_"
     }
-    $scriptOutput | Out-File $ScriptOutFile -Encoding utf8 -NoNewline
-    if ($failed)
-    {
-        throw "Script execution failed: $Script $ServerUri | output: $scriptOutput"
-    }
-    else
-    {
-        Write-Host "Script finished successfully" -ForegroundColor Green
-    }
+    Write-Host "Script finished successfully" -ForegroundColor Green
 }
 
 $serverOutput | Out-File $ServerOutFile -Encoding utf8 -NoNewline
