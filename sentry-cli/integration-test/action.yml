@@ -28,7 +28,7 @@ runs:
       run: |
         directory=$(dirname '${{ inputs.script }}')
         echo "directory=$directory" >> $GITHUB_OUTPUT
-        pwsh ${{ github.action_path }}/execute.ps1 -Script '${{ inputs.script }}' -OutputDirectory "$directory"
+        pwsh '${{ github.action_path }}/execute.ps1' -Script '${{ inputs.script }}' -OutputDirectory "$directory"
       shell: bash
 
     - name: Check script-output.txt
