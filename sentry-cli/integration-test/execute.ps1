@@ -1,15 +1,21 @@
 ﻿# Executes the script at the given path after starting a dummy Sentry server that collects and logs requests.
 # The script is given the server URL as a first argument.
 param(
-    [Parameter(Mandatory = $true)][string] $Script
+    [Parameter(Mandatory = $true)][string] $Script,
+    [Parameter(Mandatory = $false)][string] $OutputDirectory
 )
+
+if ("$OutputDirectory" -eq "")
+{
+    $OutputDirectory = (Get-Item $Script).DirectoryName
+}
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version latest
 
 $ServerUri = "http://127.0.0.1:8000"
-$ServerOutFile = "server-output.txt"
-$ScriptOutFile = "script-output.txt"
+$ServerOutFile = "$OutputDirectory/server-output.txt"
+$ScriptOutFile = "$OutputDirectory/script-output.txt"
 
 Remove-Item -Path $ServerOutFile -ErrorAction SilentlyContinue
 Remove-Item -Path $ScriptOutFile -ErrorAction SilentlyContinue

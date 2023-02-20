@@ -24,15 +24,19 @@ runs:
 
   steps:
     - name: Run ${{ inputs.script }}
-      run: ${{ github.action_path }}/execute.ps1 ${{ inputs.script }}
-      shell: pwsh
+      id: run
+      run: |
+        directory=$(dirname '${{ inputs.script }}')
+        echo "directory=$directory" >> $GITHUB_OUTPUT
+        pwsh ${{ github.action_path }}/execute.ps1 -Script '${{ inputs.script }}' -OutputDirectory "$directory"
+      shell: bash
 
     - name: Check script-output.txt
-      run: git diff --no-index script-output.txt ${{ inputs.script-output-expected }}
+      run: git diff --no-index ${{ steps.run.outputs.directory }}/script-output.txt ${{ inputs.script-output-expected }}
       if: ${{ inputs.script-output-expected }}
       shell: bash
 
     - name: Check server-output.txt
-      run: git diff --no-index server-output.txt ${{ inputs.server-output-expected }}
+      run: git diff --no-index ${{ steps.run.outputs.directory }}/server-output.txt ${{ inputs.server-output-expected }}
       if: ${{ inputs.server-output-expected }}
       shell: bash
