@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Danger - add "github" to the list of whitelisted users for action-pinning check ([#55](https://github.com/getsentry/github-workflows/pull/55))
+
 ## 2.5.1
 
 ### Fixes

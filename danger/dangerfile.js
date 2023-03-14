@@ -149,7 +149,7 @@ async function checkActionsArePinned() {
     /^\+? *uses: *(?<user>[^\/]+)\/(?<action>[^@]+)@(?<ref>[^ ]*)/;
   const usesLocalRegex = /^\+? *uses: *\.\//; // e.g. 'uses: ./.github/actions/something'
   const shaRegex = /^[a-f0-9]{40}$/;
-  const whitelistedUsers = ["getsentry", "actions"];
+  const whitelistedUsers = ["getsentry", "actions", "github"];
 
   for (const path of workflowFiles) {
     const diff = await danger.git.structuredDiffForFile(path);
