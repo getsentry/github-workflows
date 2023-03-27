@@ -1,42 +1,21 @@
 name: Sentry CLI integration test
 
 description: |
-  Action to test Sentry CLI integration & symbol upload.
-  Executes the script at the given path after starting a dummy Sentry server that collects and logs requests.
-  The script is given the server URL as a first argument. Server and script output are saved in `server-output.txt` and
-  `script-output.txt` respectively.
+  Action to test Sentry CLI integration & symbol upload. This action simply runs all the https://github.com/pester/Pester
+  tests in the given directory. The tests can make use of a dummy Sentry server that collects uploaded symbols.
+  This server is made available as a PowerShell module to your tests.
 
 inputs:
-  script:
-    description: Script to run.
+  path:
+    description: The directory containing all the tests.
     required: true
-  server-output-expected:
-    description: If given, the server-produced output must match the file at this path.
-    required: false
-    default: ''
-  script-output-expected:
-    description: If given, the script-produced output must match the file at this path.
-    required: false
-    default: ''
 
 runs:
   using: composite
 
   steps:
-    - name: Run ${{ inputs.script }}
-      id: run
+    - name: Run tests
+      shell: pwsh
       run: |
-        directory=$(dirname '${{ inputs.script }}')
-        echo "directory=$directory" >> $GITHUB_OUTPUT
-        pwsh '${{ github.action_path }}/execute.ps1' -Script '${{ inputs.script }}' -OutputDirectory "$directory"
-      shell: bash
-
-    - name: Check script-output.txt
-      run: git diff --no-index ${{ steps.run.outputs.directory }}/script-output.txt ${{ inputs.script-output-expected }}
-      if: ${{ inputs.script-output-expected }}
-      shell: bash
-
-    - name: Check server-output.txt
-      run: git diff --no-index ${{ steps.run.outputs.directory }}/server-output.txt ${{ inputs.server-output-expected }}
-      if: ${{ inputs.server-output-expected }}
-      shell: bash
+        Import-Module -Name ${{ github.action_path }}/action.psm1 -Force
+        Invoke-Pester -Output Detailed '${{ inputs.path }}'

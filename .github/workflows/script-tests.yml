@@ -28,24 +28,3 @@ jobs:
 
       - run: make test
         working-directory: updater
-
-  cli-integration:
-    name: CLI integration @ ${{ matrix.host }}
-    runs-on: ${{ matrix.host }}-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        host:
-          - ubuntu
-          - macos
-          - windows
-    defaults:
-      run:
-        working-directory: sentry-cli/integration-test
-    steps:
-      - run: git config --global core.autocrlf false
-        working-directory: .
-      - uses: actions/checkout@v3
-      - run: pwsh ./execute.ps1 tests/run-script.ps1
-      - run: git diff --no-index tests/script-output.txt tests/script-output.expected
-      - run: git diff --no-index tests/server-output.txt tests/server-output.expected

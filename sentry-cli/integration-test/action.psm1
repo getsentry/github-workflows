@@ -1,24 +1,8 @@
-﻿# Executes the script at the given path after starting a dummy Sentry server that collects and logs requests.
-# The script is given the server URL as a first argument.
-param(
-    [Parameter(Mandatory = $true)][string] $Script,
-    [Parameter(Mandatory = $false)][string] $OutputDirectory
-)
-
-if ("$OutputDirectory" -eq "")
-{
-    $OutputDirectory = (Get-Item $Script).DirectoryName
-}
-
-$ErrorActionPreference = "Stop"
-Set-StrictMode -Version latest
+﻿# Executes the given block starting a dummy Sentry server that collects and logs requests.
+# The block is given the server URL as a first argument.
+# Returns the dummy server logs.
 
 $ServerUri = "http://127.0.0.1:8000"
-$ServerOutFile = "$OutputDirectory/server-output.txt"
-$ScriptOutFile = "$OutputDirectory/script-output.txt"
-
-Remove-Item -Path $ServerOutFile -ErrorAction SilentlyContinue
-Remove-Item -Path $ScriptOutFile -ErrorAction SilentlyContinue
 
 function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
 {
@@ -50,7 +34,7 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
 
         Remove-Item $result.outFile -ErrorAction Continue
         Remove-Item $result.errFile -ErrorAction Continue
-        return "$stdout`n$stderr".Trim() -replace $Uri, "<ServerUri>" -replace "`r`n", "`n"
+        return ("$stdout`n$stderr".Trim() -replace $Uri, "<ServerUri>" -replace "`r`n", "`n") -split "`n" | ForEach-Object { $_.Trim() }
     }.GetNewClosure()
 
     $result.stop = {
@@ -97,71 +81,32 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
 
     if ($result.process.HasExited -or $startupFailed)
     {
-        Write-Host "Couldn't start the $ServerScript" -ForegroundColor Red
         $result.stop.Invoke()
         $result.dispose.Invoke()
-        exit 1
+        throw Write-Host "Couldn't start the $ServerScript"
     }
 
     return $result
 }
 
-function RunWithApiServer([ScriptBlock] $Callback)
+function Invoke-SentryServer([ScriptBlock] $Callback)
 {
     # start the server
     $httpServer = RunApiServer "sentry-server"
-    # run the test
+
+    $result = $null
     try
     {
-        $Callback.Invoke()
+        # run the test
+        Invoke-Command -ScriptBlock $Callback -ArgumentList $ServerUri
     }
     finally
     {
         $httpServer.stop.Invoke()
+        $result = $httpServer.dispose.Invoke()
     }
 
-    return $httpServer.dispose.Invoke()
+    return $result
 }
 
-if (Get-Command 'chmod' -ErrorAction SilentlyContinue)
-{
-    chmod +x $Script
-    if ($LastExitCode -ne 0)
-    {
-        throw "chmod failed";
-    }
-}
-
-function Append([string] $File, $Value)
-{
-    $info = Get-Item $file -ErrorAction SilentlyContinue
-    if ($null -ne $info -and $info.Length -gt 0)
-    {
-        "`n" | Out-File $file -Encoding utf8 -Append -NoNewline
-    }
-    $value | Out-File $file -Encoding utf8 -Append -NoNewline
-}
-
-$serverOutput = RunWithApiServer -Callback {
-    try
-    {
-        Write-Host "Running $Script $ServerUri" -ForegroundColor DarkYellow
-        & $Script $ServerUri | ForEach-Object {
-            Write-Host "  $_"
-            Append -File $ScriptOutFile -Value $_
-        }
-        if (-not $?)
-        {
-            throw "Script execution failed"
-        }
-    }
-    catch
-    {
-        Append -File $ScriptOutFile -Value $_
-        Write-Error "  $_"
-    }
-    Write-Host "Script finished successfully" -ForegroundColor Green
-}
-
-Append -File $ServerOutFile -Value $serverOutput
-Write-Host "Outputs written to '$ServerOutFile' and '$ScriptOutFile'" -ForegroundColor Green
+Export-ModuleMember -Function Invoke-SentryServer
