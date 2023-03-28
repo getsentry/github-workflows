@@ -116,7 +116,7 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
         }
         catch
         {}
-        if ($stopwatch.ElapsedMilliseconds -gt 10000)
+        if ($stopwatch.ElapsedMilliseconds -gt 60000)
         {
             $msg = "Server startup timed out."
             Write-Warning $msg
