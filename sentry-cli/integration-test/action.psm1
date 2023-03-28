@@ -4,6 +4,28 @@
 
 $ServerUri = "http://127.0.0.1:8000"
 
+class InvokeSentryResult
+{
+    [string[]]$ServerStdOut
+    [string[]]$ServerStdErr
+    [string[]]$ScriptOutput
+}
+
+function IsNullOrEmpty([string] $value)
+{
+    "$value".Trim().Length -eq 0
+}
+
+function OutputToArray([string] $output, [string] $uri = $null)
+{
+    $output = "$output".Trim()
+    if (!(IsNullOrEmpty $uri))
+    {
+        $output = $output -replace $uri, "<ServerUri>"
+    }
+    ($output -replace "`r`n", "`n") -split "`n" | ForEach-Object { $_.Trim() }
+}
+
 function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
 {
     $result = "" | Select-Object -Property process, outFile, errFile, stop, output, dispose
@@ -16,7 +38,13 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
     $result.process = Start-Process "python3" -ArgumentList @("$PSScriptRoot/$ServerScript.py", $Uri) `
         -NoNewWindow -PassThru -RedirectStandardOutput $result.outFile -RedirectStandardError $result.errFile
 
-    $result.output = { "$(Get-Content $result.outFile -Raw)`n$(Get-Content $result.errFile -Raw)" }.GetNewClosure()
+    $out = New-Object InvokeSentryResult
+    $out.ServerStdOut = @()
+    $out.ServerStdErr = @()
+
+    # We must reassign functions as variables to make them available in a block scope together with GetNewClosure().
+    $OutputToArray = { OutputToArray $args[0] $args[1] }
+    $IsNullOrEmpty = { IsNullOrEmpty $args[0] }
 
     $result.dispose = {
         $result.stop.Invoke()
@@ -25,16 +53,19 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
         Write-Host "Server stdout:" -ForegroundColor Yellow
         Write-Host $stdout
 
+        $out.ServerStdOut += & $OutputToArray $stdout $Uri
+
         $stderr = Get-Content $result.errFile -Raw
-        if ("$stderr".Trim().Length -gt 0)
+        if (!(& $IsNullOrEmpty $stderr))
         {
             Write-Host "Server stderr:" -ForegroundColor Yellow
             Write-Host $stderr
+            $out.ServerStdErr += & $OutputToArray $stderr $Uri
         }
 
         Remove-Item $result.outFile -ErrorAction Continue
         Remove-Item $result.errFile -ErrorAction Continue
-        return ("$stdout`n$stderr".Trim() -replace $Uri, "<ServerUri>" -replace "`r`n", "`n") -split "`n" | ForEach-Object { $_.Trim() }
+        return $out
     }.GetNewClosure()
 
     $result.stop = {
@@ -61,7 +92,9 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
         {
             if ((Invoke-WebRequest -Uri "$Uri/_check" -SkipHttpErrorCheck -Method Head).StatusCode -eq 999)
             {
-                Write-Host "Server started successfully in $($stopwatch.ElapsedMilliseconds) ms." -ForegroundColor Green
+                $msg = "Server started successfully in $($stopwatch.ElapsedMilliseconds) ms."
+                Write-Host $additionalOutput -ForegroundColor Green
+                $out.ServerStdOut += $msg
                 break;
             }
         }
@@ -69,7 +102,9 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
         {}
         if ($stopwatch.ElapsedMilliseconds -gt 10000)
         {
-            Write-Warning "Server startup timed out."
+            $msg = "Server startup timed out."
+            Write-Warning $msg
+            $out.ServerStdErr += $msg
             $startupFailed = $true;
             break;
         }
@@ -95,17 +130,22 @@ function Invoke-SentryServer([ScriptBlock] $Callback)
     $httpServer = RunApiServer "sentry-server"
 
     $result = $null
+    $output = $null
     try
     {
         # run the test
-        Invoke-Command -ScriptBlock $Callback -ArgumentList $ServerUri
+        # $output = Invoke-Command -NoNewScope -ScriptBlock $Callback -ArgumentList $ServerUri
+        $output = & $Callback $ServerUri
     }
     finally
     {
-        $httpServer.stop.Invoke()
-        $result = $httpServer.dispose.Invoke()
+        $result = $httpServer.dispose.Invoke()[0]
     }
 
+    if ($null -ne $result)
+    {
+        $result.ScriptOutput = OutputToArray $output
+    }
     return $result
 }
 
