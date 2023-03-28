@@ -18,6 +18,7 @@ Describe 'Invoke-SentryServer' {
         Should -ActualValue $result.ServerStdErr -HaveType [string[]]
         Should -ActualValue $result.ScriptOutput -HaveType [string[]]
         $result.ServerStdErr.Length | Should -Be 0
+        Should -ActualValue $result.HasErrors() -BeFalse
         $result.ServerStdOut.Length | Should -BeGreaterThan 1
         $result.ServerStdOut[0] | Should -Match "Server started successfully in [0-9]+ ms."
         $result.ServerStdOut | Should -Contain 'HTTP server listening on <ServerUri>'
@@ -28,5 +29,17 @@ Describe 'Invoke-SentryServer' {
         { Invoke-SentryServer { throw "hello there" } } | Should -Throw "hello there"
         $result = Invoke-SentryServer {}
         $result.ServerStdOut | Should -Contain 'HTTP server listening on <ServerUri>'
+    }
+
+    It "collects debug-files uploads" {
+        $result = Invoke-SentryServer {
+            Param([string]$url)
+            Invoke-WebRequest -Uri "$url/api/0/projects/org/project/files/difs/assemble/" -Method Post `
+                -Body '{"9a01653a":{"name":"file3.dylib","debug_id":"eb4a7644","chunks":["f84d"]},"abcd":{"name":"file2.so","debug_id":"foo","chunks":["ab"]}}'
+            Invoke-WebRequest -Uri "$url/api/0/projects/org/project/files/difs/assemble/" -Method Post `
+                -Body '{"9a01653a":{"name":"file1.dll","debug_id":"aa","chunks":["def"]}}'
+        }
+        Should -ActualValue $result.HasErrors() -BeFalse
+        $result.UploadedDebugFiles() | Should -Be @('file3.dylib', 'file2.so', 'file1.dll')
     }
 }

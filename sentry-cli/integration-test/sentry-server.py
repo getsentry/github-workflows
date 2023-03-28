@@ -73,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
             for key, value in jsonRequest.items():
                 jsonResponse += '"{}"'.format(key)
                 jsonResponse += ':{"state":"ok","missingChunks":[]},'
-                sys.stdout.write("     {}\n".format(value['name']))
+                sys.stdout.write("     upload-dif: {}\n".format(value['name']))
             jsonResponse = jsonResponse.rstrip(',') + '}'
             self.writeJSON(jsonResponse)
         elif self.isApi('api/0/projects/{}/{}/releases/'.format(apiOrg, apiProject)):

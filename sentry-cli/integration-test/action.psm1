@@ -9,6 +9,18 @@ class InvokeSentryResult
     [string[]]$ServerStdOut
     [string[]]$ServerStdErr
     [string[]]$ScriptOutput
+
+    # It is common to test debug files uploaded to the server so this function gives you a list.
+    [string[]]UploadedDebugFiles()
+    {
+        $prefix = "upload-dif:"
+        return @($this.ServerStdOut | Where-Object { $_.StartsWith($prefix) } | ForEach-Object { $_.Substring($prefix.Length).Trim() })
+    }
+
+    [bool]HasErrors()
+    {
+        return $this.ServerStdErr.Length -gt 0
+    }
 }
 
 function IsNullOrEmpty([string] $value)
@@ -27,7 +39,7 @@ function OutputToArray($output, [string] $uri = $null)
     {
         $output = $output -replace $uri, "<ServerUri>"
     }
-    $output | ForEach-Object { $_.Trim() }
+    $output | ForEach-Object { "$_".Trim() }
 }
 
 function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
