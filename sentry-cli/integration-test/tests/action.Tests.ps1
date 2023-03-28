@@ -1,3 +1,6 @@
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 # In CI, the module is expected to be loaded
 if (!(Test-Path env:CI ))
 {

@@ -16,14 +16,18 @@ function IsNullOrEmpty([string] $value)
     "$value".Trim().Length -eq 0
 }
 
-function OutputToArray([string] $output, [string] $uri = $null)
+function OutputToArray($output, [string] $uri = $null)
 {
-    $output = "$output".Trim()
+    if ($output -isnot [system.array])
+    {
+        $output = ("$output".Trim() -replace "`r`n", "`n") -split "`n"
+    }
+
     if (!(IsNullOrEmpty $uri))
     {
         $output = $output -replace $uri, "<ServerUri>"
     }
-    ($output -replace "`r`n", "`n") -split "`n" | ForEach-Object { $_.Trim() }
+    $output | ForEach-Object { $_.Trim() }
 }
 
 function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
@@ -134,7 +138,6 @@ function Invoke-SentryServer([ScriptBlock] $Callback)
     try
     {
         # run the test
-        # $output = Invoke-Command -NoNewScope -ScriptBlock $Callback -ArgumentList $ServerUri
         $output = & $Callback $ServerUri
     }
     finally
