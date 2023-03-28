@@ -45,6 +45,9 @@ if (-not $isSubmodule)
             if (Get-Command 'chmod' -ErrorAction SilentlyContinue)
             {
                 chmod +x $Path
+                if ($LastExitCode -ne 0) {
+                    throw "chmod failed";
+                }
             }
             try
             {

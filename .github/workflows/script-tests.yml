@@ -1,12 +1,12 @@
-# This isn't a reusable workflow but an actual CI action for this repo itself - to test scripts.
-name: Updater Script Tests
+# This isn't a reusable workflow but a CI action for this repo itself - testing the contained workflows & scripts.
+name: Script Tests
 
 on:
   push:
 
 jobs:
-  test:
-    name: ${{ matrix.host }}
+  updater:
+    name: Updater @ ${{ matrix.host }}
     runs-on: ${{ matrix.host }}-latest
     strategy:
       fail-fast: false

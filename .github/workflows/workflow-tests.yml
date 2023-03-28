@@ -1,0 +1,62 @@
+# This isn't a reusable workflow but an actual CI action for this repo itself - to test the workflows.
+name: Workflow Tests
+
+on:
+  push:
+
+jobs:
+  updater-create-pr:
+    uses: ./.github/workflows/updater.yml
+    with:
+      path: updater/tests/sentry-cli.properties
+      name: CLI
+      pattern: '^2\.0\.'
+      pr-strategy: update
+      _workflow_version: ${{ github.sha }}
+    secrets:
+      api-token: ${{ github.token }}
+
+  updater-test-args:
+    uses: ./.github/workflows/updater.yml
+    with:
+      path: updater/tests/workflow-args.sh
+      name: Workflow args test script
+      runs-on: macos-latest
+      pattern: '.*'
+      _workflow_version: ${{ github.sha }}
+    secrets:
+      api-token: ${{ github.token }}
+
+  updater-test-outputs:
+    runs-on: ubuntu-latest
+    needs:
+      - updater-create-pr
+      - updater-test-args
+    steps:
+      - run: "[[ '${{ needs.updater-create-pr.outputs.baseBranch }}' == 'main' ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.originalTag }}' == '2.0.0' ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.latestTag }}' =~ ^[0-9.]+$ ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.prUrl }}' =~ ^https://github.com/getsentry/github-workflows/pull/[0-9]+$ ]]"
+      - run: "[[ '${{ needs.updater-create-pr.outputs.prBranch }}' == 'deps/updater/tests/sentry-cli.properties' ]]"
+
+      - run: "[[ '${{ needs.updater-test-args.outputs.baseBranch }}' == '' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.originalTag }}' == 'latest' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.latestTag }}' == 'latest' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.prUrl }}' == '' ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.prBranch }}' == '' ]]"
+
+  cli-integration:
+    runs-on: ${{ matrix.host }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - ubuntu
+          - macos
+          - windows
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ./sentry-cli/integration-test/
+        with:
+          path: sentry-cli/integration-test/tests/

@@ -1,0 +1,21 @@
+name: Sentry CLI integration test
+
+description: |
+  Action to test Sentry CLI integration & symbol upload. This action simply runs all the https://github.com/pester/Pester
+  tests in the given directory. The tests can make use of a dummy Sentry server that collects uploaded symbols.
+  This server is made available as a PowerShell module to your tests.
+
+inputs:
+  path:
+    description: The directory containing all the tests.
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Run tests
+      shell: pwsh
+      run: |
+        Import-Module -Name ${{ github.action_path }}/action.psm1 -Force
+        Invoke-Pester -Output Detailed '${{ inputs.path }}'
