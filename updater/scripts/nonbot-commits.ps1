@@ -6,9 +6,10 @@ param(
 )
 
 Set-StrictMode -Version latest
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = 'Stop'
 
-$bot = "<noreply@github.com>"
+$RepoUrl = $RepoUrl -replace 'git@github.com:', 'https://github.com/'
+$bot = '<noreply@github.com>'
 
 $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
 New-Item -ItemType Directory $tmpDir | Out-Null
@@ -29,7 +30,8 @@ try
 
     if ($nonbotCommits.Length -gt 0)
     {
-        Write-Warning "There are commits made by others than $bot"
+`
+            Write-Warning "There are commits made by others than $bot"
     }
     $nonbotCommits
 }
