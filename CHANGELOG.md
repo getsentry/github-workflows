@@ -6,6 +6,10 @@
 
 - Sentry-CLI integration test action: support envelopes ([#58](https://github.com/getsentry/github-workflows/pull/58))
 
+### Dependencies
+
+- Bump updater action dependencies ([#61](https://github.com/getsentry/github-workflows/pull/61))
+
 ## 2.7.0
 
 ### Features

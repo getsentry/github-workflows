@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@b173b6ec0100793626c2d9e6b90435061f4fc3e5 # Tag: 0.11.0
+        uses: styfle/cancel-workflow-action@01ce38bf961b4e243a6342cbade0dbc8ba3f0432 # Tag: 0.12.0
         with:
           access_token: ${{ github.token }}
 
@@ -147,7 +147,7 @@ jobs:
 
       - name: Fetch an existing PR
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
-        uses: octokit/request-action@89a1754fe82ca777b044ca8e79e9881a42f15a93 # v2.1.7
+        uses: octokit/request-action@89697eb6635e52c6e1e5559f15b5c91ba5100cb0 # v2.1.9
         id: existing-pr-request
         with:
           route: GET /repos/${{ github.repository }}/pulls?base={base}&head={head}
@@ -195,7 +195,7 @@ jobs:
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
-        uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7 # pin#v4
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # pin#v5.0.2
         id: create-pr
         with:
           base: ${{ steps.root.outputs.baseBranch }}
@@ -258,7 +258,7 @@ jobs:
       # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
       - name: Update the PR
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
-        uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # pin#v5.0.2
         with:
           base: ${{ steps.root.outputs.baseBranch }}
           branch: ${{ steps.root.outputs.prBranch }}
