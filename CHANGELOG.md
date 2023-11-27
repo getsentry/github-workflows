@@ -8,7 +8,7 @@
 
 ### Dependencies
 
-- Bump updater action dependencies ([#60](https://github.com/getsentry/github-workflows/pull/60))
+- Bump updater action dependencies ([#61](https://github.com/getsentry/github-workflows/pull/61))
 
 ## 2.7.0
 
