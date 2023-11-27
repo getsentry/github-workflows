@@ -1,10 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.8.0
 
 ### Fixes
 
-- Updater - non-bot commit checks in PRs for SSH repository URLs (starting with `git@github.com:`) ([#62](https://github.com/getsentry/github-workflows/pull/62))
+- Updater - non-bot commit-checks in PRs for SSH repository URLs (starting with `git@github.com:`) ([#62](https://github.com/getsentry/github-workflows/pull/62))
 
 ### Features
 
