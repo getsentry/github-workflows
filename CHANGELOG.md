@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- Updater - non-bot commit checks in PRs for SSH repository URLs (starting with `git@github.com:`) ([#62](https://github.com/getsentry/github-workflows/pull/62))
+
 ### Features
 
 - Sentry-CLI integration test action: support envelopes ([#58](https://github.com/getsentry/github-workflows/pull/58))
