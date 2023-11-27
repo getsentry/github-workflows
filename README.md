@@ -80,7 +80,7 @@ jobs:
 ### Secrets
 
 * `api-token`: GH authentication token to create PRs with & push.
-  If you provide the usual `${{ github.token }}`, no followup CI will run on the created PR.
+  If you provide the usual `${{github.token}}`, no followup CI will run on the created PR.
   If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.
 
 ## Danger
