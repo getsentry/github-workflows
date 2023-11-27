@@ -42,4 +42,26 @@ Describe 'Invoke-SentryServer' {
         Should -ActualValue $result.HasErrors() -BeFalse
         $result.UploadedDebugFiles() | Should -Be @('file3.dylib', 'file2.so', 'file1.dll')
     }
+
+    It "collects envelopes" {
+        $result = Invoke-SentryServer {
+            Param([string]$url)
+            Invoke-WebRequest -Uri "$url/api/0/envelope" -Method Post -Body @'
+{"event_id":"9ec79c33ec9942ab8353589fcb2e04dc","dsn":"https://e12d836b15bb49d7bbf99e64295d995b:@sentry.io/42"}
+{"type":"attachment","length":10,"content_type":"text/plain","filename":"hello.txt"}
+\xef\xbb\xbfHello\r\n
+{"type":"event","length":41,"content_type":"application/json","filename":"application.log"}
+{"message":"hello world","level":"error"}
+'@
+            Invoke-WebRequest -Uri "$url/api/0/envelope" -Method Post -Body @'
+{"event_id":"9ec79c33ec9942ab8353589fcb2e04dc"}
+{"type":"attachment"}
+helloworld
+'@
+        }
+        Should -ActualValue $result.HasErrors() -BeFalse
+        $result.Envelopes().Length | Should -Be 2
+        $result.Envelopes()[0].Length | Should -Be 357
+        $result.Envelopes()[1].Length | Should -Be 84
+    }
 }

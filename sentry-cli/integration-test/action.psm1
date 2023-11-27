@@ -17,6 +17,28 @@ class InvokeSentryResult
         return @($this.ServerStdOut | Where-Object { $_.StartsWith($prefix) } | ForEach-Object { $_.Substring($prefix.Length).Trim() })
     }
 
+    # Envelopes are collected to a list, each envelope body a single item.
+    [string[]]Envelopes()
+    {
+        $envelopes = @()
+        $this.ServerStdOut | ForEach-Object {
+            if ($_.Trim() -eq "envelope start")
+            {
+                $envelope = ''
+            }
+            elseif ($_ -eq "envelope end")
+            {
+                $envelopes += $envelope
+                $envelope = $null
+            }
+            elseif ($null -ne $envelope)
+            {
+                $envelope += $_ + "\n"
+            }
+        }
+        return $envelopes
+    }
+
     [bool]HasErrors()
     {
         return $this.ServerStdErr.Length -gt 0

@@ -92,6 +92,11 @@ class Handler(BaseHTTPRequestHandler):
             self.writeJSON('{ }')
         elif self.isApi('api/0/organizations/{}/chunk-upload/'.format(apiOrg)):
             self.writeJSON('{ }')
+        elif self.isApi('api/0/envelope'):
+            sys.stdout.write("     envelope start\n")
+            sys.stdout.write(self.body)
+            sys.stdout.write("\n     envelope end\n")
+            self.writeJSON('{ }')
         else:
             self.writeNoApiMatchesError()
 
