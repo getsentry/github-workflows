@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Dependencies
+
+- Bump `danger/danger-js` from v11.1.2 to v11.3.1 ([#59](https://github.com/getsentry/github-workflows/pull/59))
+
 ## 2.8.1
 
 ### Fixes
