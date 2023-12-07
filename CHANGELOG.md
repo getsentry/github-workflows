@@ -1,10 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.8.1
 
 ### Fixes
 
-- sentry-server.py - The scriptroot is being set as `WorkingDirectory`.
+- Sentry-CLI integration test - set server script root so assets access works.  ([#63](https://github.com/getsentry/github-workflows/pull/63))
 
 ## 2.8.0
 
