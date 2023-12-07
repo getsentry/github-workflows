@@ -74,7 +74,7 @@ function RunApiServer([string] $ServerScript, [string] $Uri = $ServerUri)
     $result.errFile = New-TemporaryFile
 
     $result.process = Start-Process "python3" -ArgumentList @("$PSScriptRoot/$ServerScript.py", $Uri) `
-        -NoNewWindow -PassThru -RedirectStandardOutput $result.outFile -RedirectStandardError $result.errFile
+        -NoNewWindow -PassThru -RedirectStandardOutput $result.outFile -RedirectStandardError $result.errFile -WorkingDirectory $PSScriptRoot
 
     $out = New-Object InvokeSentryResult
     $out.ServerStdOut = @()
