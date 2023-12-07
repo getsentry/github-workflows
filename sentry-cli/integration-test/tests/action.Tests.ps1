@@ -43,6 +43,14 @@ Describe 'Invoke-SentryServer' {
         $result.UploadedDebugFiles() | Should -Be @('file3.dylib', 'file2.so', 'file1.dll')
     }
 
+    It "collects proguard mapping" {
+        $result = Invoke-SentryServer {
+            Param([string]$url)
+            Invoke-WebRequest -Uri "$url/api/0/projects/org/project/files/dsyms/associate/" -Method Post `
+        }
+        Should -ActualValue $result.HasErrors() -BeFalse
+    }
+
     It "collects envelopes" {
         $result = Invoke-SentryServer {
             Param([string]$url)
