@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- sentry-server.py - The scriptroot is being set as `WorkingDirectory`.
+
 ## 2.8.0
 
 ### Fixes
