@@ -9,7 +9,7 @@ jobs:
     uses: ./.github/workflows/updater.yml
     with:
       path: updater/tests/sentry-cli.properties
-      name: CLI
+      name: WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE
       pattern: '^2\.0\.'
       pr-strategy: update
       _workflow_version: ${{ github.sha }}
