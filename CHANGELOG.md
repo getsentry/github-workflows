@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- sentry-server.py - Set working directory for the server so it can find files inside the assets folder.
+
 ## 2.8.0
 
 ### Fixes
