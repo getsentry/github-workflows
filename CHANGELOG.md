@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- sentry-server.py - The scriptroot is being set as `WorkingDirectory`.
+
 ### Dependencies
 
 - Bump CLI from v2.0.0 to v2.0.4 ([#60](https://github.com/getsentry/github-workflows/pull/60))
