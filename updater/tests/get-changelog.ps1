@@ -27,7 +27,7 @@ Work in this release contributed by jkcorrea and nfelger. Thank you for your con
 
 ### 7.4.1
 
-This release includes the first *published* version of `sentry/remix`.
+This release includes the first _published_ version of `sentry/remix`.
 
 - build(remix): Make remix package public ([#5349](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5349))
 '@
