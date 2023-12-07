@@ -46,7 +46,7 @@ Describe 'Invoke-SentryServer' {
     It "collects proguard mapping" {
         $result = Invoke-SentryServer {
             Param([string]$url)
-            Invoke-WebRequest -Uri "$url/api/0/projects/org/project/files/dsyms/associate/" -Method Post `
+            Invoke-WebRequest -Uri "$url/api/0/projects/org/project/files/dsyms/associate/" -Method Post
         }
         Should -ActualValue $result.HasErrors() -BeFalse
     }
