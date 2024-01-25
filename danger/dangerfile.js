@@ -79,7 +79,7 @@ async function checkChangelog() {
     changelogFile
   );
 
-  const changelogMatch = RegExp(`^(.*)\n[^\n]+#${danger.github.pr.number}\\b`, 's').exec(
+  const changelogMatch = RegExp(`^(.*?)\n[^\n]+(\\(${danger.github.pr.html_url}\\)|#${danger.github.pr.number}\\b)`, 's').exec(
     changelogContents
   );
 

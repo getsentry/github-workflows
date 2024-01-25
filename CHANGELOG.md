@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- Danger - recognize PR links based on full URL instead of just the PR number. ([#68](https://github.com/getsentry/github-workflows/pull/68))
+
 ### Dependencies
 
 - Bump `danger/danger-js` from v11.1.2 to v11.3.1 ([#59](https://github.com/getsentry/github-workflows/pull/59))
