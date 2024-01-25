@@ -1,63 +1,60 @@
 . "$PSScriptRoot/common/test-utils.ps1"
 
-RunTest "get-changelog with existing versions" {
+RunTest 'get-changelog with existing versions' {
     $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-        -RepoUrl "https://github.com/getsentry/sentry-javascript" -OldTag "7.4.0" -NewTag "7.5.1"
+        -RepoUrl 'https://github.com/getsentry/github-workflows' -OldTag '1.0.0' -NewTag '2.1.0'
     $expected = @'
 ## Changelog
-### 7.5.1
+### 2.1.0
 
-This release removes the `user_id` and the `transaction` field from the dynamic sampling context data that is attached to outgoing requests as well as sent to Relay.
+#### Features
 
-- ref(tracing): Remove transaction name and user_id from DSC ([#5363](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5363))
+- New reusable workflow, `danger.yml`, to check Pull Requests with predefined rules ([#34](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/34))
 
-### 7.5.0
+### 2.0.0
 
-This release adds the `sendDefaultPii` flag to the `Sentry.init` options.
-When using performance monitoring capabilities of the SDK, it controls whether user IDs (set via `Sentry.setUser`) are propagated in the `baggage` header of outgoing HTTP requests.
-This flag is set to `false` per default, and acts as an opt-in mechanism for sending potentially sensitive data.
-If you want to attach user IDs to Sentry transactions and traces, set this flag to `true` but keep in mind that this is potentially sensitive information.
+#### Changes
 
-- feat(sdk): Add sendDefaultPii option to the JS SDKs ([#5341](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5341))
-- fix(remix): Sourcemaps upload script is missing in the tarball ([#5356](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5356))
-- fix(remix): Use cjs for main entry point ([#5352](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5352))
-- ref(tracing): Only add `user_id` to DSC if `sendDefaultPii` is `true` ([#5344](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5344))
+- Rename `api_token` secret to `api-token` ([#21](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/21))
+- Change changelog target section header from "Features" to "Dependencies" ([#19](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/19))
 
-Work in this release contributed by jkcorrea and nfelger. Thank you for your contributions!
+#### Features
 
-### 7.4.1
+- Add `pr-strategy` switch to choose between creating new PRs or updating an existing one ([#22](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/22))
+- Add `changelog-section` input setting to specify target changelog section header ([#19](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/19))
 
-This release includes the first _published_ version of `sentry/remix`.
+#### Fixes
 
-- build(remix): Make remix package public ([#5349](https://github-redirect.dependabot.com/getsentry/sentry-javascript/issues/5349))
+- Preserve changelog bullet-point format ([#20](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/20))
+- Changelog section parsing when an entry text contains the section name in the text ([#25](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/25))
 '@
 
     AssertEqual $expected $actual
 }
 
-RunTest "get-changelog with missing versions" {
+RunTest 'get-changelog with missing versions' {
     $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-        -RepoUrl "https://github.com/getsentry/sentry-javascript" -OldTag "XXXXXXX" -NewTag "YYYYYYYYY"
+        -RepoUrl 'https://github.com/getsentry/sentry-javascript' -OldTag 'XXXXXXX' -NewTag 'YYYYYYYYY'
     AssertEqual '' $actual
 }
 
-RunTest "get-changelog with missing repo" {
+RunTest 'get-changelog with missing repo' {
     $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-        -RepoUrl "https://github.com/getsentry/foo-bar" -OldTag "XXXXXXX" -NewTag "YYYYYYYYY"
+        -RepoUrl 'https://github.com/getsentry/foo-bar' -OldTag 'XXXXXXX' -NewTag 'YYYYYYYYY'
     # May print a warning but still returns (an empty string)
     AssertEqual '' $actual
 }
 
-RunTest "get-changelog with unsupported repo" {
+RunTest 'get-changelog with unsupported repo' {
     $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-        -RepoUrl "https://dart.googlesource.com/args" -OldTag "XXXXXXX" -NewTag "YYYYYYYYY"
+        -RepoUrl 'https://dart.googlesource.com/args' -OldTag 'XXXXXXX' -NewTag 'YYYYYYYYY'
     # May print a warning but still returns (an empty string)
     AssertEqual '' $actual
 }
 
-RunTest "get-changelog removes at-mentions" {
+RunTest 'get-changelog removes at-mentions' {
     $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-        -RepoUrl "https://github.com/getsentry/sentry-cli" -OldTag "2.1.0" -NewTag "2.2.0"
+        -RepoUrl 'https://github.com/getsentry/sentry-cli' -OldTag '2.1.0' -NewTag '2.2.0'
     $expected = @'
 ## Changelog
 ### 2.2.0
@@ -73,7 +70,7 @@ RunTest "get-changelog removes at-mentions" {
 
 RunTest "get-changelog removes doesn't duplicate PR links" {
     $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-        -RepoUrl "https://github.com/getsentry/sentry-native" -OldTag "0.4.16" -NewTag "0.4.17"
+        -RepoUrl 'https://github.com/getsentry/sentry-native' -OldTag '0.4.16' -NewTag '0.4.17'
     $expected = @'
 ## Changelog
 ### 0.4.17
@@ -92,9 +89,9 @@ Features, fixes and improvements in this release have been contributed by:
     AssertEqual $expected $actual
 }
 
-RunTest "get-changelog truncates too long text" {
+RunTest 'get-changelog truncates too long text' {
     $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-        -RepoUrl "https://github.com/getsentry/sentry-cli" -OldTag "1.0.0" -NewTag "2.4.0"
+        -RepoUrl 'https://github.com/getsentry/sentry-cli' -OldTag '1.0.0' -NewTag '2.4.0'
     if ($actual.Length -gt 61000)
     {
         throw "Expected the content to be truncated to less-than 61k characters, but got: $($actual.Length)"
