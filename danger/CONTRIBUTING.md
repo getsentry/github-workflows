@@ -7,12 +7,13 @@
 
 ## TLDR
 
-```shell-script
-export DANGER_GITHUB_API_TOKEN='XXX'
-export DANGER_FAKE_CI="YEP"
-export DANGER_TEST_REPO='username/reponame'
+```pwsh
+$env:DANGER_GITHUB_API_TOKEN = gh auth token
+$env:DANGER_FAKE_CI = 'YEP'
+$env:DANGER_TEST_REPO = 'username/reponame'
+$env:DANGER_TEST_PR = 1234
+
 cd reponame
-export DANGER_TEST_PR='1234'
-git checkout branch-for-pr-1234
+gh pr checkout $env:DANGER_TEST_PR
 npx danger ci --text-only --failOnErrors --dangerfile=../github-workflows/danger/dangerfile.js
 ```
