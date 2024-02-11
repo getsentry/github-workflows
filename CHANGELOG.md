@@ -4,7 +4,7 @@
 
 ### Fixes
 
-- Danger - fix pinned action check if the ref is at the end of the file ()
+- Danger - fix pinned action check if the ref is at the end of the file ([#70](https://github.com/getsentry/github-workflows/pull/70))
 
 ## 2.9.0
 
