@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.9.1
+
+### Fixes
+
+- Danger - fix pinned action check if the ref is at the end of the file ()
+
 ## 2.9.0
 
 ### Fixes

@@ -146,7 +146,7 @@ async function checkActionsArePinned() {
 
   const usesRegex = /^\+? *uses:/;
   const usesActionRegex =
-    /^\+? *uses: *(?<user>[^\/]+)\/(?<action>[^@]+)@(?<ref>[^ ]*)/;
+    /^\+? *uses: *(?<user>[^\/]+)\/(?<action>[^@]+)@(?<ref>[^\s]+)/;
   const usesLocalRegex = /^\+? *uses: *\.\//; // e.g. 'uses: ./.github/actions/something'
   const shaRegex = /^[a-f0-9]{40}$/;
   const whitelistedUsers = ["getsentry", "actions", "github"];
