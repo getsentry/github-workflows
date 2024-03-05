@@ -9,6 +9,7 @@
 ### Dependencies
 
 - Bump `actions/checkout` from v3 to v4 ([#72](https://github.com/getsentry/github-workflows/pull/72))
+- Bump `styfle/cancel-workflow-action` from v0.12.0 to v0.12.1 ([#73](https://github.com/getsentry/github-workflows/pull/73))
 
 ## 2.9.1
 
