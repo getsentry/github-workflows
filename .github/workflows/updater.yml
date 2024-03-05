@@ -145,27 +145,12 @@ jobs:
               Write-Output "::warning::Target branch '$prBranch' has been changed manually - skipping updater to avoid overwriting these changes."
           }
 
-      - name: Fetch an existing PR
-        if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
-        uses: octokit/request-action@89697eb6635e52c6e1e5559f15b5c91ba5100cb0 # v2.1.9
-        id: existing-pr-request
-        with:
-          route: GET /repos/${{ github.repository }}/pulls?base={base}&head={head}
-          head: '${{ github.repository }}:${{ steps.root.outputs.prBranch }}'
-          base: '${{ steps.root.outputs.baseBranch }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Parse the existing PR URL
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         id: existing-pr
         run: |
-          $data = @'
-          ${{ steps.existing-pr-request.outputs.data }}
-          '@
-
+          $data = gh api repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository }}:${{ steps.root.outputs.prBranch }}
           $prCount = $($data | jq '. | length')
-
           if ($prCount -eq '0')
           {
               "url=" | Tee-Object $env:GITHUB_OUTPUT -Append
