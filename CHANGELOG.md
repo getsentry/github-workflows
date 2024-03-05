@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Bump updater action dependency to fix an issue when creating/updating a PR ([#71](https://github.com/getsentry/github-workflows/pull/71))
+
 ## 2.9.1
 
 ### Fixes

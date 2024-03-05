@@ -195,7 +195,7 @@ jobs:
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # pin#v5.0.2
+        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
         id: create-pr
         with:
           base: ${{ steps.root.outputs.baseBranch }}
@@ -258,7 +258,7 @@ jobs:
       # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
       - name: Update the PR
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # pin#v5.0.2
+        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
         with:
           base: ${{ steps.root.outputs.baseBranch }}
           branch: ${{ steps.root.outputs.prBranch }}
