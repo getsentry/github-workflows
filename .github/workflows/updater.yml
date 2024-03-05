@@ -151,21 +151,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $data = gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ steps.root.outputs.prBranch }}'
-          Write-Host $data
-          $prCount = $($data | jq '. | length')
-          if ($prCount -eq '0')
+          $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
+          if ($urls.Length -eq 0)
           {
               "url=" | Tee-Object $env:GITHUB_OUTPUT -Append
           }
-          elseif ($prCount -eq '1')
+          elseif ($urls.Length -eq 1)
           {
-              $url = $($data | Select-String '"html_url": +"(.*/pull/.*)"').Matches[0].Groups[1].Value
-              "url=$url" | Tee-Object $env:GITHUB_OUTPUT -Append
+              "url=$($urls[0])" | Tee-Object $env:GITHUB_OUTPUT -Append
           }
           else
           {
-              throw "Unexpected number of PRs matched: $prCount"
+              throw "Unexpected number of PRs matched ($($urls.Length)): $urls"
           }
 
       - run: git --no-pager diff
