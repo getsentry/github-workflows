@@ -149,7 +149,7 @@ jobs:
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         id: existing-pr
         run: |
-          $data = gh api repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository }}:${{ steps.root.outputs.prBranch }}
+          $data = gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ steps.root.outputs.prBranch }}'
           $prCount = $($data | jq '. | length')
           if ($prCount -eq '0')
           {
