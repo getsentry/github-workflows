@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changes
+
+- Remove `octokit/request-action` dependency in favor of using `gh api` ([#74](https://github.com/getsentry/github-workflows/pull/74))
+
 ### Fixes
 
 - Bump updater action dependency to fix an issue when creating/updating a PR ([#71](https://github.com/getsentry/github-workflows/pull/71))
