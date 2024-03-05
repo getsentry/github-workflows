@@ -148,6 +148,8 @@ jobs:
       - name: Parse the existing PR URL
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         id: existing-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $data = gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ steps.root.outputs.prBranch }}'
           Write-Host $data
