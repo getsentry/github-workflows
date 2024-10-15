@@ -4,7 +4,7 @@
 
 ### Features
 
-- Add support for prettier-ignore notes on `CHANGELOG.md`
+- Add support for prettier-ignore notes on `CHANGELOG.md` ([#75](https://github.com/getsentry/github-workflows/pull/75))
 
 Example of notes before `## Unreleased` Header on `CHANGELOG.md`
 
