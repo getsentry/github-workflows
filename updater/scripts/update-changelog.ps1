@@ -30,7 +30,6 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
 
-    # .
     if ($line -match "changelog" -or $line.Trim().Length -eq 0)
     {
         continue
