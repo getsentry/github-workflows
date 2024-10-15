@@ -36,7 +36,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     }
 
     # Skip the prettier comment that may be found before the Unreleased version.
-    if ($line -match "<!-- prettier-ignore-start -->" -and $skipPrettier -eq $false)
+    if ($line -match "<!-- prettier-ignore-start -->" -and -not $skipPrettier)
     {
         $skipPrettier = $true
         continue
@@ -51,7 +51,7 @@ for ($i = 0; $i -lt $lines.Count; $i++)
         }
         throw "Prettier comment format - expected <!-- prettier-ignore-end -->, but found: '$line'"
     }
-    # End of prettier comment 
+    # End of prettier comment
 
     # Next, we expect a header for the current version or "Unreleased".
     if (-not $line.StartsWith("#"))
