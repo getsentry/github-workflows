@@ -30,6 +30,12 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
 
+    # .
+    if ($line -match "changelog" -or $line.Trim().Length -eq 0)
+    {
+        continue
+    }
+
     # Skip the prettier comment that may be found before the Unreleased version.
     if ($line -match "<!-- prettier-ignore-start -->" -and $skipPrettier -eq $false)
     {
@@ -47,12 +53,6 @@ for ($i = 0; $i -lt $lines.Count; $i++)
         throw "Prettier comment format - expected <!-- prettier-ignore-end -->, but found: '$line'"
     }
     # End of prettier comment 
-
-    # .
-    if ($line -match "changelog" -or $line.Trim().Length -eq 0)
-    {
-        continue
-    }
 
     # Next, we expect a header for the current version or "Unreleased".
     if (-not $line.StartsWith("#"))
