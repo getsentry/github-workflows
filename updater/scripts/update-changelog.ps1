@@ -23,16 +23,35 @@ Write-Host "Found changelog: $file"
 
 [string[]]$lines = Get-Content $file
 
+$skippingComment = $false
+
 # Make sure that there's an `Unreleased` header
 for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
 
-    # Skip the "Changelog" header and empty lines at the beginning.
     if ($line -match "changelog" -or $line.Trim().Length -eq 0)
     {
         continue
     }
+
+    # Skip the prettier comment that may be found before the Unreleased version.
+    if ($line -match "<!-- prettier-ignore-start -->" -and -not $skippingComment)
+    {
+        $skippingComment = $true
+        continue
+    }
+    if ($skippingComment) {
+        if ($line -match "<!-- prettier-ignore-end -->") {
+            $skippingComment = $false
+            continue
+        }
+        if ($line -match "^> ") {
+            continue
+        }
+        throw "Prettier comment format - expected <!-- prettier-ignore-end -->, but found: '$line'"
+    }
+    # End of prettier comment
 
     # Next, we expect a header for the current version or "Unreleased".
     if (-not $line.StartsWith("#"))
@@ -59,6 +78,26 @@ for ($i = 0; $i -lt $lines.Count; $i++)
     {
         continue
     }
+
+    # Skip the prettier comment that may be found before the Unreleased version.
+    if ($line -match "<!-- prettier-ignore-start -->" -and -not $skippingComment)
+    {
+        $skippingComment = $true
+        continue
+    }
+    if ($skippingComment) {
+
+        if ($line -match "<!-- prettier-ignore-end -->") {
+            $skippingComment = $false
+            continue
+        }
+        if ($line -match "^> ") {
+            continue
+        }
+        throw "Prettier comment format - expected <!-- prettier-ignore-end -->, but found: '$line'"
+    }
+    # End of prettier comment
+    
 
     # Next, we expect a header
     if (-not $line.StartsWith("#"))

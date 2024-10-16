@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Add support for prettier-ignore notes on `CHANGELOG.md` ([#75](https://github.com/getsentry/github-workflows/pull/75))
+
+Example of notes before `## Unreleased` Header on `CHANGELOG.md`
+
+<!-- prettier-ignore-start -->
+> [!IMPORTANT]
+> If you are upgrading to the `1.x` versions of the Sentry SDK from `0.x` or below,
+> make sure you follow our [migration guide](https://docs.sentry.io/platforms/SDK/migration/) first.
+<!-- prettier-ignore-end -->
+
 ## 2.10.0
 
 ### Changes
