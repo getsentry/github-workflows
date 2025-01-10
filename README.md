@@ -1,5 +1,7 @@
 # Workflows
 
+test
+
 This repository contains reusable workflows and scripts to be used with GitHub Actions.
 
 ## Updater
