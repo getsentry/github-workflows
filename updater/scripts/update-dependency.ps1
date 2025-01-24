@@ -157,6 +157,33 @@ if ("$Tag" -eq '')
 
     Write-Host "Sorted tags: $tags"
     $latestTag = $tags[-1]
+
+    if (("$originalTag" -ne '') -and ("$latestTag" -ne '') -and ("$latestTag" -ne "$originalTag"))
+    {
+        do
+        {
+            # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
+            # roll back, even though it's not the latest version matching the configured pattern.
+            if ((GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag))
+            {
+                Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
+                $latestTag = $originalTag
+                break
+            }
+
+            # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
+            $refs = $(git ls-remote --tags $url)
+            $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split '[ \t]') | Select-Object -First 1
+            $refLatest = (($refs -match "refs/tags/$latestTag" ) -split '[ \t]') | Select-Object -First 1
+            if ($refOriginal -eq $refLatest)
+            {
+                Write-Host "Latest tag '$latestTag' points to the same commit as the original tag '$originalTag'. Skipping update."
+                $latestTag = $originalTag
+                break
+            }
+        } while ($false)
+    }
+
     $latestTagNice = ($latestTag -match '^[0-9]') ? "v$latestTag" : $latestTag
 
     SetOutput 'originalTag' $originalTag
@@ -168,27 +195,6 @@ if ("$Tag" -eq '')
     if ("$originalTag" -eq "$latestTag")
     {
         return
-    }
-
-    if (("$originalTag" -ne '') -and ("$latestTag" -ne ''))
-    {
-        # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
-        # roll back, even though it's not the latest version matching the configured pattern.
-        if ((GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag))
-        {
-            Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
-            return
-        }
-
-        # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
-        $refs = $(git ls-remote --tags $url)
-        $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split '[ \t]') | Select-Object -First 1
-        $refLatest = (($refs -match "refs/tags/$latestTag" ) -split '[ \t]') | Select-Object -First 1
-        if ($refOriginal -eq $refLatest)
-        {
-            Write-Host "Latest tag '$latestTag' points to the same commit as the original tag '$originalTag'. Skipping update."
-            return
-        }
     }
 
     $Tag = $latestTag
