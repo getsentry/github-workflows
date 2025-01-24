@@ -14,6 +14,7 @@ param(
 )
 
 Set-StrictMode -Version latest
+. "$PSScriptRoot/common.ps1"
 
 if (-not (Test-Path $Path ))
 {
@@ -170,15 +171,10 @@ if ("$Tag" -eq "")
 
     # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
     # roll back, even though it's not the latest version matching the configured pattern.
-    try {
-        if ([System.Management.Automation.SemanticVersion]::Parse(($originalTag -replace '^v', '')) `
-            -ge [System.Management.Automation.SemanticVersion]::Parse(($latestTag -replace '^v', '')))
-        {
-            Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
-            return
-        }
-    } catch {
-        Write-Warning "Failed to parse semantic version '$value': $_"
+    if ((GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag))
+    {
+        Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
+        return
     }
 
     # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
