@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Fix sorting prerelease versions ([#78](https://github.com/getsentry/github-workflows/pull/78))
+
+### Dependencies
+
+- Bump Workflow args test script from latest to v2.11.0 ([#80](https://github.com/getsentry/github-workflows/pull/80))
+  - [changelog](https://github.com/getsentry/github-workflows/blob/main/CHANGELOG.md#v2110)
+  - [diff](https://github.com/getsentry/github-workflows/compare/latest...v2.11.0)
+
 ## 2.11.0
 
 ### Features
