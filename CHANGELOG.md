@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Fix sorting prerelease versions ([#78](https://github.com/getsentry/github-workflows/pull/78))
+
 ## 2.11.0
 
 ### Features
