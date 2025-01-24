@@ -10,8 +10,11 @@ function GetComparableVersion([Parameter(Mandatory = $true)][string] $value)
     try {
         [System.Management.Automation.SemanticVersion]::Parse($value)
     } catch {
-        Write-Error "Failed to parse semantic version '$value': $_"
+        Write-Warning "Failed to parse semantic version '$value': $_"
+        $null
     }
 }
 
-$List | Sort-Object -Property @{Expression = { GetComparableVersion $_ } }
+$List `
+    | Where-Object { $null -ne (GetComparableVersion $_)  } `
+    | Sort-Object -Property @{Expression = { GetComparableVersion $_ } }
