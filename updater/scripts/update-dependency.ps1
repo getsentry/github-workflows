@@ -46,8 +46,9 @@ if (-not $isSubmodule)
             if (Get-Command 'chmod' -ErrorAction SilentlyContinue)
             {
                 chmod +x $Path
-                if ($LastExitCode -ne 0) {
-                    throw "chmod failed";
+                if ($LastExitCode -ne 0)
+                {
+                    throw 'chmod failed';
                 }
             }
             try
@@ -70,18 +71,18 @@ if (-not $isSubmodule)
         {
             switch ($action)
             {
-                "get-version"
+                'get-version'
                 {
                     return (Get-Content $Path -Raw | ConvertFrom-StringData).version
                 }
-                "get-repo"
+                'get-repo'
                 {
                     return (Get-Content $Path -Raw | ConvertFrom-StringData).repo
                 }
-                "set-version"
+                'set-version'
                 {
                     $content = Get-Content $Path
-                    $content = $content -replace "^(?<prop>version *= *).*$", "`${prop}$value"
+                    $content = $content -replace '^(?<prop>version *= *).*$', "`${prop}$value"
                     $content | Out-File $Path
 
                     $readVersion = (Get-Content $Path -Raw | ConvertFrom-StringData).version
@@ -100,7 +101,7 @@ if (-not $isSubmodule)
     }
 }
 
-if ("$Tag" -eq "")
+if ("$Tag" -eq '')
 {
     if ($isSubmodule)
     {
@@ -112,7 +113,7 @@ if ("$Tag" -eq "")
             git fetch --tags
             [string[]]$tags = $(git tag --list)
             $url = $(git remote get-url origin)
-            $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
+            $mainBranch = $(git remote show origin | Select-String 'HEAD branch: (.*)').Matches[0].Groups[1].Value
         }
         finally
         {
@@ -126,9 +127,9 @@ if ("$Tag" -eq "")
 
         # Get tags for a repo without cloning.
         [string[]]$tags = $(git ls-remote --refs --tags $url)
-        $tags = $tags | ForEach-Object { ($_ -split "\s+")[1] -replace '^refs/tags/', '' }
+        $tags = $tags | ForEach-Object { ($_ -split '\s+')[1] -replace '^refs/tags/', '' }
 
-        $headRef = ($(git ls-remote $url HEAD) -split "\s+")[0]
+        $headRef = ($(git ls-remote $url HEAD) -split '\s+')[0]
         if ("$headRef" -eq '')
         {
             throw "Couldn't determine repository head (no ref returned by ls-remote HEAD"
@@ -156,35 +157,38 @@ if ("$Tag" -eq "")
 
     Write-Host "Sorted tags: $tags"
     $latestTag = $tags[-1]
-    $latestTagNice = ($latestTag -match "^[0-9]") ? "v$latestTag" : $latestTag
+    $latestTagNice = ($latestTag -match '^[0-9]') ? "v$latestTag" : $latestTag
 
-    SetOutput "originalTag" $originalTag
-    SetOutput "latestTag" $latestTag
-    SetOutput "latestTagNice" $latestTagNice
-    SetOutput "url" $url
-    SetOutput "mainBranch" $mainBranch
+    SetOutput 'originalTag' $originalTag
+    SetOutput 'latestTag' $latestTag
+    SetOutput 'latestTagNice' $latestTagNice
+    SetOutput 'url' $url
+    SetOutput 'mainBranch' $mainBranch
 
     if ("$originalTag" -eq "$latestTag")
     {
         return
     }
 
-    # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
-    # roll back, even though it's not the latest version matching the configured pattern.
-    if ((GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag))
+    if (("$originalTag" -ne '') -and ("$latestTag" -ne ''))
     {
-        Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
-        return
-    }
+        # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
+        # roll back, even though it's not the latest version matching the configured pattern.
+        if ((GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag))
+        {
+            Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
+            return
+        }
 
-    # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
-    $refs = $(git ls-remote --tags $url)
-    $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split "[ \t]") | Select-Object -First 1
-    $refLatest = (($refs -match "refs/tags/$latestTag" ) -split "[ \t]") | Select-Object -First 1
-    if ($refOriginal -eq $refLatest)
-    {
-        Write-Host "Latest tag '$latestTag' points to the same commit as the original tag '$originalTag'. Skipping update."
-        return
+        # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
+        $refs = $(git ls-remote --tags $url)
+        $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split '[ \t]') | Select-Object -First 1
+        $refLatest = (($refs -match "refs/tags/$latestTag" ) -split '[ \t]') | Select-Object -First 1
+        if ($refOriginal -eq $refLatest)
+        {
+            Write-Host "Latest tag '$latestTag' points to the same commit as the original tag '$originalTag'. Skipping update."
+            return
+        }
     }
 
     $Tag = $latestTag

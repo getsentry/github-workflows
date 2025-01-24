@@ -1,5 +1,5 @@
 
-function GetComparableVersion([Parameter(Mandatory = $true)][string] $value)
+function GetComparableVersion([string] $value)
 {
     $value = $value -replace '^v', ''
     try {
