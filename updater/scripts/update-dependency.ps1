@@ -167,6 +167,30 @@ if ("$Tag" -eq "")
     {
         return
     }
+
+    # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
+    # roll back, even though it's not the latest version matching the configured pattern.
+    try {
+        if ([System.Management.Automation.SemanticVersion]::Parse(($originalTag -replace '^v', '')) `
+            -ge [System.Management.Automation.SemanticVersion]::Parse(($latestTag -replace '^v', '')))
+        {
+            Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
+            return
+        }
+    } catch {
+        Write-Warning "Failed to parse semantic version '$value': $_"
+    }
+
+    # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
+    $refs = $(git ls-remote --tags $url)
+    $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split "[ \t]") | Select-Object -First 1
+    $refLatest = (($refs -match "refs/tags/$latestTag" ) -split "[ \t]") | Select-Object -First 1
+    if ($refOriginal -eq $refLatest)
+    {
+        Write-Host "Latest tag '$latestTag' points to the same commit as the original tag '$originalTag'. Skipping update."
+        return
+    }
+
     $Tag = $latestTag
 }
 
