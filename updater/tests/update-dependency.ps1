@@ -23,19 +23,19 @@ $repoUrl = 'https://github.com/getsentry/github-workflows'
 $currentVersion = (git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' $repoUrl `
     | Select-Object -Last 1 | Select-String -Pattern 'refs/tags/(.*)$').Matches.Groups[1].Value
 
-RunTest "properties-file" {
+RunTest 'properties-file' {
     $testFile = "$testDir/test.properties"
-    @("repo=$repoUrl", "version  =   none") | Out-File $testFile
+    @("repo=$repoUrl", 'version  =   none') | Out-File $testFile
     UpdateDependency $testFile
     AssertEqual @("repo=$repoUrl", "version  =   $currentVersion") (Get-Content $testFile)
 }
 
-RunTest "version pattern match" {
+RunTest 'version pattern match' {
     $testFile = "$testDir/test.properties"
     $repo = 'https://github.com/getsentry/sentry-cli'
-    @("repo=$repo", "version=0") | Out-File $testFile
+    @("repo=$repo", 'version=0') | Out-File $testFile
     UpdateDependency $testFile '^0\.'
-    AssertEqual @("repo=$repo", "version=0.28.0") (Get-Content $testFile)
+    AssertEqual @("repo=$repo", 'version=0.28.0') (Get-Content $testFile)
 }
 
 function _testOutput([string[]] $output)
@@ -48,27 +48,27 @@ function _testOutput([string[]] $output)
     AssertContains $output 'mainBranch=master'
 }
 
-RunTest "writes output" {
+RunTest 'writes output' {
     $testFile = "$testDir/test.properties"
     $repo = 'https://github.com/getsentry/sentry-cli'
-    @("repo=$repo", "version=0") | Out-File $testFile
+    @("repo=$repo", 'version=0') | Out-File $testFile
     $stdout = UpdateDependency $testFile '^0\.'
     _testOutput $stdout
 }
 
-RunTest "writes to env:GITHUB_OUTPUT" {
+RunTest 'writes to env:GITHUB_OUTPUT' {
     $testFile = "$testDir/test.properties"
     $repo = 'https://github.com/getsentry/sentry-cli'
-    @("repo=$repo", "version=0") | Out-File $testFile
+    @("repo=$repo", 'version=0') | Out-File $testFile
     $outFile = "$testDir/outfile"
     New-Item $outFile -ItemType File | Out-Null
     try
     {
         $env:GITHUB_OUTPUT = $outFile
         $stdout = UpdateDependency $testFile '^0\.'
-        Write-Host "Testing standard output"
+        Write-Host 'Testing standard output'
         _testOutput $stdout
-        Write-Host "Testing env:GITHUB_OUTPUT"
+        Write-Host 'Testing env:GITHUB_OUTPUT'
         _testOutput (Get-Content $outFile)
     }
     finally
@@ -80,15 +80,23 @@ RunTest "writes to env:GITHUB_OUTPUT" {
 }
 
 # Note: without custom sorting, this would have yielded 'v1.7.31_gradle_plugin'
-RunTest "version sorting must work properly" {
+RunTest 'version sorting must work properly' {
     $testFile = "$testDir/test.properties"
     $repo = 'https://github.com/getsentry/sentry-java'
-    @("repo=$repo", "version=0") | Out-File $testFile
+    @("repo=$repo", 'version=0') | Out-File $testFile
     UpdateDependency $testFile '^v?[123].*$'
-    AssertEqual @("repo=$repo", "version=3.2.1") (Get-Content $testFile)
+    AssertEqual @("repo=$repo", 'version=3.2.1') (Get-Content $testFile)
 }
 
-RunTest "powershell-script" {
+RunTest 'will not update from a later release to an earlier release' {
+    $testFile = "$testDir/test.properties"
+    $repo = 'https://github.com/getsentry/sentry-java'
+    @("repo=$repo", 'version=999.0.0-beta.1') | Out-File $testFile
+    UpdateDependency $testFile
+    AssertEqual @("repo=$repo", 'version=999.0.0-beta.1') (Get-Content $testFile)
+}
+
+RunTest 'powershell-script' {
     $testFile = "$testDir/test.version"
     '' | Out-File $testFile
     $testScript = "$testDir/test.ps1"
@@ -109,7 +117,7 @@ switch ($action)
     AssertEqual $currentVersion (Get-Content $testFile)
 }
 
-RunTest "bash-script" {
+RunTest 'bash-script' {
     $testFile = "$testDir/test.version"
     '' | Out-File $testFile
     $testScript = "$testDir/test.sh"
@@ -136,18 +144,18 @@ esac
 '@ | Out-File $testScript
     UpdateDependency $testScript
     AssertEqual $currentVersion (Get-Content $testFile)
-} -skipReason ($IsWindows ? "on Windows" : '')
+} -skipReason ($IsWindows ? 'on Windows' : '')
 
-RunTest "powershell-script fails in get-version" {
+RunTest 'powershell-script fails in get-version' {
     $testScript = "$testDir/test.ps1"
     @'
 throw "Failure"
 '@ | Out-File $testScript
 
-    AssertFailsWith "get-version  | output: Failure" { UpdateDependency $testScript }
+    AssertFailsWith 'get-version  | output: Failure' { UpdateDependency $testScript }
 }
 
-RunTest "bash-script fails in get-version" {
+RunTest 'bash-script fails in get-version' {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
@@ -155,10 +163,10 @@ echo "Failure"
 exit 1
 '@ | Out-File $testScript
 
-    AssertFailsWith "get-version  | output: Failure" { UpdateDependency $testScript }
-} -skipReason ($IsWindows ? "on Windows" : '')
+    AssertFailsWith 'get-version  | output: Failure' { UpdateDependency $testScript }
+} -skipReason ($IsWindows ? 'on Windows' : '')
 
-RunTest "powershell-script fails in get-repo" {
+RunTest 'powershell-script fails in get-repo' {
     $testScript = "$testDir/test.ps1"
     @'
 param([string] $action, [string] $value)
@@ -168,10 +176,10 @@ if ($action -eq "get-repo")
 }
 '@ | Out-File $testScript
 
-    AssertFailsWith "get-repo  | output: Failure" { UpdateDependency $testScript }
+    AssertFailsWith 'get-repo  | output: Failure' { UpdateDependency $testScript }
 }
 
-RunTest "bash-script fails in get-repo" {
+RunTest 'bash-script fails in get-repo' {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
@@ -186,10 +194,10 @@ get-repo)
 esac
 '@ | Out-File $testScript
 
-    AssertFailsWith "get-repo  | output: Failure" { UpdateDependency $testScript }
-} -skipReason ($IsWindows ? "on Windows" : '')
+    AssertFailsWith 'get-repo  | output: Failure' { UpdateDependency $testScript }
+} -skipReason ($IsWindows ? 'on Windows' : '')
 
-RunTest "powershell-script fails in set-version" {
+RunTest 'powershell-script fails in set-version' {
     $testScript = "$testDir/test.ps1"
     @'
 param([string] $action, [string] $value)
@@ -206,7 +214,7 @@ switch ($action)
     AssertFailsWith "set-version $currentVersion | output: Failure" { UpdateDependency $testScript }
 }
 
-RunTest "bash-script fails in set-version" {
+RunTest 'bash-script fails in set-version' {
     $testScript = "$testDir/test.sh"
     @'
 #!/usr/bin/env bash
@@ -228,4 +236,4 @@ esac
 '@ | Out-File $testScript
 
     AssertFailsWith "set-version $currentVersion | output: Failure" { UpdateDependency $testScript }
-} -skipReason ($IsWindows ? "on Windows" : '')
+} -skipReason ($IsWindows ? 'on Windows' : '')

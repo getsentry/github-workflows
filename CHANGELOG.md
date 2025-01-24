@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Don't update from a manually-updated prerelease to a latest stable release that is earlier than the prerelease ([#78](https://github.com/getsentry/github-workflows/pull/78))
+
 ## 2.11.0
 
 ### Features
