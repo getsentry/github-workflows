@@ -103,4 +103,22 @@ Features, fixes and improvements in this release have been contributed by:
             throw "Expected changelog to contain message '$msg'"
         }
     }
+
+    It 'supports cross-repo links' {
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/getsentry/sentry-native' -OldTag '0.7.17' -NewTag '0.7.18'
+        $expected = @'
+## Changelog
+### 0.7.18
+
+**Features**:
+
+- Add support for Xbox Series X/S. ([#1100](https://github-redirect.dependabot.com/getsentry/sentry-native/pull/1100))
+- Add option to set debug log level. ([#1107](https://github-redirect.dependabot.com/getsentry/sentry-native/pull/1107))
+- Add `traces_sampler` ([#1108](https://github-redirect.dependabot.com/getsentry/sentry-native/pull/1108))
+- Provide support for C++17 compilers when using the `crashpad` backend. ([#1110](https://github-redirect.dependabot.com/getsentry/sentry-native/pull/1110), [crashpad#116](https://github-redirect.dependabot.com/getsentry/crashpad/pull/116), [mini_chromium#1](https://github-redirect.dependabot.com/getsentry/mini_chromium/pull/1))
+'@
+
+        $actual | Should -Be $expected
+    }
 }
