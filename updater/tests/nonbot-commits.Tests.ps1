@@ -1,35 +1,37 @@
 Set-StrictMode -Version latest
 
-. "$PSScriptRoot/common/test-utils.ps1"
-
-foreach ($repoUrl in @('https://github.com/getsentry/github-workflows', 'git@github.com:getsentry/github-workflows.git'))
-{
-    function NonBotCommits([Parameter(Mandatory = $true)][string] $branch)
-    {
-        $result = & "$PSScriptRoot/../scripts/nonbot-commits.ps1" -RepoUrl $repoUrl -MainBranch 'main' -PrBranch $branch
-        if (-not $?)
-        {
-            throw $result
+Describe 'nonbot-commits' {
+    Context 'Repo <_>' -ForEach @('https://github.com/getsentry/github-workflows', 'git@github.com:getsentry/github-workflows.git') {
+        BeforeEach {
+            $repoUrl = $_
+            function NonBotCommits([Parameter(Mandatory = $true)][string] $branch)
+            {
+                $result = & "$PSScriptRoot/../scripts/nonbot-commits.ps1" -RepoUrl $repoUrl -MainBranch 'main' -PrBranch $branch
+                if (-not $?)
+                {
+                    throw $result
+                }
+                elseif ($LASTEXITCODE -ne 0)
+                {
+                    throw "Script finished with exit code $LASTEXITCODE"
+                }
+                $result
+            }
         }
-        elseif ($LASTEXITCODE -ne 0)
-        {
-            throw "Script finished with exit code $LASTEXITCODE"
+
+        It 'empty-if-all-commits-by-bot' {
+            $commits = NonBotCommits 'deps/updater/tests/sentry-cli.properties'
+            $commits | Should -BeNullOrEmpty
         }
-        $result
-    }
 
-    RunTest 'empty-if-all-commits-by-bot' {
-        $commits = NonBotCommits 'deps/updater/tests/sentry-cli.properties'
-        AssertEqual '' "$commits"
-    }
+        It 'empty-if-branch-doesnt-exist' {
+            $commits = NonBotCommits 'non-existent-branch'
+            $commits | Should -BeNullOrEmpty
+        }
 
-    RunTest 'empty-if-branch-doesnt-exist' {
-        $commits = NonBotCommits 'non-existent-branch'
-        AssertEqual '' "$commits"
-    }
-
-    RunTest 'non-empty-if-changed' {
-        $commits = NonBotCommits 'test/nonbot-commits'
-        AssertEqual '0b7d9cc test: keep this branch' "$commits"
+        It 'non-empty-if-changed' {
+            $commits = NonBotCommits 'test/nonbot-commits'
+            $commits | Should -Be '0b7d9cc test: keep this branch'
+        }
     }
 }
