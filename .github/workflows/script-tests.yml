@@ -20,11 +20,6 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Install make
-        if: ${{ matrix.host == 'macos' }}
-        run: |
-          brew install make
-          echo "$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
-
-      - run: make test
+      - run: Invoke-Pester
         working-directory: updater
+        shell: pwsh
