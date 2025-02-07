@@ -1,10 +1,9 @@
-. "$PSScriptRoot/common/test-utils.ps1"
 
-$testCases = Get-ChildItem "$PSScriptRoot/testdata/changelog/"
+$testCases =
 
-foreach ($testCase in $testCases)
-{
-    RunTest $testCase {
+Describe 'update-changelog' {
+    It '<_>' -ForEach @(Get-ChildItem "$PSScriptRoot/testdata/changelog/") {
+        $testCase = $_
         Copy-Item "$testCase/CHANGELOG.md.original" "$testCase/CHANGELOG.md"
 
         pwsh -WorkingDirectory $testCase -File "$PSScriptRoot/../scripts/update-changelog.ps1" `
@@ -16,6 +15,6 @@ foreach ($testCase in $testCases)
             -NewTag '7.17.0' `
             -Section 'Dependencies'
 
-        AssertEqual (Get-Content "$testCase/CHANGELOG.md.expected") (Get-Content "$testCase/CHANGELOG.md")
+        Get-Content "$testCase/CHANGELOG.md" | Should -Be (Get-Content "$testCase/CHANGELOG.md.expected")
     }
 }
