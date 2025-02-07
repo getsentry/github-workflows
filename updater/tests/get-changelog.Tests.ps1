@@ -89,6 +89,25 @@ Features, fixes and improvements in this release have been contributed by:
         $actual | Should -Be $expected
     }
 
+    It 'Does not show versions older than OldTag even if OldTag is missing' {
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/getsentry/github-workflows' -OldTag '2.1.5' -NewTag '2.2.1'
+        $actual | Should -Be @'
+## Changelog
+### 2.2.1
+
+#### Fixes
+
+- Support comments when parsing pinned actions in Danger ([#40](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/40))
+
+### 2.2.0
+
+#### Features
+
+- Danger - check for that actions are pinned to a commit ([#39](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/39))
+'@
+    }
+
     It 'truncates too long text' {
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
             -RepoUrl 'https://github.com/getsentry/sentry-cli' -OldTag '1.0.0' -NewTag '2.4.0'

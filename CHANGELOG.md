@@ -6,6 +6,7 @@
 
 - Don't update from a manually-updated prerelease to a latest stable release that is earlier than the prerelease ([#78](https://github.com/getsentry/github-workflows/pull/78))
 - Cross-repo links in changelog notes ([#82](https://github.com/getsentry/github-workflows/pull/82))
+- Truncate changelog to nearest SemVer even if actual previous version is missing ([#84](https://github.com/getsentry/github-workflows/pull/84))
 
 ## 2.11.0
 

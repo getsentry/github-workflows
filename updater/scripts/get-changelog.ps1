@@ -40,32 +40,63 @@ finally
     Remove-Item -Recurse -Force -ErrorAction Continue -Path $tmpDir
 }
 
-$foundFirst = $false
+$startIndex = -1
+$endIndex = -1
 $changelog = ''
 for ($i = 0; $i -lt $lines.Count; $i++)
 {
     $line = $lines[$i]
 
-    if (-not $foundFirst)
+    if ($startIndex -lt 0)
     {
         if ($line -match "^#+ +v?$NewTag\b")
         {
-            $foundFirst = $true
-        }
-        else
-        {
-            continue
+            $startIndex = $i
         }
     }
     elseif ($line -match "^#+ +v?$OldTag\b")
     {
+        $endIndex = $i - 1
         break
     }
-
-    $changelog += "$line`n"
 }
 
-$changelog = $changelog.Trim()
+# If the changelog doesn't have a section for the oldTag, stop at the first SemVer that's lower than oldTag.
+if ($endIndex -lt 0)
+{
+    $endIndex = $lines.Count - 1 # fallback, may be overwritten below
+    try
+    {
+        $semverOldTag = [System.Management.Automation.SemanticVersion]::Parse($OldTag)
+        for ($i = $startIndex; $i -lt $lines.Count; $i++)
+        {
+            $line = $lines[$i]
+            if ($line -match '^#+ +v?([0-9]+.*)$')
+            {
+                try
+                {
+                    if ($semverOldTag -ge [System.Management.Automation.SemanticVersion]::Parse($matches[1]))
+                    {
+                        $endIndex = $i - 1
+                        break
+                    }
+                }
+                catch {}
+            }
+        }
+    }
+    catch {}
+}
+
+# Slice changelog lines from startIndex to endIndex.
+if ($startIndex -ge 0)
+{
+    $changelog = ($lines[$startIndex..$endIndex] -join "`n").Trim()
+}
+else
+{
+    $changelog = ''
+}
 if ($changelog.Length -gt 1)
 {
     $changelog = "# Changelog`n$changelog"
