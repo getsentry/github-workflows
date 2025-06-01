@@ -1,12 +1,10 @@
 # Changelog
 
-## 2.13.0
+## 2.12.0
 
 ### Features
 
 - Gzip-compressed HTTP requests ([#88](https://github.com/getsentry/github-workflows/pull/88))
-
-## 2.12.0
 
 ### Fixes
 
