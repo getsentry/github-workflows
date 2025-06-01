@@ -8,6 +8,7 @@ import sys
 import threading
 import binascii
 import json
+import gzip
 
 uri = urlparse(sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1:8000')
 apiOrg = 'org'
@@ -135,6 +136,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.command == "POST" and 'Content-Length' in self.headers:
             length = int(self.headers['Content-Length'])
             content = self.rfile.read(length)
+            if self.headers.get("Content-Encoding") == "gzip":
+                content = gzip.decompress(content)
             try:
                 return content.decode("utf-8")
             except:

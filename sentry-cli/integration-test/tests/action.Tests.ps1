@@ -72,4 +72,28 @@ helloworld
         $result.Envelopes()[0].Length | Should -Be 357
         $result.Envelopes()[1].Length | Should -Be 84
     }
+
+    It "collects gzip compressed envelopes" {
+        $result = Invoke-SentryServer {
+            Param([string]$url)
+            $ms = New-Object System.IO.MemoryStream
+            $gzip = New-Object System.IO.Compression.GZipStream($ms, [System.IO.Compression.CompressionMode]::Compress)
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes(@'
+{"event_id":"9ec79c33ec9942ab8353589fcb2e04dc","dsn":"https://e12d836b15bb49d7bbf99e64295d995b:@sentry.io/42"}
+{"type":"attachment","length":10,"content_type":"text/plain","filename":"hello.txt"}
+\xef\xbb\xbfHello\r\n
+{"type":"event","length":41,"content_type":"application/json","filename":"application.log"}
+{"message":"hello world","level":"error"}
+'@)
+            $gzip.Write($bytes, 0, $bytes.Length)
+            $gzip.Close()
+            $body = $ms.ToArray()
+            $ms.Close()
+            Invoke-WebRequest -Uri "$url/api/0/envelope" -Method Post -Body $body -Headers @{ "Content-Encoding" = "gzip" }
+        }
+        
+        Should -ActualValue $result.HasErrors() -BeFalse
+        $result.Envelopes().Length | Should -Be 1
+        $result.Envelopes()[0].Length | Should -Be 357
+    }
 }
