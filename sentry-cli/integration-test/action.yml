@@ -16,6 +16,9 @@ runs:
   steps:
     - name: Run tests
       shell: pwsh
+      env:
+        GITHUB_ACTION_PATH: ${{ github.action_path }}
+        INPUT_PATH: ${{ inputs.path }}
       run: |
-        Import-Module -Name ${{ github.action_path }}/action.psm1 -Force
-        Invoke-Pester -Output Detailed '${{ inputs.path }}'
+        Import-Module -Name "$env:GITHUB_ACTION_PATH/action.psm1" -Force
+        Invoke-Pester -Output Detailed "$env:INPUT_PATH"
