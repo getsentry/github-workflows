@@ -40,7 +40,7 @@ function SetOutput([string] $name, $value)
 if (-not $isSubmodule)
 {
     $isScript = $Path -match '\.(ps1|sh)$'
-    $isCMake = $Path -match '\.(cmake|txt)$' -or ((Test-Path $Path -PathType Leaf) -and ((Get-Content $Path -Raw -ErrorAction SilentlyContinue) -match 'FetchContent_Declare'))
+    $isCMake = $Path -match '\.(cmake|txt)$' -or ((Test-Path $Path -PathType Leaf) -and $Path -notmatch '\.(ps1|sh)$' -and ((Get-Content $Path -Raw -ErrorAction SilentlyContinue) -match 'FetchContent_Declare'))
     function DependencyConfig ([Parameter(Mandatory = $true)][string] $action, [string] $value = $null)
     {
         if ($isScript)
@@ -76,9 +76,13 @@ if (-not $isSubmodule)
                 'get-version'
                 {
                     $content = Get-Content $Path -Raw
-                    if ($content -match '(?m)^\s*GIT_TAG\s+([^\s#]+)')
+                    if ($content -match '(?m)^\s*GIT_TAG\s+(?:"([^"]+)"|([^\s#]+))')
                     {
-                        return $Matches[1]
+                        if ($Matches[1]) { 
+                            return $Matches[1] 
+                        } else { 
+                            return $Matches[2] 
+                        }
                     }
                     throw "Could not find GIT_TAG in CMake file $Path"
                 }
@@ -97,9 +101,17 @@ if (-not $isSubmodule)
                     $updated = $false
                     for ($i = 0; $i -lt $content.Length; $i++)
                     {
-                        if ($content[$i] -match '^(\s*GIT_TAG\s+)[^\s#]+(.*)$')
+                        if ($content[$i] -match '^(\s*GIT_TAG\s+)(")([^"]+)(".*)$')
                         {
-                            $content[$i] = $Matches[1] + $value + $Matches[2]
+                            # Quoted version - preserve quotes
+                            $content[$i] = $Matches[1] + $Matches[2] + $value + $Matches[4]
+                            $updated = $true
+                            break
+                        }
+                        elseif ($content[$i] -match '^(\s*GIT_TAG\s+)([^\s#]+)(.*)$')
+                        {
+                            # Unquoted version
+                            $content[$i] = $Matches[1] + $value + $Matches[3]
                             $updated = $true
                             break
                         }

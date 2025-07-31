@@ -346,5 +346,19 @@ switch ($action)
             $content = Get-Content $testFile
             $content[4] | Should -Match "GIT_TAG $currentVersion"
         }
+
+        It 'handles quoted GIT_TAG values' {
+            $testFile = "$testDir/test.cmake"
+            @(
+                'FetchContent_Declare(',
+                '    dependency',
+                "    GIT_REPOSITORY $repoUrl",
+                '    GIT_TAG "v0.0.1"',
+                ')'
+            ) | Out-File $testFile
+            UpdateDependency $testFile
+            $content = Get-Content $testFile
+            $content[3] | Should -Match "GIT_TAG `"$currentVersion`""
+        }
     }
 }
