@@ -39,6 +39,7 @@ function SetOutput([string] $name, $value)
 if (-not $isSubmodule)
 {
     $isScript = $Path -match '\.(ps1|sh)$'
+    $isCMake = $Path -match '\.(cmake|txt)$' -or ((Test-Path $Path -PathType Leaf) -and ((Get-Content $Path -Raw -ErrorAction SilentlyContinue) -match 'FetchContent_Declare'))
     function DependencyConfig ([Parameter(Mandatory = $true)][string] $action, [string] $value = $null)
     {
         if ($isScript)
@@ -66,6 +67,60 @@ if (-not $isSubmodule)
                 throw "Script execution failed: $Path $action $value | output: $result"
             }
             return $result
+        }
+        elseif ($isCMake)
+        {
+            switch ($action)
+            {
+                'get-version'
+                {
+                    $content = Get-Content $Path -Raw
+                    if ($content -match '(?m)^\s*GIT_TAG\s+([^\s#]+)')
+                    {
+                        return $Matches[1]
+                    }
+                    throw "Could not find GIT_TAG in CMake file $Path"
+                }
+                'get-repo'
+                {
+                    $content = Get-Content $Path -Raw
+                    if ($content -match '(?m)^\s*GIT_REPOSITORY\s+([^\s]+)')
+                    {
+                        return $Matches[1]
+                    }
+                    throw "Could not find GIT_REPOSITORY in CMake file $Path"
+                }
+                'set-version'
+                {
+                    $content = Get-Content $Path
+                    $updated = $false
+                    for ($i = 0; $i -lt $content.Length; $i++)
+                    {
+                        if ($content[$i] -match '^(\s*GIT_TAG\s+)[^\s#]+(.*)$')
+                        {
+                            $content[$i] = $Matches[1] + $value + $Matches[2]
+                            $updated = $true
+                            break
+                        }
+                    }
+                    if (-not $updated)
+                    {
+                        throw "Could not find GIT_TAG line to update in CMake file $Path"
+                    }
+                    $content | Out-File $Path
+
+                    # Verify the update worked
+                    $readVersion = DependencyConfig 'get-version'
+                    if ("$readVersion" -ne "$value")
+                    {
+                        throw "Update failed - read-after-write yielded '$readVersion' instead of expected '$value'"
+                    }
+                }
+                Default
+                {
+                    throw "Unknown action $action"
+                }
+            }
         }
         else
         {

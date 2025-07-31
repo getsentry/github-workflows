@@ -247,4 +247,104 @@ switch ($action)
             }
         }
     }
+
+    Context 'cmake-file' {
+        It 'works with FetchContent_Declare' {
+            $testFile = "$testDir/test.cmake"
+            @(
+                'FetchContent_Declare(',
+                '    sentry-native',
+                "    GIT_REPOSITORY $repoUrl",
+                '    GIT_TAG none # 0.9.1',
+                '    GIT_SHALLOW FALSE',
+                '    GIT_SUBMODULES "external/breakpad"',
+                ')'
+            ) | Out-File $testFile
+            UpdateDependency $testFile
+            $content = Get-Content $testFile
+            $content[3] | Should -Match "GIT_TAG $currentVersion"
+            $content[3] | Should -Match '# 0.9.1'  # Comment should be preserved
+        }
+
+        It 'works with CMakeLists.txt' {
+            $testFile = "$testDir/CMakeLists.txt"
+            @(
+                'cmake_minimum_required(VERSION 3.10)',
+                'FetchContent_Declare(',
+                '    some-dependency',
+                "    GIT_REPOSITORY $repoUrl",
+                '    GIT_TAG v0.0.1',
+                ')'
+            ) | Out-File $testFile
+            UpdateDependency $testFile
+            $content = Get-Content $testFile
+            $content[4] | Should -Match "GIT_TAG $currentVersion"
+        }
+
+        It 'handles indented GIT_TAG' {
+            $testFile = "$testDir/test.cmake"
+            @(
+                'FetchContent_Declare(dependency',
+                "        GIT_REPOSITORY $repoUrl",
+                '        GIT_TAG old_version',
+                ')'
+            ) | Out-File $testFile
+            UpdateDependency $testFile
+            $content = Get-Content $testFile
+            $content[2] | Should -Match "^\s+GIT_TAG $currentVersion"
+        }
+
+        It 'version pattern match' {
+            $testFile = "$testDir/test.cmake"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @(
+                'FetchContent_Declare(',
+                '    sentry-cli',
+                "    GIT_REPOSITORY $repo",
+                '    GIT_TAG 0.1.0',
+                ')'
+            ) | Out-File $testFile
+            UpdateDependency $testFile '^0\.'
+            $content = Get-Content $testFile
+            $content[3] | Should -Match 'GIT_TAG 0.28.0'
+        }
+
+        It 'fails when GIT_TAG is missing' {
+            $testFile = "$testDir/test.cmake"
+            @(
+                'FetchContent_Declare(',
+                '    dependency',
+                "    GIT_REPOSITORY $repoUrl",
+                ')'
+            ) | Out-File $testFile
+            { UpdateDependency $testFile } | Should -Throw '*Could not find GIT_TAG*'
+        }
+
+        It 'fails when GIT_REPOSITORY is missing' {
+            $testFile = "$testDir/test.cmake"
+            @(
+                'FetchContent_Declare(',
+                '    dependency',
+                '    GIT_TAG v1.0.0',
+                ')'
+            ) | Out-File $testFile
+            { UpdateDependency $testFile } | Should -Throw '*Could not find GIT_REPOSITORY*'
+        }
+
+        It 'detects FetchContent_Declare in any file' {
+            $testFile = "$testDir/dependency.txt"
+            @(
+                'Some text before',
+                'FetchContent_Declare(',
+                '    dependency',
+                "    GIT_REPOSITORY $repoUrl",
+                '    GIT_TAG v0.0.1',
+                ')',
+                'Some text after'
+            ) | Out-File $testFile
+            UpdateDependency $testFile
+            $content = Get-Content $testFile
+            $content[4] | Should -Match "GIT_TAG $currentVersion"
+        }
+    }
 }
