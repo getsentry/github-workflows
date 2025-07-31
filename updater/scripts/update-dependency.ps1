@@ -2,6 +2,7 @@ param(
     # Path to the dependency, which can be either of the following:
     #  - a submodule
     #  - a [.properties](https://en.wikipedia.org/wiki/.properties) file with `version` (e.g. 1.0.0) and `repo` (e.g. https://github.com/getsentry/dependency)
+    #  - a CMake file (.cmake, CMakeLists.txt) or any file containing FetchContent_Declare with `GIT_REPOSITORY` and `GIT_TAG`
     #  - a script (.sh, .ps1) that takes the executes a given action based on a given argument:
     #    * `get-version` - return the currently specified dependency version
     #    * `get-repo` - return the repository url (e.g.  https://github.com/getsentry/dependency)

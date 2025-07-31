@@ -46,11 +46,20 @@ jobs:
       name: Gradle Plugin
     secrets:
       api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
+  # Update a CMake file with FetchContent_Declare
+  cmake-dep:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: cmake/dependencies.cmake
+      name: CMake Dependency
+    secrets:
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
 ```
 
 ### Inputs
 
-* `path`: Dependency path in the source repository, this can be either a submodule, a .properties file or a shell script.
+* `path`: Dependency path in the source repository, this can be either a submodule, a .properties file, a CMake file, or a shell script.
   * type: string
   * required: true
 * `name`: Name used in the PR title and the changelog entry.
