@@ -69,7 +69,8 @@ async function checkChangelog() {
   // Check if skipped
   if (
     ["ci", "test", "deps", "chore(deps)", "build(deps)"].includes(prFlavor) ||
-    (danger.github.pr.body + "").includes("#skip-changelog")
+    (danger.github.pr.body + "").includes("#skip-changelog") ||
+    (danger.github.pr.labels || []).some(label => label.name === 'skip-changelog')
   ) {
     return;
   }
@@ -126,7 +127,7 @@ Example:
 - ${prTitleFormatted} ([#${danger.github.pr.number}](${danger.github.pr.html_url}))
 \`\`\`
 
-If none of the above apply, you can opt out of this check by adding \`#skip-changelog\` to the PR description.`.trim(),
+If none of the above apply, you can opt out of this check by adding \`#skip-changelog\` to the PR description or adding a \`skip-changelog\` label.`.trim(),
     changelogFile
   );
 }
