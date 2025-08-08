@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Danger - Changelog checks can now additionally be skipped with a `skip-changelog` label ([#94](https://github.com/getsentry/github-workflows/pull/94))
+
 ## 2.12.0
 
 ### Features
