@@ -70,7 +70,7 @@ async function checkChangelog() {
   if (
     ["ci", "test", "deps", "chore(deps)", "build(deps)"].includes(prFlavor) ||
     (danger.github.pr.body + "").includes("#skip-changelog") ||
-    (pr.labels || []).some(label => label.name === 'skip-changelog')
+    (danger.github.pr.labels || []).some(label => label.name === 'skip-changelog')
   ) {
     return;
   }
