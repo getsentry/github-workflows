@@ -78,7 +78,7 @@ jobs:
       - name: Validate dependency name
         run: |
           # Validate that inputs.name contains only safe characters
-          if [[ ! "${{ inputs.name }}" =~ ^[a-zA-Z0-9_\-\./@[:space:]]+$ ]]; then
+          if [[ ! "${{ inputs.name }}" =~ ^[a-zA-Z0-9_\./@[:space:]-]+$ ]]; then
             echo "::error::Invalid dependency name: '${{ inputs.name }}'. Only alphanumeric characters, spaces, and _-./@  are allowed."
             exit 1
           fi
@@ -87,7 +87,7 @@ jobs:
       - name: Validate dependency path
         run: |
           # Validate that inputs.path contains only safe characters
-          if [[ ! "${{ inputs.path }}" =~ ^[a-zA-Z0-9_\-\./]+$ ]]; then
+          if [[ ! "${{ inputs.path }}" =~ ^[a-zA-Z0-9_\./-]+$ ]]; then
             echo "::error::Invalid dependency path: '${{ inputs.path }}'. Only alphanumeric characters and _-./ are allowed."
             exit 1
           fi
