@@ -115,11 +115,11 @@ jobs:
           RUNNER_TEMP: ${{ runner.temp }}
           WORKFLOW_VERSION: ${{ inputs._workflow_version }}
         run: |
-          mkdir -p "$RUNNER_TEMP/ghwf"
-          cd "$RUNNER_TEMP/ghwf"
+          New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ghwf" -Force
+          Set-Location "$env:RUNNER_TEMP/ghwf"
           git init
           git remote add origin https://github.com/getsentry/github-workflows.git
-          git fetch --depth 1 origin "$WORKFLOW_VERSION"
+          git fetch --depth 1 origin "$env:WORKFLOW_VERSION"
           git checkout FETCH_HEAD
 
       - name: Update to the latest version
