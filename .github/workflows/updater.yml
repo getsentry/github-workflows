@@ -116,7 +116,7 @@ jobs:
           WORKFLOW_VERSION: ${{ inputs._workflow_version }}
         run: |
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ghwf" -Force
-          Set-Location "$env:RUNNER_TEMP/ghwf"
+          cd "$env:RUNNER_TEMP/ghwf"
           git init
           git remote add origin https://github.com/getsentry/github-workflows.git
           git fetch --depth 1 origin "$env:WORKFLOW_VERSION"
