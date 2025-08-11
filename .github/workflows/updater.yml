@@ -128,7 +128,8 @@ jobs:
           RUNNER_TEMP: ${{ runner.temp }}
           INPUT_PATH: ${{ inputs.path }}
           INPUT_PATTERN: ${{ inputs.pattern }}
-        run: "$env:RUNNER_TEMP/ghwf/updater/scripts/update-dependency.ps1" -Path "$env:INPUT_PATH" -Pattern "$env:INPUT_PATTERN"
+        run: |  
+          & "$env:RUNNER_TEMP/ghwf/updater/scripts/update-dependency.ps1" -Path "$env:INPUT_PATH" -Pattern "$env:INPUT_PATTERN"
 
       - name: Get the base repo info
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
@@ -243,7 +244,8 @@ jobs:
           RUNNER_TEMP: ${{ runner.temp }}
           INPUT_PATH: ${{ inputs.path }}
           LATEST_TAG: ${{ steps.target.outputs.latestTag }}
-        run: "$env:RUNNER_TEMP/ghwf/updater/scripts/update-dependency.ps1" -Path "$env:INPUT_PATH" -Tag "$env:LATEST_TAG"
+        run: |
+          & "$env:RUNNER_TEMP/ghwf/updater/scripts/update-dependency.ps1" -Path "$env:INPUT_PATH" -Tag "$env:LATEST_TAG"
 
       - name: Update Changelog
         if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
