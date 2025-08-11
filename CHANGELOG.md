@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.13.1
+
+### Fixes
+
+- Updater - invalid workflow syntax - reverts recent switch to env vars ([#97](https://github.com/getsentry/github-workflows/pull/97))
+
 ## 2.13.0
 
 ### Features
