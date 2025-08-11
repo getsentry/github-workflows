@@ -146,7 +146,7 @@ jobs:
           }
           "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
           "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
-          $nonBotCommits = "$env:RUNNER_TEMP/ghwf/updater/scripts/nonbot-commits.ps1" `
+          $nonBotCommits = & "$env:RUNNER_TEMP/ghwf/updater/scripts/nonbot-commits.ps1" `
             -RepoUrl "$(git config --get remote.origin.url)" -PrBranch $prBranch -MainBranch $mainBranch
           $changed = $nonBotCommits.Length -gt 0 ? 'true' : 'false'
           "changed=$changed" | Tee-Object $env:GITHUB_OUTPUT -Append
