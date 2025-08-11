@@ -111,30 +111,21 @@ jobs:
       - name: Check out workflow scripts
         # Note: cannot use `actions/checkout` at the moment because you can't clone outside of the repo root.
         #       Follow https://github.com/actions/checkout/issues/197
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
-          WORKFLOW_VERSION: ${{ inputs._workflow_version }}
         run: |
-          mkdir -p "$RUNNER_TEMP/ghwf"
-          cd "$RUNNER_TEMP/ghwf"
+          mkdir -p ${{ runner.temp }}/ghwf
+          cd ${{ runner.temp }}/ghwf
           git init
           git remote add origin https://github.com/getsentry/github-workflows.git
-          git fetch --depth 1 origin "$WORKFLOW_VERSION"
+          git fetch --depth 1 origin ${{ inputs._workflow_version }}
           git checkout FETCH_HEAD
 
       - name: Update to the latest version
         id: target
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
-          INPUT_PATH: ${{ inputs.path }}
-          INPUT_PATTERN: ${{ inputs.pattern }}
-        run: "$env:RUNNER_TEMP/ghwf/updater/scripts/update-dependency.ps1" -Path "$env:INPUT_PATH" -Pattern "$env:INPUT_PATTERN"
+        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Pattern '${{ inputs.pattern }}'
 
       - name: Get the base repo info
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
         id: root
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
         run: |
           $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
           $prBranch = switch ('${{ inputs.pr-strategy }}')
@@ -145,7 +136,7 @@ jobs:
           }
           "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
           "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
-          $nonBotCommits = "$env:RUNNER_TEMP/ghwf/updater/scripts/nonbot-commits.ps1" `
+          $nonBotCommits = ${{ runner.temp }}/ghwf/updater/scripts/nonbot-commits.ps1 `
             -RepoUrl "$(git config --get remote.origin.url)" -PrBranch $prBranch -MainBranch $mainBranch
           $changed = $nonBotCommits.Length -gt 0 ? 'true' : 'false'
           "changed=$changed" | Tee-Object $env:GITHUB_OUTPUT -Append
@@ -159,10 +150,8 @@ jobs:
         id: existing-pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
         run: |
-          $urls = @(gh api "repos/$GITHUB_REPOSITORY/pulls?base=${{ steps.root.outputs.baseBranch }}&head=$GITHUB_REPOSITORY_OWNER:${{ steps.root.outputs.prBranch }}" --jq '.[].html_url')
+          $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
           if ($urls.Length -eq 0)
           {
               "url=" | Tee-Object $env:GITHUB_OUTPUT -Append
@@ -181,17 +170,12 @@ jobs:
 
       - name: Get target changelog
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
-          TARGET_URL: ${{ steps.target.outputs.url }}
-          ORIGINAL_TAG: ${{ steps.target.outputs.originalTag }}
-          LATEST_TAG: ${{ steps.target.outputs.latestTag }}
         run: |
-          $changelog = "$env:RUNNER_TEMP/ghwf/updater/scripts/get-changelog.ps1" `
-            -RepoUrl "$env:TARGET_URL" `
-            -OldTag "$env:ORIGINAL_TAG" `
-            -NewTag "$env:LATEST_TAG"
-          "$env:RUNNER_TEMP/ghwf/updater/scripts/set-github-env.ps1" TARGET_CHANGELOG $changelog
+          $changelog = ${{ runner.temp }}/ghwf/updater/scripts/get-changelog.ps1 `
+            -RepoUrl '${{ steps.target.outputs.url }}' `
+            -OldTag '${{ steps.target.outputs.originalTag }}' `
+            -NewTag '${{ steps.target.outputs.latestTag }}'
+          ${{ runner.temp }}/ghwf/updater/scripts/set-github-env.ps1 TARGET_CHANGELOG $changelog
 
       # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
       - name: Create a PR
@@ -239,32 +223,19 @@ jobs:
 
       - name: 'After new PR: redo the update'
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
-          INPUT_PATH: ${{ inputs.path }}
-          LATEST_TAG: ${{ steps.target.outputs.latestTag }}
-        run: "$env:RUNNER_TEMP/ghwf/updater/scripts/update-dependency.ps1" -Path "$env:INPUT_PATH" -Tag "$env:LATEST_TAG"
+        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path '${{ inputs.path }}' -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
         if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
-        env:
-          RUNNER_TEMP: ${{ runner.temp }}
-          INPUT_NAME: ${{ inputs.name }}
-          PR_URL: ${{ steps.pr.outputs.url }}
-          TARGET_URL: ${{ steps.target.outputs.url }}
-          MAIN_BRANCH: ${{ steps.target.outputs.mainBranch }}
-          ORIGINAL_TAG: ${{ steps.target.outputs.originalTag }}
-          LATEST_TAG: ${{ steps.target.outputs.latestTag }}
-          CHANGELOG_SECTION: ${{ inputs.changelog-section }}
         run: |
-          "$env:RUNNER_TEMP/ghwf/updater/scripts/update-changelog.ps1" `
-            -Name "$env:INPUT_NAME" `
-            -PR "$env:PR_URL" `
-            -RepoUrl "$env:TARGET_URL" `
-            -MainBranch "$env:MAIN_BRANCH" `
-            -OldTag "$env:ORIGINAL_TAG" `
-            -NewTag "$env:LATEST_TAG" `
-            -Section "$env:CHANGELOG_SECTION"
+          ${{ runner.temp }}/ghwf/updater/scripts/update-changelog.ps1 `
+            -Name '${{ inputs.name }}' `
+            -PR '${{ steps.pr.outputs.url }}' `
+            -RepoUrl '${{ steps.target.outputs.url }}' `
+            -MainBranch '${{ steps.target.outputs.mainBranch }}' `
+            -OldTag '${{ steps.target.outputs.originalTag }}' `
+            -NewTag '${{ steps.target.outputs.latestTag }}' `
+            -Section '${{ inputs.changelog-section }}'
 
       - run: git --no-pager diff
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
