@@ -75,19 +75,23 @@ jobs:
   validate-inputs:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate inputs
+      - name: Validate dependency name
         run: |
           # Validate that inputs.name contains only safe characters
           if [[ ! "${{ inputs.name }}" =~ ^[a-zA-Z0-9_\-\./@ ]+$ ]]; then
             echo "::error::Invalid dependency name: '${{ inputs.name }}'. Only alphanumeric characters, spaces, and _-./@  are allowed."
             exit 1
           fi
-          
+          echo "✓ Dependency name '${{ inputs.name }}' is valid"
+      
+      - name: Validate dependency path
+        run: |
           # Validate that inputs.path contains only safe characters
           if [[ ! "${{ inputs.path }}" =~ ^[a-zA-Z0-9_\-\./]+$ ]]; then
             echo "::error::Invalid dependency path: '${{ inputs.path }}'. Only alphanumeric characters and _-./ are allowed."
             exit 1
           fi
+          echo "✓ Dependency path '${{ inputs.path }}' is valid"
 
   # What we need to accomplish:
   # * update to the latest tag
