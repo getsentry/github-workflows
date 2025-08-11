@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix updater.yml syntax errors ([#96](https://github.com/getsentry/github-workflows/pull/96))
+
 ## 2.13.0
 
 ### Features
