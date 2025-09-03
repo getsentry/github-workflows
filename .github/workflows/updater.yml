@@ -252,7 +252,7 @@ jobs:
 
       - name: 'After new PR: redo the update'
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
-        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path "$env:DEPENDENCY_PATH" -Tag '${{ steps.target.outputs.latestTag }}'
+        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}'
 
       - name: Update Changelog
         if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
