@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Security
+
+- Updater - Prevent script injection vulnerabilities through workflow inputs ([#98](https://github.com/getsentry/github-workflows/pull/98))
+
 ## 2.13.1
 
 ### Fixes
