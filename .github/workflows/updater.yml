@@ -264,7 +264,7 @@ jobs:
             -MainBranch '${{ steps.target.outputs.mainBranch }}' `
             -OldTag '${{ steps.target.outputs.originalTag }}' `
             -NewTag '${{ steps.target.outputs.latestTag }}' `
-            -Section "$env:CHANGELOG_SECTION"
+            -Section $env:CHANGELOG_SECTION
 
       - run: git --no-pager diff
         if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
