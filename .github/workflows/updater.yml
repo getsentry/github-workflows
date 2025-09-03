@@ -150,7 +150,7 @@ jobs:
 
       - name: Update to the latest version
         id: target
-        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path "$env:DEPENDENCY_PATH" -Pattern "$env:DEPENDENCY_PATTERN"
+        run: ${{ runner.temp }}/ghwf/updater/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN
 
       - name: Get the base repo info
         if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
