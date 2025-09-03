@@ -258,7 +258,7 @@ jobs:
         if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
         run: |
           ${{ runner.temp }}/ghwf/updater/scripts/update-changelog.ps1 `
-            -Name "$env:DEPENDENCY_NAME" `
+            -Name $env:DEPENDENCY_NAME `
             -PR '${{ steps.pr.outputs.url }}' `
             -RepoUrl '${{ steps.target.outputs.url }}' `
             -MainBranch '${{ steps.target.outputs.mainBranch }}' `
