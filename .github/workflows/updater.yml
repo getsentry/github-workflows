@@ -84,7 +84,6 @@ jobs:
             exit 1
           }
           Write-Output "✓ Dependency name '${{ inputs.name }}' is valid"
-      
       - name: Validate dependency path
         shell: pwsh
         run: |
