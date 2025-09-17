@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Add Proguard artifact endpoint for Android builds in sentry-server ([#100](https://github.com/getsentry/github-workflows/pull/100))
+
 ### Security
 
 - Updater - Prevent script injection vulnerabilities through workflow inputs ([#98](https://github.com/getsentry/github-workflows/pull/98))
