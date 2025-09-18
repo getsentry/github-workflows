@@ -20,17 +20,18 @@ Set-StrictMode -Version latest
 . "$PSScriptRoot/common.ps1"
 
 # Parse CMake file with dependency name
-$cmakeFile = $null
-$cmakeDep = $null
-if ($Path -match '^(.+\.cmake)#(.+)$') {
-    $cmakeFile = $Matches[1]
-    $cmakeDep = $Matches[2]
-    $Path = $cmakeFile  # Set Path to file for existing logic
-} elseif ($Path -match '\.cmake$') {
-    $cmakeFile = $Path
-    $cmakeDep = $null  # Will auto-detect
+if ($Path -match '^(.+\.cmake)(#.+)?$') {
+    $Path = $Matches[1]  # Set Path to file for existing logic
+    if ($Matches[2]) {
+        $cmakeDep = $Matches[2].TrimStart('#')
+    } else {
+        $cmakeDep = $null  # Will auto-detect
+    }
+    $isCMakeFile = $true
+} else {
+    $cmakeDep = $null
+    $isCMakeFile = $false
 }
-$isCMakeFile = $cmakeFile -ne $null
 
 if (-not (Test-Path $Path ))
 {
@@ -61,7 +62,7 @@ if (-not $isSubmodule)
             # CMake file handling
             switch ($action) {
                 'get-version' {
-                    $fetchContent = Parse-CMakeFetchContent $cmakeFile $cmakeDep
+                    $fetchContent = Parse-CMakeFetchContent $Path $cmakeDep
                     $currentValue = $fetchContent.GitTag
                     if ($currentValue -match '^[a-f0-9]{40}$') {
                         # Try to resolve hash to tag for version comparison
@@ -72,10 +73,10 @@ if (-not $isSubmodule)
                     return $currentValue
                 }
                 'get-repo' {
-                    return (Parse-CMakeFetchContent $cmakeFile $cmakeDep).GitRepository
+                    return (Parse-CMakeFetchContent $Path $cmakeDep).GitRepository
                 }
                 'set-version' {
-                    Update-CMakeFile $cmakeFile $cmakeDep $value
+                    Update-CMakeFile $Path $cmakeDep $value
                 }
                 Default {
                     throw "Unknown action $action"
