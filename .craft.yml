@@ -1,5 +1,7 @@
 minVersion: 0.23.1
 changelogPolicy: auto
 preReleaseCommand: pwsh -cwa ''
+artifactProvider:
+  name: none
 targets:
   - name: github
