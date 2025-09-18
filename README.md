@@ -47,21 +47,21 @@ jobs:
     secrets:
       api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
-  # Update a CMake FetchContent dependency with explicit dependency name
+  # Update a CMake FetchContent dependency with auto-detection (single dependency only)
   sentry-native:
     uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
     with:
-      path: vendor/sentry-native.cmake#sentry-native
+      path: vendor/sentry-native.cmake
       name: Sentry Native SDK
     secrets:
       api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
-  # Update a CMake FetchContent dependency with auto-detection (single dependency only)
+  # Update a CMake FetchContent dependency with explicit dependency name
   deps:
     uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
     with:
-      path: vendor/dependencies.cmake
-      name: Dependencies
+      path: vendor/dependencies.cmake#googletest
+      name: GoogleTest
     secrets:
       api-token: ${{ secrets.CI_DEPLOY_KEY }}
 ```
