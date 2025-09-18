@@ -57,7 +57,7 @@ function Find-TagForHash($repo, $hash) {
 function Test-HashAncestry($repo, $oldHash, $newHash) {
     try {
         # Create a temporary directory for git operations
-        $tempDir = Join-Path $env:TEMP "git-ancestry-check-$(Get-Random)"
+        $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
         try {
