@@ -113,14 +113,9 @@ function Update-CMakeFile($filePath, $depName, $newValue) {
         $replacement = $newValue
     }
 
-    # Update GIT_TAG value, preserving formatting
-    if ($wasHash) {
-        # For hash updates, replace everything after GIT_TAG on that line (including existing comments)
-        $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)[^\r\n]+(\r?\n[^)]*\))"
-    } else {
-        # For tag updates, preserve existing structure
-        $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)\S+(\s*[^)]*\))"
-    }
+    # Update GIT_TAG value, replacing entire line content after GIT_TAG
+    # This removes potentially outdated version-specific comments
+    $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)[^\r\n]+(\r?\n[^)]*\))"
     $newContent = [regex]::Replace($content, $pattern, "`${1}$replacement`${2}", 'Singleline')
 
     if ($newContent -eq $content) {
