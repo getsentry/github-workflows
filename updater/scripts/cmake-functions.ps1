@@ -40,6 +40,9 @@ function Parse-CMakeFetchContent($filePath, $depName) {
 function Find-TagForHash($repo, $hash) {
     try {
         $refs = git ls-remote --tags $repo
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to fetch tags from repository $repo (git ls-remote failed with exit code $LASTEXITCODE)"
+        }
         foreach ($ref in $refs) {
             $commit, $tagRef = $ref -split '\s+', 2
             if ($commit -eq $hash) {
@@ -99,6 +102,9 @@ function Update-CMakeFile($filePath, $depName, $newValue) {
     if ($wasHash) {
         # Convert tag to hash and add comment
         $newHashRefs = git ls-remote $repo "refs/tags/$newValue"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to fetch tag $newValue from repository $repo (git ls-remote failed with exit code $LASTEXITCODE)"
+        }
         if (-not $newHashRefs) {
             throw "Tag $newValue not found in repository $repo"
         }
