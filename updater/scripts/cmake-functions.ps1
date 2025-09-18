@@ -83,9 +83,9 @@ function Test-HashAncestry($repo, $oldHash, $newHash) {
         }
     }
     catch {
-        Write-Host "Warning: Could not validate ancestry for $oldHash -> $newHash : $_"
-        # When in doubt, allow the update (safer for automation)
-        return $true
+        Write-Host "Error: Could not validate ancestry for $oldHash -> $newHash : $_"
+        # When in doubt, fail safely to prevent incorrect updates
+        return $false
     }
 }
 
