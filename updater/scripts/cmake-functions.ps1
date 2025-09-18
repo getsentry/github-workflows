@@ -54,6 +54,41 @@ function Find-TagForHash($repo, $hash) {
     }
 }
 
+function Test-HashAncestry($repo, $oldHash, $newHash) {
+    try {
+        # Create a temporary directory for git operations
+        $tempDir = Join-Path $env:TEMP "git-ancestry-check-$(Get-Random)"
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+        try {
+            Push-Location $tempDir
+
+            # Initialize a bare repository and add the remote
+            git init --bare 2>$null | Out-Null
+            git remote add origin $repo 2>$null | Out-Null
+
+            # Fetch both commits
+            git fetch origin $oldHash 2>$null | Out-Null
+            git fetch origin $newHash 2>$null | Out-Null
+
+            # Check if old hash is ancestor of new hash
+            git merge-base --is-ancestor $oldHash $newHash 2>$null
+            $isAncestor = $LastExitCode -eq 0
+
+            return $isAncestor
+        }
+        finally {
+            Pop-Location
+            Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    catch {
+        Write-Host "Warning: Could not validate ancestry for $oldHash -> $newHash : $_"
+        # When in doubt, allow the update (safer for automation)
+        return $true
+    }
+}
+
 function Update-CMakeFile($filePath, $depName, $newValue) {
     $content = Get-Content $filePath -Raw
     $fetchContent = Parse-CMakeFetchContent $filePath $depName
@@ -71,16 +106,22 @@ function Update-CMakeFile($filePath, $depName, $newValue) {
         $replacement = "$newHash # $newValue"
 
         # Validate ancestry: ensure old hash is reachable from new tag
-        # Note: Skipping ancestry check for now as it requires local repository
-        # TODO: Implement proper ancestry validation for remote repositories
-        Write-Host "Warning: Skipping ancestry validation for hash update from $originalValue to $newValue"
+        if (-not (Test-HashAncestry $repo $originalValue $newHash)) {
+            throw "Cannot update: hash $originalValue is not in history of tag $newValue"
+        }
     } else {
         $replacement = $newValue
     }
 
     # Update GIT_TAG value, preserving formatting
-    $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)\S+([^#\r\n]*).*?(\s*[^)]*\))"
-    $newContent = [regex]::Replace($content, $pattern, "`${1}$replacement`${3}", 'Singleline')
+    if ($wasHash) {
+        # For hash updates, replace everything after GIT_TAG on that line (including existing comments)
+        $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)[^\r\n]+(\r?\n[^)]*\))"
+    } else {
+        # For tag updates, preserve existing structure
+        $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)\S+(\s*[^)]*\))"
+    }
+    $newContent = [regex]::Replace($content, $pattern, "`${1}$replacement`${2}", 'Singleline')
 
     if ($newContent -eq $content) {
         throw "Failed to update GIT_TAG in $filePath - pattern may not have matched"
