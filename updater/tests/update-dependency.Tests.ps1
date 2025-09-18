@@ -247,4 +247,180 @@ switch ($action)
             }
         }
     }
+
+    Context 'cmake-fetchcontent' {
+        BeforeAll {
+            $cmakeTestDir = "$testDir/cmake"
+            if (-not (Test-Path $cmakeTestDir)) {
+                New-Item $cmakeTestDir -ItemType Directory
+            }
+        }
+
+        It 'updates CMake file with explicit dependency name' {
+            $testFile = "$cmakeTestDir/sentry-explicit.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG v0.9.1
+    GIT_SHALLOW FALSE
+)
+
+FetchContent_MakeAvailable(sentry-native)
+'@ | Out-File $testFile
+
+            UpdateDependency "$testFile#sentry-native"
+
+            $content = Get-Content $testFile -Raw
+            $content | Should -Not -Match 'v0.9.1'
+            $content | Should -Match 'GIT_TAG \d+\.\d+\.\d+'
+            $content | Should -Match 'GIT_REPOSITORY https://github.com/getsentry/sentry-native'
+        }
+
+        It 'auto-detects single FetchContent dependency' {
+            $testFile = "$cmakeTestDir/sentry-auto.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG v0.9.0
+    GIT_SHALLOW FALSE
+)
+
+FetchContent_MakeAvailable(sentry-native)
+'@ | Out-File $testFile
+
+            UpdateDependency $testFile
+
+            $content = Get-Content $testFile -Raw
+            $content | Should -Not -Match 'v0.9.0'
+            $content | Should -Match 'GIT_TAG \d+\.\d+\.\d+'
+        }
+
+        It 'updates from hash to newer tag preserving hash format' {
+            $testFile = "$cmakeTestDir/sentry-hash.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2 # 0.9.1
+    GIT_SHALLOW FALSE
+)
+
+FetchContent_MakeAvailable(sentry-native)
+'@ | Out-File $testFile
+
+            UpdateDependency $testFile
+
+            $content = Get-Content $testFile -Raw
+            # Should update to a new hash with tag comment (note: may have comment formatting issues)
+            $content | Should -Match 'GIT_TAG [a-f0-9]{40} # \d+\.\d+\.\d+'
+            $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
+        }
+
+        It 'handles multiple dependencies with explicit selection' {
+            $testFile = "$cmakeTestDir/multiple-deps.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG v0.9.1
+)
+
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest
+    GIT_TAG v1.14.0
+)
+
+FetchContent_MakeAvailable(sentry-native googletest)
+'@ | Out-File $testFile
+
+            UpdateDependency "$testFile#googletest"
+
+            $content = Get-Content $testFile -Raw
+            # sentry-native should remain unchanged
+            $content | Should -Match 'sentry-native[\s\S]*GIT_TAG v0\.9\.1'
+            # googletest should be updated
+            $content | Should -Match 'googletest[\s\S]*GIT_TAG v1\.\d+\.\d+'
+            $content | Should -Not -Match 'googletest[\s\S]*GIT_TAG v1\.14\.0'
+        }
+
+        It 'outputs correct GitHub Actions variables' {
+            $testFile = "$cmakeTestDir/output-test.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG v0.9.0
+)
+'@ | Out-File $testFile
+
+            $output = UpdateDependency $testFile
+
+            # Join output lines for easier searching
+            $outputText = $output -join "`n"
+            $outputText | Should -Match 'originalTag=v0\.9\.0'
+            $outputText | Should -Match 'latestTag=\d+\.\d+\.\d+'
+            $outputText | Should -Match 'url=https://github.com/getsentry/sentry-native'
+            $outputText | Should -Match 'mainBranch=master'
+        }
+
+        It 'respects version patterns' {
+            $testFile = "$cmakeTestDir/pattern-test.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG v0.8.0
+)
+'@ | Out-File $testFile
+
+            # Limit to 0.9.x versions
+            UpdateDependency $testFile '^v?0\.9\.'
+
+            $content = Get-Content $testFile -Raw
+            $content | Should -Match 'GIT_TAG 0\.9\.\d+'
+            $content | Should -Not -Match 'v0\.8\.0'
+        }
+
+        It 'fails on multiple dependencies without explicit name' {
+            $testFile = "$cmakeTestDir/multi-fail.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(sentry-native GIT_REPOSITORY https://github.com/getsentry/sentry-native GIT_TAG v0.9.1)
+FetchContent_Declare(googletest GIT_REPOSITORY https://github.com/google/googletest GIT_TAG v1.14.0)
+'@ | Out-File $testFile
+
+            { UpdateDependency $testFile } | Should -Throw '*Multiple FetchContent declarations found*'
+        }
+
+        It 'fails on missing dependency' {
+            $testFile = "$cmakeTestDir/missing-dep.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG v0.9.1
+)
+'@ | Out-File $testFile
+
+            { UpdateDependency "$testFile#nonexistent" } | Should -Throw "*FetchContent_Declare for 'nonexistent' not found*"
+        }
+    }
 }
