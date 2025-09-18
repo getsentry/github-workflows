@@ -5,6 +5,7 @@
 ### Features
 
 - Add Proguard artifact endpoint for Android builds in sentry-server ([#100](https://github.com/getsentry/github-workflows/pull/100))
+- Add proguard endpoint in sentry-server test ([#102](https://github.com/getsentry/github-workflows/pull/102))
 
 ### Security
 
