@@ -68,8 +68,13 @@ jobs:
 
 ### Inputs
 
-* `path`: Dependency path in the source repository, this can be either a submodule, a .properties file, a shell script, or a CMake file with FetchContent.
-  * For CMake files: Use `path/to/file.cmake#DepName` to specify dependency name, or just `path/to/file.cmake` for auto-detection (single dependency only)
+* `path`: Dependency path in the source repository. Supported formats:
+  * Submodule path
+  * Properties file (`.properties`)
+  * Shell script (`.ps1`, `.sh`)
+  * CMake file with FetchContent:
+    * `path/to/file.cmake#DepName` - specify dependency name
+    * `path/to/file.cmake` - auto-detection (single dependency only)
   * type: string
   * required: true
 * `name`: Name used in the PR title and the changelog entry.
