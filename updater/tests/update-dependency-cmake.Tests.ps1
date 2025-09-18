@@ -126,6 +126,22 @@ Describe 'CMake Helper Functions' {
             $content | Should -Not -Match 'v0.9.1'
         }
 
+        It 'updates hash to newer hash preserving format' {
+            $sourceFile = "$testDataDir/hash-dependency.cmake"
+            $testFile = "$tempDir/test.cmake"
+            Copy-Item $sourceFile $testFile
+
+            # Update to a newer tag that will be converted to hash (0.11.0 is known to exist)
+            Update-CMakeFile $testFile 'sentry-native' '0.11.0'
+
+            $content = Get-Content $testFile -Raw
+            # Should have new hash with tag comment
+            $content | Should -Match 'GIT_TAG [a-f0-9]{40} # 0.11.0'
+            # Should not have old hash or old comment
+            $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
+            $content | Should -Not -Match '# 0.9.1'
+        }
+
         It 'preserves file structure and other content' {
             $sourceFile = "$testDataDir/single-dependency.cmake"
             $testFile = "$tempDir/test.cmake"
