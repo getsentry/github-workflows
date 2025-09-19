@@ -1,3 +1,5 @@
+const { getFlavorConfig, extractPRFlavor } = require('./dangerfile-utils.js');
+
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
 const isFork = headRepoName != baseRepoName;
@@ -36,27 +38,15 @@ if (isFork) {
 
 // e.g. "feat" if PR title is "Feat : add more useful stuff"
 // or  "ci" if PR branch is "ci/update-danger"
-const prFlavor = (function () {
-  if (danger.github && danger.github.pr) {
-    if (danger.github.pr.title) {
-      const parts = danger.github.pr.title.split(":");
-      if (parts.length > 1) {
-        return parts[0].toLowerCase().trim();
-      }
-    }
-    if (danger.github.pr.head && danger.github.pr.head.ref) {
-      const parts = danger.github.pr.head.ref.split("/");
-      if (parts.length > 1) {
-        return parts[0].toLowerCase();
-      }
-    }
-  }
-  return "";
-})();
+const prFlavor = extractPRFlavor(
+  danger.github?.pr?.title,
+  danger.github?.pr?.head?.ref
+);
 console.log(`::debug:: PR Flavor: '${prFlavor}'`);
 
 async function checkDocs() {
-  if (prFlavor.startsWith("feat")) {
+  const flavorConfig = getFlavorConfig(prFlavor);
+  if (flavorConfig.isFeature) {
     message(
       'Do not forget to update <a href="https://github.com/getsentry/sentry-docs">Sentry-docs</a> with your feature once the pull request gets approved.'
     );
@@ -65,10 +55,11 @@ async function checkDocs() {
 
 async function checkChangelog() {
   const changelogFile = "CHANGELOG.md";
+  const flavorConfig = getFlavorConfig(prFlavor);
 
-  // Check if skipped
+  // Check if skipped - either by flavor config, explicit skip, or skip label
   if (
-    ["ci", "test", "deps", "chore(deps)", "build(deps)"].includes(prFlavor) ||
+    flavorConfig.changelog === undefined ||
     (danger.github.pr.body + "").includes("#skip-changelog") ||
     (danger.github.pr.labels || []).some(label => label.name === 'skip-changelog')
   ) {
@@ -103,6 +94,7 @@ async function checkChangelog() {
   }
 }
 
+
 /// Report missing changelog entry
 function reportMissingChangelog(changelogFile) {
   fail("Please consider adding a changelog entry for the next release.", changelogFile);
@@ -112,6 +104,10 @@ function reportMissingChangelog(changelogFile) {
     .slice(-1)[0]
     .trim()
     .replace(/\.+$/, "");
+
+  // Determine the appropriate section based on PR flavor
+  const flavorConfig = getFlavorConfig(prFlavor);
+  const sectionName = flavorConfig.changelog || "Features";
 
   markdown(
     `
@@ -123,6 +119,8 @@ Example:
 
 \`\`\`markdown
 ## Unreleased
+
+### ${sectionName}
 
 - ${prTitleFormatted} ([#${danger.github.pr.number}](${danger.github.pr.html_url}))
 \`\`\`

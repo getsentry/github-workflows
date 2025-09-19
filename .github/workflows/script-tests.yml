@@ -1,5 +1,7 @@
 # This isn't a reusable workflow but a CI action for this repo itself - testing the contained workflows & scripts.
 name: Script Tests
+permissions:
+  contents: read
 
 on:
   push:
@@ -23,3 +25,21 @@ jobs:
       - run: Invoke-Pester
         working-directory: updater
         shell: pwsh
+
+  danger:
+    name: Danger JS Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: danger
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - run: node --test
+
+      - name: Check syntax
+        run: node -c dangerfile.js

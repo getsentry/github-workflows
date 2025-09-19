@@ -22,8 +22,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download dangerfile.js
-        run: wget https://raw.githubusercontent.com/getsentry/github-workflows/${{ inputs._workflow_version }}/danger/dangerfile.js -P ${{ runner.temp }}
+      - name: Download dangerfile.js and utilities
+        run: |
+          wget https://raw.githubusercontent.com/getsentry/github-workflows/${{ inputs._workflow_version }}/danger/dangerfile.js -P ${{ runner.temp }}
+          wget https://raw.githubusercontent.com/getsentry/github-workflows/${{ inputs._workflow_version }}/danger/dangerfile-utils.js -P ${{ runner.temp }}
 
       # Using a pre-built docker image in GitHub container registry instaed of NPM to reduce possible attack vectors.
       - name: Run DangerJS

@@ -1,0 +1,278 @@
+const { describe, it } = require('node:test');
+const assert = require('node:assert');
+const { getFlavorConfig, extractPRFlavor, FLAVOR_CONFIG } = require('./dangerfile-utils.js');
+
+describe('dangerfile-utils', () => {
+  describe('getFlavorConfig', () => {
+    it('should return config for features with isFeature true', () => {
+      const featConfig = getFlavorConfig('feat');
+      assert.strictEqual(featConfig.changelog, 'Features');
+      assert.strictEqual(featConfig.isFeature, true);
+
+      const featureConfig = getFlavorConfig('feature');
+      assert.strictEqual(featureConfig.changelog, 'Features');
+      assert.strictEqual(featureConfig.isFeature, true);
+    });
+
+    it('should return config for fixes without isFeature', () => {
+      const fixConfig = getFlavorConfig('fix');
+      assert.strictEqual(fixConfig.changelog, 'Fixes');
+      assert.strictEqual(fixConfig.isFeature, undefined);
+
+      const bugConfig = getFlavorConfig('bug');
+      assert.strictEqual(bugConfig.changelog, 'Fixes');
+      assert.strictEqual(bugConfig.isFeature, undefined);
+
+      const bugfixConfig = getFlavorConfig('bugfix');
+      assert.strictEqual(bugfixConfig.changelog, 'Fixes');
+      assert.strictEqual(bugfixConfig.isFeature, undefined);
+    });
+
+    it('should return config with undefined changelog for skipped flavors', () => {
+      const skipFlavors = ['docs', 'doc', 'ci', 'tests', 'test', 'style', 'refactor', 'build', 'chore', 'meta', 'deps', 'dep', 'chore(deps)', 'build(deps)'];
+
+      skipFlavors.forEach(flavor => {
+        const config = getFlavorConfig(flavor);
+        assert.strictEqual(config.changelog, undefined, `${flavor} should have undefined changelog`);
+        assert.strictEqual(config.isFeature, undefined, `${flavor} should have undefined isFeature`);
+      });
+    });
+
+    it('should return default config for unknown flavors', () => {
+      const unknownConfig = getFlavorConfig('unknown');
+      assert.strictEqual(unknownConfig.changelog, 'Features');
+      assert.strictEqual(unknownConfig.isFeature, undefined);
+
+      const emptyConfig = getFlavorConfig('');
+      assert.strictEqual(emptyConfig.changelog, 'Features');
+      assert.strictEqual(emptyConfig.isFeature, undefined);
+    });
+
+    it('should be case-insensitive and handle whitespace', () => {
+      const config1 = getFlavorConfig('FEAT');
+      assert.strictEqual(config1.changelog, 'Features');
+
+      const config2 = getFlavorConfig(' fix ');
+      assert.strictEqual(config2.changelog, 'Fixes');
+    });
+
+    it('should handle all security-related flavors', () => {
+      const secConfig = getFlavorConfig('sec');
+      assert.strictEqual(secConfig.changelog, 'Security');
+
+      const securityConfig = getFlavorConfig('security');
+      assert.strictEqual(securityConfig.changelog, 'Security');
+    });
+
+    it('should handle all performance-related flavors', () => {
+      const perfConfig = getFlavorConfig('perf');
+      assert.strictEqual(perfConfig.changelog, 'Performance');
+
+      const performanceConfig = getFlavorConfig('performance');
+      assert.strictEqual(performanceConfig.changelog, 'Performance');
+    });
+
+    it('should handle ref flavor (internal changes - no changelog)', () => {
+      const refConfig = getFlavorConfig('ref');
+      assert.strictEqual(refConfig.changelog, undefined);
+      assert.strictEqual(refConfig.isFeature, undefined);
+    });
+
+    it('should handle scoped flavors by stripping scope', () => {
+      const scopedFeat = getFlavorConfig('feat(core)');
+      assert.strictEqual(scopedFeat.changelog, 'Features');
+      assert.strictEqual(scopedFeat.isFeature, true);
+
+      const scopedFix = getFlavorConfig('fix(browser)');
+      assert.strictEqual(scopedFix.changelog, 'Fixes');
+      assert.strictEqual(scopedFix.isFeature, undefined);
+
+      const scopedChore = getFlavorConfig('chore(deps)');
+      assert.strictEqual(scopedChore.changelog, undefined);
+
+      // Test edge cases for scope stripping
+      const nestedParens = getFlavorConfig('feat(scope(nested))');
+      assert.strictEqual(nestedParens.changelog, 'Features'); // Should strip at first (
+
+      const noCloseParen = getFlavorConfig('feat(scope');
+      assert.strictEqual(noCloseParen.changelog, 'Features'); // Should still work
+
+      const multipleParens = getFlavorConfig('feat(scope1)(scope2)');
+      assert.strictEqual(multipleParens.changelog, 'Features'); // Should strip at first (
+    });
+
+    it('should handle non-conventional action words', () => {
+      // Feature-related words
+      const addConfig = getFlavorConfig('add');
+      assert.strictEqual(addConfig.changelog, 'Features');
+      assert.strictEqual(addConfig.isFeature, true);
+
+      const implementConfig = getFlavorConfig('implement');
+      assert.strictEqual(implementConfig.changelog, 'Features');
+      assert.strictEqual(implementConfig.isFeature, true);
+
+      // Fix-related words
+      const resolveConfig = getFlavorConfig('resolve');
+      assert.strictEqual(resolveConfig.changelog, 'Fixes');
+
+      const correctConfig = getFlavorConfig('correct');
+      assert.strictEqual(correctConfig.changelog, 'Fixes');
+
+      // Internal change words
+      const updateConfig = getFlavorConfig('update');
+      assert.strictEqual(updateConfig.changelog, undefined);
+
+      const bumpConfig = getFlavorConfig('bump');
+      assert.strictEqual(bumpConfig.changelog, undefined);
+
+      const cleanupConfig = getFlavorConfig('cleanup');
+      assert.strictEqual(cleanupConfig.changelog, undefined);
+
+      const formatConfig = getFlavorConfig('format');
+      assert.strictEqual(formatConfig.changelog, undefined);
+    });
+  });
+
+  describe('extractPRFlavor', () => {
+    it('should extract flavor from PR title with colon', () => {
+      const flavor = extractPRFlavor('feat: add new feature', null);
+      assert.strictEqual(flavor, 'feat');
+
+      const flavor2 = extractPRFlavor('Fix: resolve bug in authentication', null);
+      assert.strictEqual(flavor2, 'fix');
+
+      const flavor3 = extractPRFlavor('Docs: Update readme', null);
+      assert.strictEqual(flavor3, 'docs');
+    });
+
+    it('should extract flavor from branch name with slash', () => {
+      const flavor = extractPRFlavor(null, 'feature/new-api');
+      assert.strictEqual(flavor, 'feature');
+
+      const flavor2 = extractPRFlavor(null, 'ci/update-workflows');
+      assert.strictEqual(flavor2, 'ci');
+
+      const flavor3 = extractPRFlavor(null, 'fix/auth-bug');
+      assert.strictEqual(flavor3, 'fix');
+    });
+
+    it('should prefer title over branch if both available', () => {
+      const flavor = extractPRFlavor('feat: add feature', 'ci/update-workflows');
+      assert.strictEqual(flavor, 'feat');
+    });
+
+    it('should return empty string if no flavor found', () => {
+      // Empty or whitespace-only strings
+      const flavor1 = extractPRFlavor('', null);
+      assert.strictEqual(flavor1, '');
+
+      const flavor2 = extractPRFlavor('   ', null);
+      assert.strictEqual(flavor2, '');
+
+      // No branch with slash
+      const flavor3 = extractPRFlavor(null, 'simple-branch');
+      assert.strictEqual(flavor3, '');
+
+      // All null/undefined
+      const flavor4 = extractPRFlavor(null, null);
+      assert.strictEqual(flavor4, '');
+    });
+
+    it('should handle edge cases', () => {
+      const flavor1 = extractPRFlavor(':', null);
+      assert.strictEqual(flavor1, '');
+
+      const flavor2 = extractPRFlavor(null, '/');
+      assert.strictEqual(flavor2, '');
+
+      const flavor3 = extractPRFlavor('title: with: multiple: colons', null);
+      assert.strictEqual(flavor3, 'title');
+    });
+
+    it('should validate input parameters and handle non-string types', () => {
+      // Number inputs
+      const flavor1 = extractPRFlavor(123, 456);
+      assert.strictEqual(flavor1, '');
+
+      // Object inputs
+      const flavor2 = extractPRFlavor({ test: 'object' }, ['array']);
+      assert.strictEqual(flavor2, '');
+
+      // Boolean inputs
+      const flavor3 = extractPRFlavor(true, false);
+      assert.strictEqual(flavor3, '');
+
+      // Mixed valid/invalid inputs
+      const flavor4 = extractPRFlavor(null, 'valid/branch');
+      assert.strictEqual(flavor4, 'valid');
+
+      const flavor5 = extractPRFlavor('valid: title', 42);
+      assert.strictEqual(flavor5, 'valid');
+    });
+
+    it('should extract first word from non-conventional PR titles', () => {
+      // Non-conventional titles starting with action words
+      const flavor1 = extractPRFlavor('Fix memory leak in authentication', null);
+      assert.strictEqual(flavor1, 'fix');
+
+      const flavor2 = extractPRFlavor('Add support for new API endpoint', null);
+      assert.strictEqual(flavor2, 'add');
+
+      const flavor3 = extractPRFlavor('Update dependencies to latest versions', null);
+      assert.strictEqual(flavor3, 'update');
+
+      const flavor4 = extractPRFlavor('Remove deprecated configuration options', null);
+      assert.strictEqual(flavor4, 'remove');
+
+      const flavor5 = extractPRFlavor('Bump version to 2.0.0', null);
+      assert.strictEqual(flavor5, 'bump');
+
+      // Should still prefer conventional format over first word
+      const flavor6 = extractPRFlavor('chore: Update dependencies to latest versions', null);
+      assert.strictEqual(flavor6, 'chore');
+
+      // Handle extra whitespace
+      const flavor7 = extractPRFlavor('  Fix   memory   leak  ', null);
+      assert.strictEqual(flavor7, 'fix');
+    });
+  });
+
+
+  describe('FLAVOR_CONFIG integrity', () => {
+    it('should have unique labels across all configs', () => {
+      const allLabels = [];
+      FLAVOR_CONFIG.forEach(config => {
+        config.labels.forEach(label => {
+          assert.ok(!allLabels.includes(label), `Duplicate label found: ${label}`);
+          allLabels.push(label);
+        });
+      });
+    });
+
+    it('should have proper structure for all configs', () => {
+      FLAVOR_CONFIG.forEach((config, index) => {
+        assert.ok(Array.isArray(config.labels), `Config ${index} should have labels array`);
+        assert.ok(config.labels.length > 0, `Config ${index} should have at least one label`);
+        assert.ok(config.hasOwnProperty('changelog'), `Config ${index} should have changelog property`);
+
+        // changelog should be either a string or undefined
+        if (config.changelog !== undefined) {
+          assert.strictEqual(typeof config.changelog, 'string', `Config ${index} changelog should be string or undefined`);
+        }
+
+        // isFeature should be true or undefined (not false)
+        if (config.hasOwnProperty('isFeature')) {
+          assert.strictEqual(config.isFeature, true, `Config ${index} isFeature should be true or undefined`);
+        }
+      });
+    });
+
+    it('should have only Features configs with isFeature true', () => {
+      FLAVOR_CONFIG.forEach(config => {
+        if (config.isFeature === true) {
+          assert.strictEqual(config.changelog, 'Features', 'Only Features configs should have isFeature true');
+        }
+      });
+    });
+  });
+});
