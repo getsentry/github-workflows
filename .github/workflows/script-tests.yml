@@ -1,5 +1,7 @@
 # This isn't a reusable workflow but a CI action for this repo itself - testing the contained workflows & scripts.
 name: Script Tests
+permissions:
+  contents: read
 
 on:
   push:
