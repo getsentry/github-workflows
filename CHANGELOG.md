@@ -4,6 +4,7 @@
 
 ### Features
 
+- Danger - Improve testing infrastructure and conventional commit scope handling ([#105](https://github.com/getsentry/github-workflows/pull/105))
 - Add Proguard artifact endpoint for Android builds in sentry-server ([#100](https://github.com/getsentry/github-workflows/pull/100))
 
 ### Security

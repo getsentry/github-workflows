@@ -7,11 +7,7 @@ const FLAVOR_CONFIG = [
   },
   {
     labels: ["fix", "bug", "bugfix"],
-    changelog: "Bug Fixes"  // More standard than "Fixes"
-  },
-  {
-    labels: ["ref"],  // Very common in Sentry repos (14 occurrences)
-    changelog: "Changes"
+    changelog: "Fixes"
   },
   {
     labels: ["sec", "security"],
@@ -22,8 +18,23 @@ const FLAVOR_CONFIG = [
     changelog: "Performance"
   },
   {
-    labels: ["docs", "doc", "style", "refactor", "tests", "test", "build", "ci", "chore", "meta", "deps", "dep", "chore(deps)", "build(deps)"],
-    changelog: undefined  // Internal changes - no changelog needed
+    // Internal changes - no changelog needed
+    changelog: undefined,
+    labels: [
+      "docs",
+      "doc",
+      "style",
+      "ref",
+      "refactor",
+      "tests",
+      "test",
+      "build",
+      "ci",
+      "chore",
+      "meta",
+      "deps",
+      "dep"
+    ]
   }
 ];
 
@@ -31,8 +42,11 @@ const FLAVOR_CONFIG = [
 function getFlavorConfig(prFlavor) {
   const normalizedFlavor = prFlavor.toLowerCase().trim();
 
+  // Strip scope/context from conventional commit format: "type(scope)" -> "type"
+  const baseType = normalizedFlavor.replace(/\([^)]*\)/, '');
+
   const config = FLAVOR_CONFIG.find(config =>
-    config.labels.includes(normalizedFlavor)
+    config.labels.includes(normalizedFlavor) || config.labels.includes(baseType)
   );
 
   return config || {
