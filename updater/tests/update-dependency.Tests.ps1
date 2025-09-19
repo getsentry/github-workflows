@@ -16,10 +16,13 @@ BeforeAll {
     }
     $repoUrl = 'https://github.com/getsentry/github-workflows'
 
-    # Find the latest latest version in this repo. We're intentionally using different code than `update-dependency.ps1`
-    # script uses to be able to catch issues, if any.
-    $currentVersion = (git -c 'versionsort.suffix=-' ls-remote --tags --sort='v:refname' $repoUrl `
-        | Select-Object -Last 1 | Select-String -Pattern 'refs/tags/(.*)$').Matches.Groups[1].Value
+    # Find the latest latest version in this repo using the same logic as update-dependency.ps1
+    . "$PSScriptRoot/../scripts/common.ps1"
+    [string[]]$tags = $(git ls-remote --refs --tags $repoUrl)
+    $tags = $tags | ForEach-Object { ($_ -split '\s+')[1] -replace '^refs/tags/', '' }
+    $tags = $tags -match '^v?([0-9.]+)$'
+    $tags = & "$PSScriptRoot/../scripts/sort-versions.ps1" $tags
+    $currentVersion = $tags[-1]
 }
 
 Describe ('update-dependency') {
