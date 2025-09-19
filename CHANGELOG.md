@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Use GITHUB_WORKFLOW_REF instead of _workflow_version input parameter to automatically determine workflow script versions ([#109](https://github.com/getsentry/github-workflows/pull/109))
+
 ## 2.14.0
 
 ### Features
