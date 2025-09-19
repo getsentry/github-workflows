@@ -1,8 +1,9 @@
 name: Sync tags with releases
 
 on:
-  release:
-    types: [published, edited]
+  workflow_dispatch:
+  # release:
+  #  types: [published, edited]
 
 jobs:
   actions-tagger:
