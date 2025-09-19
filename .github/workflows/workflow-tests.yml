@@ -40,7 +40,7 @@ jobs:
       - run: "[[ '${{ needs.updater-create-pr.outputs.prBranch }}' == 'deps/updater/tests/sentry-cli.properties' ]]"
 
       - run: "[[ '${{ needs.updater-test-args.outputs.baseBranch }}' == '' ]]"
-      - run: "[[ '${{ needs.updater-test-args.outputs.originalTag }}' =~ ^v?[0-9]+\\.[0-9]+\\.[0-9]+$ ]]"
+      - run: "[[ '${{ needs.updater-test-args.outputs.originalTag }}' == 'latest' || '${{ needs.updater-test-args.outputs.originalTag }}' =~ ^v?[0-9]+\\.[0-9]+\\.[0-9]+$ ]]"
       - run: "[[ '${{ needs.updater-test-args.outputs.originalTag }}' == '${{ needs.updater-test-args.outputs.latestTag }}' ]]"
       - run: "[[ '${{ needs.updater-test-args.outputs.prUrl }}' == '' ]]"
       - run: "[[ '${{ needs.updater-test-args.outputs.prBranch }}' == '' ]]"
