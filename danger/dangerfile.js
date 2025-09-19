@@ -103,6 +103,21 @@ async function reportMissingChangelog(changelogFile) {
   const flavorConfig = getFlavorConfig(prFlavor);
   const sectionName = flavorConfig.changelog || "Features";
 
+  // Check if changelog file is part of the PR diff
+  // GitHub API can only create review comments on files that are modified in the PR
+  const allChangedFiles = danger.git.created_files
+    .concat(danger.git.modified_files)
+    .concat(danger.git.deleted_files);
+
+  const isChangelogInDiff = allChangedFiles.includes(changelogFile);
+
+  if (!isChangelogInDiff) {
+    // Cannot create inline suggestions on files not in the diff
+    console.log(`::warning::Cannot create inline suggestion: ${changelogFile} is not modified in this PR`);
+    showMarkdownInstructions(changelogFile, sectionName);
+    return;
+  }
+
   try {
     // Get changelog content
     const changelogContent = await danger.github.utils.fileContents(changelogFile);
