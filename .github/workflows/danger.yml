@@ -24,6 +24,7 @@ jobs:
 
       - name: Download dangerfile.js and utilities
         run: |
+          printenv
           wget https://raw.githubusercontent.com/getsentry/github-workflows/${{ inputs._workflow_version }}/danger/dangerfile.js -P ${{ runner.temp }}
           wget https://raw.githubusercontent.com/getsentry/github-workflows/${{ inputs._workflow_version }}/danger/dangerfile-utils.js -P ${{ runner.temp }}
 
