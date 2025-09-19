@@ -1,3 +1,5 @@
+const { getFlavorConfig, findChangelogInsertionPoint, extractPRFlavor } = require('./dangerfile-utils.js');
+
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
 const isFork = headRepoName != baseRepoName;
@@ -36,27 +38,15 @@ if (isFork) {
 
 // e.g. "feat" if PR title is "Feat : add more useful stuff"
 // or  "ci" if PR branch is "ci/update-danger"
-const prFlavor = (function () {
-  if (danger.github && danger.github.pr) {
-    if (danger.github.pr.title) {
-      const parts = danger.github.pr.title.split(":");
-      if (parts.length > 1) {
-        return parts[0].toLowerCase().trim();
-      }
-    }
-    if (danger.github.pr.head && danger.github.pr.head.ref) {
-      const parts = danger.github.pr.head.ref.split("/");
-      if (parts.length > 1) {
-        return parts[0].toLowerCase();
-      }
-    }
-  }
-  return "";
-})();
+const prFlavor = extractPRFlavor(
+  danger.github?.pr?.title,
+  danger.github?.pr?.head?.ref
+);
 console.log(`::debug:: PR Flavor: '${prFlavor}'`);
 
 async function checkDocs() {
-  if (prFlavor.startsWith("feat")) {
+  const flavorConfig = getFlavorConfig(prFlavor);
+  if (flavorConfig.isFeature) {
     message(
       'Do not forget to update <a href="https://github.com/getsentry/sentry-docs">Sentry-docs</a> with your feature once the pull request gets approved.'
     );
@@ -65,10 +55,11 @@ async function checkDocs() {
 
 async function checkChangelog() {
   const changelogFile = "CHANGELOG.md";
+  const flavorConfig = getFlavorConfig(prFlavor);
 
-  // Check if skipped
+  // Check if skipped - either by flavor config, explicit skip, or skip label
   if (
-    ["ci", "test", "deps", "chore(deps)", "build(deps)"].includes(prFlavor) ||
+    flavorConfig.changelog === undefined ||
     (danger.github.pr.body + "").includes("#skip-changelog") ||
     (danger.github.pr.labels || []).some(label => label.name === 'skip-changelog')
   ) {
@@ -86,7 +77,7 @@ async function checkChangelog() {
 
   // check if a changelog entry exists
   if (!changelogMatch) {
-    return reportMissingChangelog(changelogFile);
+    return await reportMissingChangelog(changelogFile);
   }
 
   // Check if the entry is added to an Unreleased section (or rather, check that it's not added to a released one)
@@ -103,18 +94,44 @@ async function checkChangelog() {
   }
 }
 
-/// Report missing changelog entry
-function reportMissingChangelog(changelogFile) {
-  fail("Please consider adding a changelog entry for the next release.", changelogFile);
 
+/// Report missing changelog entry
+async function reportMissingChangelog(changelogFile) {
   const prTitleFormatted = danger.github.pr.title
     .split(": ")
     .slice(-1)[0]
     .trim()
     .replace(/\.+$/, "");
 
-  markdown(
-    `
+  try {
+    const changelogContents = await danger.github.utils.fileContents(changelogFile);
+    const lines = changelogContents.split('\n');
+
+    // Determine the appropriate section based on PR flavor
+    const flavorConfig = getFlavorConfig(prFlavor);
+    const sectionName = flavorConfig.changelog;
+    const newEntry = `- ${prTitleFormatted} ([#${danger.github.pr.number}](${danger.github.pr.html_url}))`;
+
+    // Find where to insert the changelog entry
+    const insertionResult = findChangelogInsertionPoint(lines, sectionName);
+
+    if (insertionResult.success) {
+      // Create an inline suggestion
+      const suggestion = insertionResult.isNewSection
+        ? `${insertionResult.sectionHeader}\n\n${newEntry}`
+        : newEntry;
+
+      fail(
+        `Please consider adding a changelog entry for the next release:\n\n\`\`\`suggestion\n${suggestion}\n\`\`\``,
+        changelogFile,
+        insertionResult.lineNumber
+      );
+    } else {
+      // Fallback to the original approach if we can't determine the insertion point
+      fail("Please consider adding a changelog entry for the next release.", changelogFile);
+
+      markdown(
+        `
 ### Instructions and example for changelog
 
 Please add an entry to \`${changelogFile}\` to the "Unreleased" section. Make sure the entry includes this PR's number.
@@ -124,12 +141,20 @@ Example:
 \`\`\`markdown
 ## Unreleased
 
+### ${sectionName}
+
 - ${prTitleFormatted} ([#${danger.github.pr.number}](${danger.github.pr.html_url}))
 \`\`\`
 
 If none of the above apply, you can opt out of this check by adding \`#skip-changelog\` to the PR description or adding a \`skip-changelog\` label.`.trim(),
-    changelogFile
-  );
+        changelogFile
+      );
+    }
+  } catch (error) {
+    console.log(`::debug:: Error reading changelog for suggestion: ${error.message}`);
+    // Fallback to original approach
+    fail("Please consider adding a changelog entry for the next release.", changelogFile);
+  }
 }
 
 async function checkActionsArePinned() {
