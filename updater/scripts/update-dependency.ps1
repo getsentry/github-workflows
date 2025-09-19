@@ -20,10 +20,14 @@ Set-StrictMode -Version latest
 . "$PSScriptRoot/common.ps1"
 
 # Parse CMake file with dependency name
-if ($Path -match '^(.+\.cmake)(#.+)?$') {
+if ($Path -match '^(.+\.cmake)(#(.+))?$') {
     $Path = $Matches[1]  # Set Path to file for existing logic
-    if ($Matches[2]) {
-        $cmakeDep = $Matches[2].TrimStart('#')
+    if ($Matches[3]) {
+        $cmakeDep = $Matches[3]
+        # Validate dependency name follows CMake naming conventions
+        if ($cmakeDep -notmatch '^[a-zA-Z][a-zA-Z0-9_.-]*$') {
+            throw "Invalid CMake dependency name: '$cmakeDep'. Must start with letter and contain only alphanumeric, underscore, dot, or hyphen."
+        }
     } else {
         $cmakeDep = $null  # Will auto-detect
     }
