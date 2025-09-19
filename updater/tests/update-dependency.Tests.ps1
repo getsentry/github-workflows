@@ -275,7 +275,7 @@ FetchContent_MakeAvailable(sentry-native)
 
             $content = Get-Content $testFile -Raw
             $content | Should -Not -Match 'v0.9.1'
-            $content | Should -Match 'GIT_TAG \d+\.\d+\.\d+'
+            $content | Should -Match 'GIT_TAG 0\.11\.0'
             $content | Should -Match 'GIT_REPOSITORY https://github.com/getsentry/sentry-native'
         }
 
@@ -298,7 +298,7 @@ FetchContent_MakeAvailable(sentry-native)
 
             $content = Get-Content $testFile -Raw
             $content | Should -Not -Match 'v0.9.0'
-            $content | Should -Match 'GIT_TAG \d+\.\d+\.\d+'
+            $content | Should -Match 'GIT_TAG 0\.11\.0'
         }
 
         It 'updates from hash to newer tag preserving hash format' {
