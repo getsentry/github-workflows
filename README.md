@@ -46,11 +46,35 @@ jobs:
       name: Gradle Plugin
     secrets:
       api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
+  # Update a CMake FetchContent dependency with auto-detection (single dependency only)
+  sentry-native:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: vendor/sentry-native.cmake
+      name: Sentry Native SDK
+    secrets:
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
+  # Update a CMake FetchContent dependency with explicit dependency name
+  deps:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: vendor/dependencies.cmake#googletest
+      name: GoogleTest
+    secrets:
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
 ```
 
 ### Inputs
 
-* `path`: Dependency path in the source repository, this can be either a submodule, a .properties file or a shell script.
+* `path`: Dependency path in the source repository. Supported formats:
+  * Submodule path
+  * Properties file (`.properties`)
+  * Shell script (`.ps1`, `.sh`)
+  * CMake file with FetchContent:
+    * `path/to/file.cmake#DepName` - specify dependency name
+    * `path/to/file.cmake` - auto-detection (single dependency only)
   * type: string
   * required: true
 * `name`: Name used in the PR title and the changelog entry.

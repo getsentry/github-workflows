@@ -6,6 +6,9 @@ param(
     #    * `get-version` - return the currently specified dependency version
     #    * `get-repo` - return the repository url (e.g.  https://github.com/getsentry/dependency)
     #    * `set-version` - update the dependency version (passed as another string argument after this one)
+    #  - a CMake file (.cmake) with FetchContent_Declare statements:
+    #    * Use `path/to/file.cmake#DepName` to specify dependency name
+    #    * Or just `path/to/file.cmake` if file contains single FetchContent_Declare
     [Parameter(Mandatory = $true)][string] $Path,
     # RegEx pattern that will be matched against available versions when picking the latest one
     [string] $Pattern = '',
@@ -15,6 +18,24 @@ param(
 
 Set-StrictMode -Version latest
 . "$PSScriptRoot/common.ps1"
+
+# Parse CMake file with dependency name
+if ($Path -match '^(.+\.cmake)(#(.+))?$') {
+    $Path = $Matches[1]  # Set Path to file for existing logic
+    if ($Matches[3]) {
+        $cmakeDep = $Matches[3]
+        # Validate dependency name follows CMake naming conventions
+        if ($cmakeDep -notmatch '^[a-zA-Z][a-zA-Z0-9_.-]*$') {
+            throw "Invalid CMake dependency name: '$cmakeDep'. Must start with letter and contain only alphanumeric, underscore, dot, or hyphen."
+        }
+    } else {
+        $cmakeDep = $null  # Will auto-detect
+    }
+    $isCMakeFile = $true
+} else {
+    $cmakeDep = $null
+    $isCMakeFile = $false
+}
 
 if (-not (Test-Path $Path ))
 {
@@ -41,7 +62,32 @@ if (-not $isSubmodule)
     $isScript = $Path -match '\.(ps1|sh)$'
     function DependencyConfig ([Parameter(Mandatory = $true)][string] $action, [string] $value = $null)
     {
-        if ($isScript)
+        if ($isCMakeFile) {
+            # CMake file handling
+            switch ($action) {
+                'get-version' {
+                    $fetchContent = Parse-CMakeFetchContent $Path $cmakeDep
+                    $currentValue = $fetchContent.GitTag
+                    if ($currentValue -match '^[a-f0-9]{40}$') {
+                        # Try to resolve hash to tag for version comparison
+                        $repo = $fetchContent.GitRepository
+                        $tagForHash = Find-TagForHash $repo $currentValue
+                        return $tagForHash ?? $currentValue
+                    }
+                    return $currentValue
+                }
+                'get-repo' {
+                    return (Parse-CMakeFetchContent $Path $cmakeDep).GitRepository
+                }
+                'set-version' {
+                    Update-CMakeFile $Path $cmakeDep $value
+                }
+                Default {
+                    throw "Unknown action $action"
+                }
+            }
+        }
+        elseif ($isScript)
         {
             if (Get-Command 'chmod' -ErrorAction SilentlyContinue)
             {
@@ -99,6 +145,9 @@ if (-not $isSubmodule)
             }
         }
     }
+
+    # Load CMake helper functions
+    . "$PSScriptRoot/cmake-functions.ps1"
 }
 
 if ("$Tag" -eq '')
