@@ -38,11 +38,6 @@ on:
         type: string
         required: false
         default: create
-      _workflow_version:
-        description: 'Internal: specify github-workflows (this repo) revision to use when checking out scripts.'
-        type: string
-        required: false
-        default: v2 # Note: update when publishing a new version
     secrets:
       api-token:
         required: true
@@ -141,11 +136,13 @@ jobs:
         # Note: cannot use `actions/checkout` at the moment because you can't clone outside of the repo root.
         #       Follow https://github.com/actions/checkout/issues/197
         run: |
+          # Extract the ref from GITHUB_WORKFLOW_REF (e.g., getsentry/github-workflows/.github/workflows/updater.yml@refs/pull/109/merge -> refs/pull/109/merge)
+          WORKFLOW_REF=$(echo "${{ github.workflow_ref }}" | sed 's/.*@//')
           mkdir -p ${{ runner.temp }}/ghwf
           cd ${{ runner.temp }}/ghwf
           git init
           git remote add origin https://github.com/getsentry/github-workflows.git
-          git fetch --depth 1 origin ${{ inputs._workflow_version }}
+          git fetch --depth 1 origin ${WORKFLOW_REF}
           git checkout FETCH_HEAD
 
       - name: Update to the latest version
