@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { getFlavorConfig, findChangelogInsertionPoint, extractPRFlavor, FLAVOR_CONFIG } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, FLAVOR_CONFIG } = require('./dangerfile-utils.js');
 
 describe('dangerfile-utils', () => {
   describe('getFlavorConfig', () => {
@@ -143,118 +143,6 @@ describe('dangerfile-utils', () => {
     });
   });
 
-  describe('findChangelogInsertionPoint', () => {
-    it('should find insertion point in existing section', () => {
-      const changelog = [
-        '# Changelog',
-        '',
-        '## Unreleased',
-        '',
-        '### Features',
-        '',
-        '- Some existing feature ([#123](...))',
-        '',
-        '## 1.0.0'
-      ];
-
-      const result = findChangelogInsertionPoint(changelog, 'Features');
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.lineNumber, 8); // Should insert after existing feature
-      assert.strictEqual(result.isNewSection, false);
-      assert.strictEqual(result.sectionHeader, null);
-    });
-
-    it('should create new section when section does not exist', () => {
-      const changelog = [
-        '# Changelog',
-        '',
-        '## Unreleased',
-        '',
-        '### Features',
-        '',
-        '- Some existing feature ([#123](...))',
-        '',
-        '## 1.0.0'
-      ];
-
-      const result = findChangelogInsertionPoint(changelog, 'Security');
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.isNewSection, true);
-      assert.strictEqual(result.sectionHeader, '### Security');
-      // Should insert before existing Features section
-      assert.strictEqual(result.lineNumber, 5);
-    });
-
-    it('should handle changelog with no existing sections', () => {
-      const changelog = [
-        '# Changelog',
-        '',
-        '## Unreleased',
-        '',
-        '## 1.0.0'
-      ];
-
-      const result = findChangelogInsertionPoint(changelog, 'Features');
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.isNewSection, true);
-      assert.strictEqual(result.sectionHeader, '### Features');
-      // Should insert after Unreleased header
-      assert.strictEqual(result.lineNumber, 4);
-    });
-
-    it('should fail when no Unreleased section exists', () => {
-      const changelog = [
-        '# Changelog',
-        '',
-        '## 1.0.0',
-        '',
-        '- Initial release'
-      ];
-
-      const result = findChangelogInsertionPoint(changelog, 'Features');
-      assert.strictEqual(result.success, false);
-    });
-
-    it('should handle empty section', () => {
-      const changelog = [
-        '# Changelog',
-        '',
-        '## Unreleased',
-        '',
-        '### Features',
-        '',
-        '### Fixes',
-        '',
-        '- Some fix ([#456](...))',
-        '',
-        '## 1.0.0'
-      ];
-
-      const result = findChangelogInsertionPoint(changelog, 'Features');
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.isNewSection, false);
-      // Should insert in empty Features section
-      assert.strictEqual(result.lineNumber, 7);
-    });
-
-    it('should be case-insensitive for section matching', () => {
-      const changelog = [
-        '# Changelog',
-        '',
-        '## unreleased',
-        '',
-        '### features',
-        '',
-        '- Some existing feature ([#123](...))',
-        '',
-        '## 1.0.0'
-      ];
-
-      const result = findChangelogInsertionPoint(changelog, 'Features');
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.isNewSection, false);
-    });
-  });
 
   describe('FLAVOR_CONFIG integrity', () => {
     it('should have unique labels across all configs', () => {
