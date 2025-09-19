@@ -296,7 +296,7 @@ FetchContent_MakeAvailable(sentry-native)
 
             $content = Get-Content $hashTestFile -Raw
             # Should have new hash with tag comment
-            $content | Should -Match 'GIT_TAG [a-f0-9]{40} # 0.11.0'
+            $content | Should -Match 'GIT_TAG 3bd091313ae97be90be62696a2babe591a988eb8 # 0.11.0'
             # Should not have old hash or old comment
             $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
             $content | Should -Not -Match '# 0.9.1'
