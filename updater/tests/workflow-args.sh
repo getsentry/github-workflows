@@ -5,7 +5,8 @@ set -euo pipefail
 
 case $1 in
 get-version)
-    echo "latest"
+    # Return the actual latest tag to ensure no update is needed
+    git describe --tags --abbrev=0
 
     # Run actual tests here.
     if [[ "$(uname)" != 'Darwin' ]]; then
