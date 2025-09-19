@@ -1,12 +1,12 @@
 /// Unified configuration for PR flavors (based on real Sentry usage analysis)
 const FLAVOR_CONFIG = [
   {
-    labels: ["feat", "feature"],
+    labels: ["feat", "feature", "add", "implement"],
     changelog: "Features",
     isFeature: true
   },
   {
-    labels: ["fix", "bug", "bugfix"],
+    labels: ["fix", "bug", "bugfix", "resolve", "correct"],
     changelog: "Fixes"
   },
   {
@@ -33,7 +33,11 @@ const FLAVOR_CONFIG = [
       "chore",
       "meta",
       "deps",
-      "dep"
+      "dep",
+      "update",
+      "bump",
+      "cleanup",
+      "format"
     ]
   }
 ];
@@ -60,11 +64,19 @@ function getFlavorConfig(prFlavor) {
 function extractPRFlavor(prTitle, prBranchRef) {
   // Validate input parameters to prevent runtime errors
   if (prTitle && typeof prTitle === 'string') {
-    const parts = prTitle.split(":");
-    if (parts.length > 1) {
-      return parts[0].toLowerCase().trim();
+    // First try conventional commit format: "type(scope): description"
+    const colonParts = prTitle.split(":");
+    if (colonParts.length > 1) {
+      return colonParts[0].toLowerCase().trim();
+    }
+
+    // Fallback: try first word for non-conventional titles like "fix memory leak"
+    const firstWord = prTitle.trim().split(/\s+/)[0];
+    if (firstWord) {
+      return firstWord.toLowerCase();
     }
   }
+
   if (prBranchRef && typeof prBranchRef === 'string') {
     const parts = prBranchRef.split("/");
     if (parts.length > 1) {

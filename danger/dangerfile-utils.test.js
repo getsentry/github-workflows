@@ -100,6 +100,37 @@ describe('dangerfile-utils', () => {
       const multipleParens = getFlavorConfig('feat(scope1)(scope2)');
       assert.strictEqual(multipleParens.changelog, 'Features'); // Should strip at first (
     });
+
+    it('should handle non-conventional action words', () => {
+      // Feature-related words
+      const addConfig = getFlavorConfig('add');
+      assert.strictEqual(addConfig.changelog, 'Features');
+      assert.strictEqual(addConfig.isFeature, true);
+
+      const implementConfig = getFlavorConfig('implement');
+      assert.strictEqual(implementConfig.changelog, 'Features');
+      assert.strictEqual(implementConfig.isFeature, true);
+
+      // Fix-related words
+      const resolveConfig = getFlavorConfig('resolve');
+      assert.strictEqual(resolveConfig.changelog, 'Fixes');
+
+      const correctConfig = getFlavorConfig('correct');
+      assert.strictEqual(correctConfig.changelog, 'Fixes');
+
+      // Internal change words
+      const updateConfig = getFlavorConfig('update');
+      assert.strictEqual(updateConfig.changelog, undefined);
+
+      const bumpConfig = getFlavorConfig('bump');
+      assert.strictEqual(bumpConfig.changelog, undefined);
+
+      const cleanupConfig = getFlavorConfig('cleanup');
+      assert.strictEqual(cleanupConfig.changelog, undefined);
+
+      const formatConfig = getFlavorConfig('format');
+      assert.strictEqual(formatConfig.changelog, undefined);
+    });
   });
 
   describe('extractPRFlavor', () => {
@@ -131,14 +162,20 @@ describe('dangerfile-utils', () => {
     });
 
     it('should return empty string if no flavor found', () => {
-      const flavor1 = extractPRFlavor('Simple title', null);
+      // Empty or whitespace-only strings
+      const flavor1 = extractPRFlavor('', null);
       assert.strictEqual(flavor1, '');
 
-      const flavor2 = extractPRFlavor(null, 'simple-branch');
+      const flavor2 = extractPRFlavor('   ', null);
       assert.strictEqual(flavor2, '');
 
-      const flavor3 = extractPRFlavor(null, null);
+      // No branch with slash
+      const flavor3 = extractPRFlavor(null, 'simple-branch');
       assert.strictEqual(flavor3, '');
+
+      // All null/undefined
+      const flavor4 = extractPRFlavor(null, null);
+      assert.strictEqual(flavor4, '');
     });
 
     it('should handle edge cases', () => {
@@ -171,6 +208,32 @@ describe('dangerfile-utils', () => {
 
       const flavor5 = extractPRFlavor('valid: title', 42);
       assert.strictEqual(flavor5, 'valid');
+    });
+
+    it('should extract first word from non-conventional PR titles', () => {
+      // Non-conventional titles starting with action words
+      const flavor1 = extractPRFlavor('Fix memory leak in authentication', null);
+      assert.strictEqual(flavor1, 'fix');
+
+      const flavor2 = extractPRFlavor('Add support for new API endpoint', null);
+      assert.strictEqual(flavor2, 'add');
+
+      const flavor3 = extractPRFlavor('Update dependencies to latest versions', null);
+      assert.strictEqual(flavor3, 'update');
+
+      const flavor4 = extractPRFlavor('Remove deprecated configuration options', null);
+      assert.strictEqual(flavor4, 'remove');
+
+      const flavor5 = extractPRFlavor('Bump version to 2.0.0', null);
+      assert.strictEqual(flavor5, 'bump');
+
+      // Should still prefer conventional format over first word
+      const flavor6 = extractPRFlavor('chore: Update dependencies to latest versions', null);
+      assert.strictEqual(flavor6, 'chore');
+
+      // Handle extra whitespace
+      const flavor7 = extractPRFlavor('  Fix   memory   leak  ', null);
+      assert.strictEqual(flavor7, 'fix');
     });
   });
 
