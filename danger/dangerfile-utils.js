@@ -1,4 +1,4 @@
-/// Unified configuration for PR flavors
+/// Unified configuration for PR flavors (based on real Sentry usage analysis)
 const FLAVOR_CONFIG = [
   {
     labels: ["feat", "feature"],
@@ -7,7 +7,11 @@ const FLAVOR_CONFIG = [
   },
   {
     labels: ["fix", "bug", "bugfix"],
-    changelog: "Fixes"
+    changelog: "Bug Fixes"  // More standard than "Fixes"
+  },
+  {
+    labels: ["ref"],  // Very common in Sentry repos (14 occurrences)
+    changelog: "Changes"
   },
   {
     labels: ["sec", "security"],
@@ -18,7 +22,7 @@ const FLAVOR_CONFIG = [
     changelog: "Performance"
   },
   {
-    labels: ["docs", "doc", "style", "refactor", "test", "build", "ci", "chore", "deps", "dep", "chore(deps)", "build(deps)"],
+    labels: ["docs", "doc", "style", "refactor", "tests", "test", "build", "ci", "chore", "meta", "deps", "dep", "chore(deps)", "build(deps)"],
     changelog: undefined  // Internal changes - no changelog needed
   }
 ];

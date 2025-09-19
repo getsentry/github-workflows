@@ -16,20 +16,20 @@ describe('dangerfile-utils', () => {
 
     it('should return config for fixes without isFeature', () => {
       const fixConfig = getFlavorConfig('fix');
-      assert.strictEqual(fixConfig.changelog, 'Fixes');
+      assert.strictEqual(fixConfig.changelog, 'Bug Fixes');
       assert.strictEqual(fixConfig.isFeature, undefined);
 
       const bugConfig = getFlavorConfig('bug');
-      assert.strictEqual(bugConfig.changelog, 'Fixes');
+      assert.strictEqual(bugConfig.changelog, 'Bug Fixes');
       assert.strictEqual(bugConfig.isFeature, undefined);
 
       const bugfixConfig = getFlavorConfig('bugfix');
-      assert.strictEqual(bugfixConfig.changelog, 'Fixes');
+      assert.strictEqual(bugfixConfig.changelog, 'Bug Fixes');
       assert.strictEqual(bugfixConfig.isFeature, undefined);
     });
 
     it('should return config with undefined changelog for skipped flavors', () => {
-      const skipFlavors = ['docs', 'doc', 'ci', 'test', 'style', 'refactor', 'build', 'chore', 'deps', 'dep', 'chore(deps)', 'build(deps)'];
+      const skipFlavors = ['docs', 'doc', 'ci', 'tests', 'test', 'style', 'refactor', 'build', 'chore', 'meta', 'deps', 'dep', 'chore(deps)', 'build(deps)'];
 
       skipFlavors.forEach(flavor => {
         const config = getFlavorConfig(flavor);
@@ -53,7 +53,7 @@ describe('dangerfile-utils', () => {
       assert.strictEqual(config1.changelog, 'Features');
 
       const config2 = getFlavorConfig(' fix ');
-      assert.strictEqual(config2.changelog, 'Fixes');
+      assert.strictEqual(config2.changelog, 'Bug Fixes');
     });
 
     it('should handle all security-related flavors', () => {
@@ -70,6 +70,12 @@ describe('dangerfile-utils', () => {
 
       const performanceConfig = getFlavorConfig('performance');
       assert.strictEqual(performanceConfig.changelog, 'Performance');
+    });
+
+    it('should handle ref flavor (common in Sentry repos)', () => {
+      const refConfig = getFlavorConfig('ref');
+      assert.strictEqual(refConfig.changelog, 'Changes');
+      assert.strictEqual(refConfig.isFeature, undefined);
     });
   });
 
