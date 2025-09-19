@@ -319,8 +319,8 @@ FetchContent_MakeAvailable(sentry-native)
             UpdateDependency $testFile
 
             $content = Get-Content $testFile -Raw
-            # Should update to a new hash with tag comment (note: may have comment formatting issues)
-            $content | Should -Match 'GIT_TAG [a-f0-9]{40} # \d+\.\d+\.\d+'
+            # Should update to a new hash with tag comment
+            $content | Should -Match 'GIT_TAG 3bd091313ae97be90be62696a2babe591a988eb8 # 0\.11\.0'
             $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
         }
 
