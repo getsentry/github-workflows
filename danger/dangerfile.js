@@ -1,4 +1,4 @@
-const { getFlavorConfig, findChangelogInsertionPoint, extractPRFlavor } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor } = require('./dangerfile-utils.js');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -77,7 +77,7 @@ async function checkChangelog() {
 
   // check if a changelog entry exists
   if (!changelogMatch) {
-    return await reportMissingChangelog(changelogFile);
+    return reportMissingChangelog(changelogFile);
   }
 
   // Check if the entry is added to an Unreleased section (or rather, check that it's not added to a released one)
@@ -96,42 +96,21 @@ async function checkChangelog() {
 
 
 /// Report missing changelog entry
-async function reportMissingChangelog(changelogFile) {
+function reportMissingChangelog(changelogFile) {
+  fail("Please consider adding a changelog entry for the next release.", changelogFile);
+
   const prTitleFormatted = danger.github.pr.title
     .split(": ")
     .slice(-1)[0]
     .trim()
     .replace(/\.+$/, "");
 
-  try {
-    const changelogContents = await danger.github.utils.fileContents(changelogFile);
-    const lines = changelogContents.split('\n');
+  // Determine the appropriate section based on PR flavor
+  const flavorConfig = getFlavorConfig(prFlavor);
+  const sectionName = flavorConfig.changelog || "Features";
 
-    // Determine the appropriate section based on PR flavor
-    const flavorConfig = getFlavorConfig(prFlavor);
-    const sectionName = flavorConfig.changelog;
-    const newEntry = `- ${prTitleFormatted} ([#${danger.github.pr.number}](${danger.github.pr.html_url}))`;
-
-    // Find where to insert the changelog entry
-    const insertionResult = findChangelogInsertionPoint(lines, sectionName);
-
-    if (insertionResult.success) {
-      // Create an inline suggestion
-      const suggestion = insertionResult.isNewSection
-        ? `${insertionResult.sectionHeader}\n\n${newEntry}`
-        : newEntry;
-
-      fail(
-        `Please consider adding a changelog entry for the next release:\n\n\`\`\`suggestion\n${suggestion}\n\`\`\``,
-        changelogFile,
-        insertionResult.lineNumber
-      );
-    } else {
-      // Fallback to the original approach if we can't determine the insertion point
-      fail("Please consider adding a changelog entry for the next release.", changelogFile);
-
-      markdown(
-        `
+  markdown(
+    `
 ### Instructions and example for changelog
 
 Please add an entry to \`${changelogFile}\` to the "Unreleased" section. Make sure the entry includes this PR's number.
@@ -147,14 +126,8 @@ Example:
 \`\`\`
 
 If none of the above apply, you can opt out of this check by adding \`#skip-changelog\` to the PR description or adding a \`skip-changelog\` label.`.trim(),
-        changelogFile
-      );
-    }
-  } catch (error) {
-    console.log(`::debug:: Error reading changelog for suggestion: ${error.message}`);
-    // Fallback to original approach
-    fail("Please consider adding a changelog entry for the next release.", changelogFile);
-  }
+    changelogFile
+  );
 }
 
 async function checkActionsArePinned() {
