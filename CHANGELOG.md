@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Dependencies
+
+- Bump Workflow args test script from latest to v2.14.0 ([#108](https://github.com/getsentry/github-workflows/pull/108))
+  - [changelog](https://github.com/getsentry/github-workflows/blob/main/CHANGELOG.md#2140)
+  - [diff](https://github.com/getsentry/github-workflows/compare/latest...2.14.0)
+
 ## 2.14.0
 
 ### Features
