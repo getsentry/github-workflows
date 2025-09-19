@@ -18,32 +18,8 @@ const FLAVOR_CONFIG = [
     changelog: "Performance"
   },
   {
-    labels: ["docs", "doc"],
-    changelog: undefined  // Internal documentation changes
-  },
-  {
-    labels: ["style", "refactor"],
-    changelog: undefined  // Internal code improvements - no changelog needed
-  },
-  {
-    labels: ["test"],
-    changelog: undefined  // Test updates don't need changelog
-  },
-  {
-    labels: ["build"],
-    changelog: undefined  // Build system changes
-  },
-  {
-    labels: ["ci"],
-    changelog: undefined  // CI changes don't need changelog
-  },
-  {
-    labels: ["chore"],
-    changelog: undefined  // General maintenance
-  },
-  {
-    labels: ["deps", "dep", "chore(deps)", "build(deps)"],
-    changelog: undefined  // Dependency updates
+    labels: ["docs", "doc", "style", "refactor", "test", "build", "ci", "chore", "deps", "dep", "chore(deps)", "build(deps)"],
+    changelog: undefined  // Internal changes - no changelog needed
   }
 ];
 
