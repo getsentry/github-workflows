@@ -43,7 +43,8 @@ function getFlavorConfig(prFlavor) {
   const normalizedFlavor = prFlavor.toLowerCase().trim();
 
   // Strip scope/context from conventional commit format: "type(scope)" -> "type"
-  const baseType = normalizedFlavor.replace(/\([^)]*\)/, '');
+  const parenIndex = normalizedFlavor.indexOf('(');
+  const baseType = parenIndex !== -1 ? normalizedFlavor.substring(0, parenIndex) : normalizedFlavor;
 
   const config = FLAVOR_CONFIG.find(config =>
     config.labels.includes(normalizedFlavor) || config.labels.includes(baseType)

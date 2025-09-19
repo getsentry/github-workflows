@@ -89,6 +89,16 @@ describe('dangerfile-utils', () => {
 
       const scopedChore = getFlavorConfig('chore(deps)');
       assert.strictEqual(scopedChore.changelog, undefined);
+
+      // Test edge cases for scope stripping
+      const nestedParens = getFlavorConfig('feat(scope(nested))');
+      assert.strictEqual(nestedParens.changelog, 'Features'); // Should strip at first (
+
+      const noCloseParen = getFlavorConfig('feat(scope');
+      assert.strictEqual(noCloseParen.changelog, 'Features'); // Should still work
+
+      const multipleParens = getFlavorConfig('feat(scope1)(scope2)');
+      assert.strictEqual(multipleParens.changelog, 'Features'); // Should strip at first (
     });
   });
 
