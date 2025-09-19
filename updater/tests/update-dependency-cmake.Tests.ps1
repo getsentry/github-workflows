@@ -3,13 +3,12 @@ BeforeAll {
     . "$PSScriptRoot/../scripts/cmake-functions.ps1"
 }
 
-Describe 'CMake Helper Functions' {
-    Context 'Parse-CMakeFetchContent' {
+Describe 'Parse-CMakeFetchContent' {
+    Context 'Basic single dependency file' {
         BeforeAll {
             $script:tempDir = "$TestDrive/cmake-tests"
             New-Item $tempDir -ItemType Directory -Force | Out-Null
 
-            # Create test files with inline data
             $script:basicFile = "$tempDir/basic.cmake"
             @'
 include(FetchContent)
@@ -23,6 +22,33 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sentry-native)
 '@ | Out-File $basicFile
+        }
+
+        It 'parses with explicit dependency name' {
+            $result = Parse-CMakeFetchContent $basicFile 'sentry-native'
+
+            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
+            $result.GitTag | Should -Be 'v0.9.1'
+            $result.DepName | Should -Be 'sentry-native'
+        }
+
+        It 'auto-detects single dependency' {
+            $result = Parse-CMakeFetchContent $basicFile $null
+
+            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
+            $result.GitTag | Should -Be 'v0.9.1'
+            $result.DepName | Should -Be 'sentry-native'
+        }
+
+        It 'throws on missing dependency' {
+            { Parse-CMakeFetchContent $basicFile 'nonexistent' } | Should -Throw "*FetchContent_Declare for 'nonexistent' not found*"
+        }
+    }
+
+    Context 'Hash-based dependency file' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
 
             $script:hashFile = "$tempDir/hash.cmake"
             @'
@@ -38,6 +64,21 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sentry-native)
 '@ | Out-File $hashFile
+        }
+
+        It 'handles hash values correctly' {
+            $result = Parse-CMakeFetchContent $hashFile 'sentry-native'
+
+            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
+            $result.GitTag | Should -Be 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
+            $result.DepName | Should -Be 'sentry-native'
+        }
+    }
+
+    Context 'Complex formatting file' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
 
             $script:complexFile = "$tempDir/complex.cmake"
             @'
@@ -57,6 +98,21 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sentry-native)
 '@ | Out-File $complexFile
+        }
+
+        It 'handles complex multi-line formatting' {
+            $result = Parse-CMakeFetchContent $complexFile 'sentry-native'
+
+            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
+            $result.GitTag | Should -Be 'v0.9.1'
+            $result.DepName | Should -Be 'sentry-native'
+        }
+    }
+
+    Context 'Multiple dependencies file' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
 
             $script:multipleFile = "$tempDir/multiple.cmake"
             @'
@@ -76,6 +132,25 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sentry-native googletest)
 '@ | Out-File $multipleFile
+        }
+
+        It 'throws on multiple dependencies without explicit name' {
+            { Parse-CMakeFetchContent $multipleFile $null } | Should -Throw '*Multiple FetchContent declarations found*'
+        }
+
+        It 'handles specific dependency from multiple dependencies' {
+            $result = Parse-CMakeFetchContent $multipleFile 'googletest'
+
+            $result.GitRepository | Should -Be 'https://github.com/google/googletest'
+            $result.GitTag | Should -Be 'v1.14.0'
+            $result.DepName | Should -Be 'googletest'
+        }
+    }
+
+    Context 'Malformed files' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
 
             $script:missingRepoFile = "$tempDir/missing-repo.cmake"
             @'
@@ -98,54 +173,6 @@ FetchContent_Declare(
 '@ | Out-File $missingTagFile
         }
 
-        It 'parses basic FetchContent_Declare with explicit dependency name' {
-            $result = Parse-CMakeFetchContent $basicFile 'sentry-native'
-
-            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
-            $result.GitTag | Should -Be 'v0.9.1'
-            $result.DepName | Should -Be 'sentry-native'
-        }
-
-        It 'auto-detects single FetchContent_Declare' {
-            $result = Parse-CMakeFetchContent $basicFile $null
-
-            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
-            $result.GitTag | Should -Be 'v0.9.1'
-            $result.DepName | Should -Be 'sentry-native'
-        }
-
-        It 'handles hash values correctly' {
-            $result = Parse-CMakeFetchContent $hashFile 'sentry-native'
-
-            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
-            $result.GitTag | Should -Be 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
-            $result.DepName | Should -Be 'sentry-native'
-        }
-
-        It 'handles complex multi-line formatting' {
-            $result = Parse-CMakeFetchContent $complexFile 'sentry-native'
-
-            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
-            $result.GitTag | Should -Be 'v0.9.1'
-            $result.DepName | Should -Be 'sentry-native'
-        }
-
-        It 'throws on multiple dependencies without explicit name' {
-            { Parse-CMakeFetchContent $multipleFile $null } | Should -Throw '*Multiple FetchContent declarations found*'
-        }
-
-        It 'handles specific dependency from multiple dependencies' {
-            $result = Parse-CMakeFetchContent $multipleFile 'googletest'
-
-            $result.GitRepository | Should -Be 'https://github.com/google/googletest'
-            $result.GitTag | Should -Be 'v1.14.0'
-            $result.DepName | Should -Be 'googletest'
-        }
-
-        It 'throws on missing dependency' {
-            { Parse-CMakeFetchContent $basicFile 'nonexistent' } | Should -Throw "*FetchContent_Declare for 'nonexistent' not found*"
-        }
-
         It 'throws on missing GIT_REPOSITORY' {
             { Parse-CMakeFetchContent $missingRepoFile 'sentry-native' } | Should -Throw '*Could not parse GIT_REPOSITORY or GIT_TAG*'
         }
@@ -154,8 +181,10 @@ FetchContent_Declare(
             { Parse-CMakeFetchContent $missingTagFile 'sentry-native' } | Should -Throw '*Could not parse GIT_REPOSITORY or GIT_TAG*'
         }
     }
+}
 
-    Context 'Find-TagForHash' {
+Describe 'Find-TagForHash' {
+    Context 'Hash resolution scenarios' {
         It 'returns null for hash without matching tag' {
             # Use a fake hash that won't match any real tag
             $fakeHash = 'abcdef1234567890abcdef1234567890abcdef12'
@@ -179,13 +208,14 @@ FetchContent_Declare(
         # Note: Testing actual hash resolution requires network access
         # and is better suited for integration tests
     }
+}
 
-    Context 'Update-CMakeFile' {
+Describe 'Update-CMakeFile' {
+    Context 'Basic tag updates' {
         BeforeAll {
             $script:tempDir = "$TestDrive/cmake-update-tests"
             New-Item $tempDir -ItemType Directory -Force | Out-Null
 
-            # Template for basic CMake file
             $script:basicTemplate = @'
 include(FetchContent)
 
@@ -198,8 +228,47 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sentry-native)
 '@
+        }
 
-            # Template for hash-based CMake file
+        BeforeEach {
+            $script:basicTestFile = "$tempDir/basic-test.cmake"
+        }
+
+        It 'updates tag to tag preserving format' {
+            $basicTemplate | Out-File $basicTestFile
+
+            Update-CMakeFile $basicTestFile 'sentry-native' 'v0.9.2'
+
+            $content = Get-Content $basicTestFile -Raw
+            $content | Should -Match 'GIT_TAG v0.9.2'
+            $content | Should -Not -Match 'v0.9.1'
+        }
+
+        It 'preserves file structure and other content' {
+            $basicTemplate | Out-File $basicTestFile
+
+            Update-CMakeFile $basicTestFile 'sentry-native' 'v0.9.2'
+
+            $content = Get-Content $basicTestFile -Raw
+            $content | Should -Match 'include\(FetchContent\)'
+            $content | Should -Match 'FetchContent_MakeAvailable'
+            $content | Should -Match 'GIT_REPOSITORY https://github.com/getsentry/sentry-native'
+            $content | Should -Match 'GIT_SHALLOW FALSE'
+        }
+
+        It 'throws on failed regex match' {
+            $basicTemplate | Out-File $basicTestFile
+
+            # Try to update a dependency that doesn't exist
+            { Update-CMakeFile $basicTestFile 'nonexistent-dep' 'v1.0.0' } | Should -Throw "*FetchContent_Declare for 'nonexistent-dep' not found*"
+        }
+    }
+
+    Context 'Hash updates' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-update-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
+
             $script:hashTemplate = @'
 include(FetchContent)
 
@@ -213,8 +282,32 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sentry-native)
 '@
+        }
 
-            # Template for complex formatting
+        BeforeEach {
+            $script:hashTestFile = "$tempDir/hash-test.cmake"
+        }
+
+        It 'updates hash to newer hash preserving format' {
+            $hashTemplate | Out-File $hashTestFile
+
+            # Update to a newer tag that will be converted to hash (0.11.0 is known to exist)
+            Update-CMakeFile $hashTestFile 'sentry-native' '0.11.0'
+
+            $content = Get-Content $hashTestFile -Raw
+            # Should have new hash with tag comment
+            $content | Should -Match 'GIT_TAG [a-f0-9]{40} # 0.11.0'
+            # Should not have old hash or old comment
+            $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
+            $content | Should -Not -Match '# 0.9.1'
+        }
+    }
+
+    Context 'Complex formatting' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-update-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
+
             $script:complexTemplate = @'
 include(FetchContent)
 
@@ -235,46 +328,7 @@ FetchContent_MakeAvailable(sentry-native)
         }
 
         BeforeEach {
-            # Create fresh test files for each test
-            $script:basicTestFile = "$tempDir/basic-test.cmake"
-            $script:hashTestFile = "$tempDir/hash-test.cmake"
             $script:complexTestFile = "$tempDir/complex-test.cmake"
-        }
-
-        It 'updates tag to tag preserving format' {
-            $basicTemplate | Out-File $basicTestFile
-
-            Update-CMakeFile $basicTestFile 'sentry-native' 'v0.9.2'
-
-            $content = Get-Content $basicTestFile -Raw
-            $content | Should -Match 'GIT_TAG v0.9.2'
-            $content | Should -Not -Match 'v0.9.1'
-        }
-
-        It 'updates hash to newer hash preserving format' {
-            $hashTemplate | Out-File $hashTestFile
-
-            # Update to a newer tag that will be converted to hash (0.11.0 is known to exist)
-            Update-CMakeFile $hashTestFile 'sentry-native' '0.11.0'
-
-            $content = Get-Content $hashTestFile -Raw
-            # Should have new hash with tag comment
-            $content | Should -Match 'GIT_TAG [a-f0-9]{40} # 0.11.0'
-            # Should not have old hash or old comment
-            $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
-            $content | Should -Not -Match '# 0.9.1'
-        }
-
-        It 'preserves file structure and other content' {
-            $basicTemplate | Out-File $basicTestFile
-
-            Update-CMakeFile $basicTestFile 'sentry-native' 'v0.9.2'
-
-            $content = Get-Content $basicTestFile -Raw
-            $content | Should -Match 'include\(FetchContent\)'
-            $content | Should -Match 'FetchContent_MakeAvailable'
-            $content | Should -Match 'GIT_REPOSITORY https://github.com/getsentry/sentry-native'
-            $content | Should -Match 'GIT_SHALLOW FALSE'
         }
 
         It 'handles complex formatting correctly' {
@@ -286,15 +340,8 @@ FetchContent_MakeAvailable(sentry-native)
             $content | Should -Match 'GIT_TAG\s+v0.9.2'
             $content | Should -Not -Match 'v0.9.1'
         }
-
-        It 'throws on failed regex match' {
-            $basicTemplate | Out-File $basicTestFile
-
-            # Try to update a dependency that doesn't exist
-            { Update-CMakeFile $basicTestFile 'nonexistent-dep' 'v1.0.0' } | Should -Throw "*FetchContent_Declare for 'nonexistent-dep' not found*"
-        }
-
-        # Note: Hash update tests require network access for git ls-remote
-        # and are better suited for integration tests
     }
+
+    # Note: Hash update tests require network access for git ls-remote
+    # and are better suited for integration tests
 }
