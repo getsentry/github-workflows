@@ -141,6 +141,27 @@ describe('dangerfile-utils', () => {
       const flavor3 = extractPRFlavor('title: with: multiple: colons', null);
       assert.strictEqual(flavor3, 'title');
     });
+
+    it('should validate input parameters and handle non-string types', () => {
+      // Number inputs
+      const flavor1 = extractPRFlavor(123, 456);
+      assert.strictEqual(flavor1, '');
+
+      // Object inputs
+      const flavor2 = extractPRFlavor({ test: 'object' }, ['array']);
+      assert.strictEqual(flavor2, '');
+
+      // Boolean inputs
+      const flavor3 = extractPRFlavor(true, false);
+      assert.strictEqual(flavor3, '');
+
+      // Mixed valid/invalid inputs
+      const flavor4 = extractPRFlavor(null, 'valid/branch');
+      assert.strictEqual(flavor4, 'valid');
+
+      const flavor5 = extractPRFlavor('valid: title', 42);
+      assert.strictEqual(flavor5, 'valid');
+    });
   });
 
 

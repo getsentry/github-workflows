@@ -57,13 +57,14 @@ function getFlavorConfig(prFlavor) {
 
 /// Extract PR flavor from title or branch name
 function extractPRFlavor(prTitle, prBranchRef) {
-  if (prTitle) {
+  // Validate input parameters to prevent runtime errors
+  if (prTitle && typeof prTitle === 'string') {
     const parts = prTitle.split(":");
     if (parts.length > 1) {
       return parts[0].toLowerCase().trim();
     }
   }
-  if (prBranchRef) {
+  if (prBranchRef && typeof prBranchRef === 'string') {
     const parts = prBranchRef.split("/");
     if (parts.length > 1) {
       return parts[0].toLowerCase();
