@@ -8,8 +8,6 @@ on:
 jobs:
   danger:
     uses: ./.github/workflows/danger.yml
-    with:
-      _workflow_version: ${{ github.sha }}
 
   test-outputs:
     runs-on: ubuntu-latest
