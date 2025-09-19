@@ -1,4 +1,4 @@
-const { getFlavorConfig, extractPRFlavor } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, findChangelogInsertionPoint, generateChangelogSuggestion } = require('./dangerfile-utils.js');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -95,19 +95,62 @@ async function checkChangelog() {
 }
 
 
-/// Report missing changelog entry
-function reportMissingChangelog(changelogFile) {
+/// Report missing changelog entry with inline suggestion
+async function reportMissingChangelog(changelogFile) {
   fail("Please consider adding a changelog entry for the next release.", changelogFile);
 
+  // Determine the appropriate section based on PR flavor
+  const flavorConfig = getFlavorConfig(prFlavor);
+  const sectionName = flavorConfig.changelog || "Features";
+
+  try {
+    // Get changelog content
+    const changelogContent = await danger.github.utils.fileContents(changelogFile);
+
+    // Find insertion point
+    const insertionInfo = findChangelogInsertionPoint(changelogContent, sectionName);
+
+    if (insertionInfo) {
+      // Generate suggestion text
+      const suggestionText = generateChangelogSuggestion(
+        danger.github.pr.title,
+        danger.github.pr.number,
+        danger.github.pr.html_url,
+        sectionName,
+        insertionInfo
+      );
+
+      // Create GitHub suggestion comment
+      await danger.github.api.rest.pulls.createReviewComment({
+        owner: danger.github.pr.base.repo.owner.login,
+        repo: danger.github.pr.base.repo.name,
+        pull_number: danger.github.pr.number,
+        body: `\`\`\`suggestion\n${suggestionText}\n\`\`\``,
+        commit_id: danger.github.pr.head.sha,
+        path: changelogFile,
+        line: insertionInfo.lineNumber,
+        side: "RIGHT"
+      });
+
+      message(`💡 I've suggested a changelog entry above. Click "Apply suggestion" to add it!`);
+    } else {
+      // Fallback to markdown instructions if parsing fails
+      showMarkdownInstructions(changelogFile, sectionName);
+    }
+  } catch (error) {
+    console.log(`::warning::Failed to create inline suggestion: ${error.message}`);
+    // Fallback to markdown instructions
+    showMarkdownInstructions(changelogFile, sectionName);
+  }
+}
+
+/// Fallback function to show markdown instructions
+function showMarkdownInstructions(changelogFile, sectionName) {
   const prTitleFormatted = danger.github.pr.title
     .split(": ")
     .slice(-1)[0]
     .trim()
     .replace(/\.+$/, "");
-
-  // Determine the appropriate section based on PR flavor
-  const flavorConfig = getFlavorConfig(prFlavor);
-  const sectionName = flavorConfig.changelog || "Features";
 
   markdown(
     `

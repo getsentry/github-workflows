@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { getFlavorConfig, extractPRFlavor, FLAVOR_CONFIG } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, FLAVOR_CONFIG, findChangelogInsertionPoint, generateChangelogSuggestion } = require('./dangerfile-utils.js');
 
 describe('dangerfile-utils', () => {
   describe('getFlavorConfig', () => {
@@ -273,6 +273,242 @@ describe('dangerfile-utils', () => {
           assert.strictEqual(config.changelog, 'Features', 'Only Features configs should have isFeature true');
         }
       });
+    });
+  });
+
+  describe('findChangelogInsertionPoint', () => {
+    it('should find insertion point for existing Features section', () => {
+      const changelog = `# Changelog
+
+## Unreleased
+
+### Features
+
+- Existing feature ([#100](url))
+
+### Fixes
+
+- Existing fix ([#99](url))
+
+## 1.0.0
+
+Released content`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 7, // Before "- Existing feature"
+        createSection: false
+      });
+    });
+
+    it('should find insertion point when Features section exists but is empty', () => {
+      const changelog = `# Changelog
+
+## Unreleased
+
+### Features
+
+### Fixes
+
+- Existing fix ([#99](url))`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 7, // Right after "### Features" and empty line
+        createSection: false
+      });
+    });
+
+    it('should create section when Features section does not exist', () => {
+      const changelog = `# Changelog
+
+## Unreleased
+
+### Fixes
+
+- Existing fix ([#99](url))`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 4, // Right after "## Unreleased"
+        createSection: true,
+        sectionName: 'Features'
+      });
+    });
+
+    it('should handle changelog with only Unreleased section', () => {
+      const changelog = `# Changelog
+
+## Unreleased
+
+## 1.0.0
+
+Released content`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 4, // Right after "## Unreleased"
+        createSection: true,
+        sectionName: 'Features'
+      });
+    });
+
+    it('should return null when no Unreleased section found', () => {
+      const changelog = `# Changelog
+
+## 1.0.0
+
+Released content`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.strictEqual(result, null);
+    });
+
+    it('should handle case-insensitive Unreleased section', () => {
+      const changelog = `# Changelog
+
+## unreleased
+
+### Features
+
+- Existing feature ([#100](url))`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 7,
+        createSection: false
+      });
+    });
+
+    it('should handle different section names', () => {
+      const changelog = `# Changelog
+
+## Unreleased
+
+### Security
+
+- Security fix ([#101](url))`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Fixes');
+      assert.deepStrictEqual(result, {
+        lineNumber: 4, // After "## Unreleased"
+        createSection: true,
+        sectionName: 'Fixes'
+      });
+    });
+
+    it('should handle extra whitespace around sections', () => {
+      const changelog = `# Changelog
+
+## Unreleased
+
+   ### Features
+
+   - Existing feature ([#100](url))`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 7, // Before "   - Existing feature"
+        createSection: false
+      });
+    });
+  });
+
+  describe('generateChangelogSuggestion', () => {
+    it('should generate bullet point for existing section', () => {
+      const insertionInfo = { lineNumber: 7, createSection: false };
+      const result = generateChangelogSuggestion(
+        'feat: add new feature',
+        123,
+        'https://github.com/repo/pull/123',
+        'Features',
+        insertionInfo
+      );
+
+      assert.strictEqual(result, '- add new feature ([#123](https://github.com/repo/pull/123))');
+    });
+
+    it('should generate section with bullet point for new section', () => {
+      const insertionInfo = { lineNumber: 4, createSection: true, sectionName: 'Features' };
+      const result = generateChangelogSuggestion(
+        'feat: add new feature',
+        123,
+        'https://github.com/repo/pull/123',
+        'Features',
+        insertionInfo
+      );
+
+      assert.strictEqual(result, '\n### Features\n\n- add new feature ([#123](https://github.com/repo/pull/123))');
+    });
+
+    it('should clean up PR title by removing conventional commit prefix', () => {
+      const insertionInfo = { lineNumber: 7, createSection: false };
+
+      const result1 = generateChangelogSuggestion(
+        'feat(auth): add OAuth support',
+        123,
+        'url',
+        'Features',
+        insertionInfo
+      );
+      assert.strictEqual(result1, '- add OAuth support ([#123](url))');
+
+      const result2 = generateChangelogSuggestion(
+        'fix: resolve memory leak',
+        124,
+        'url',
+        'Fixes',
+        insertionInfo
+      );
+      assert.strictEqual(result2, '- resolve memory leak ([#124](url))');
+    });
+
+    it('should handle non-conventional PR titles', () => {
+      const insertionInfo = { lineNumber: 7, createSection: false };
+
+      const result = generateChangelogSuggestion(
+        'Fix memory leak in authentication',
+        125,
+        'url',
+        'Fixes',
+        insertionInfo
+      );
+      assert.strictEqual(result, '- Fix memory leak in authentication ([#125](url))');
+    });
+
+    it('should remove trailing periods from title', () => {
+      const insertionInfo = { lineNumber: 7, createSection: false };
+
+      const result = generateChangelogSuggestion(
+        'feat: add new feature...',
+        126,
+        'url',
+        'Features',
+        insertionInfo
+      );
+      assert.strictEqual(result, '- add new feature ([#126](url))');
+    });
+
+    it('should handle various section names', () => {
+      const insertionInfo = { lineNumber: 4, createSection: true };
+
+      const securityResult = generateChangelogSuggestion(
+        'sec: fix vulnerability',
+        127,
+        'url',
+        'Security',
+        insertionInfo
+      );
+      assert.strictEqual(securityResult, '\n### Security\n\n- fix vulnerability ([#127](url))');
+
+      const perfResult = generateChangelogSuggestion(
+        'perf: optimize queries',
+        128,
+        'url',
+        'Performance',
+        insertionInfo
+      );
+      assert.strictEqual(perfResult, '\n### Performance\n\n- optimize queries ([#128](url))');
     });
   });
 });
