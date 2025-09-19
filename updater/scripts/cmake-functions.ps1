@@ -1,6 +1,16 @@
 # CMake FetchContent helper functions for update-dependency.ps1
 
-function Parse-CMakeFetchContent($filePath, $depName) {
+function Parse-CMakeFetchContent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateScript({Test-Path $_ -PathType Leaf})]
+        [string]$filePath,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateScript({[string]::IsNullOrEmpty($_) -or $_ -match '^[a-zA-Z][a-zA-Z0-9_.-]*$'})]
+        [string]$depName
+    )
     $content = Get-Content $filePath -Raw
 
     if ($depName) {
@@ -37,7 +47,17 @@ function Parse-CMakeFetchContent($filePath, $depName) {
     return @{ GitRepository = $repo; GitTag = $tag; DepName = $depName }
 }
 
-function Find-TagForHash($repo, $hash) {
+function Find-TagForHash {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$repo,
+
+        [Parameter(Mandatory=$true)]
+        [ValidatePattern('^[a-f0-9]{40}$')]
+        [string]$hash
+    )
     try {
         $refs = git ls-remote --tags $repo
         if ($LASTEXITCODE -ne 0) {
@@ -57,7 +77,21 @@ function Find-TagForHash($repo, $hash) {
     }
 }
 
-function Test-HashAncestry($repo, $oldHash, $newHash) {
+function Test-HashAncestry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$repo,
+
+        [Parameter(Mandatory=$true)]
+        [ValidatePattern('^[a-f0-9]{40}$')]
+        [string]$oldHash,
+
+        [Parameter(Mandatory=$true)]
+        [ValidatePattern('^[a-f0-9]{40}$')]
+        [string]$newHash
+    )
     try {
         # Create a temporary directory for git operations
         $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
@@ -92,7 +126,21 @@ function Test-HashAncestry($repo, $oldHash, $newHash) {
     }
 }
 
-function Update-CMakeFile($filePath, $depName, $newValue) {
+function Update-CMakeFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateScript({Test-Path $_ -PathType Leaf})]
+        [string]$filePath,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateScript({[string]::IsNullOrEmpty($_) -or $_ -match '^[a-zA-Z][a-zA-Z0-9_.-]*$'})]
+        [string]$depName,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$newValue
+    )
     $content = Get-Content $filePath -Raw
     $fetchContent = Parse-CMakeFetchContent $filePath $depName
     $originalValue = $fetchContent.GitTag
