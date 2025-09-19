@@ -86,7 +86,7 @@ function extractPRFlavor(prTitle, prBranchRef) {
   return "";
 }
 
-/// Find insertion point for changelog entry in a specific section
+/// Find insertion point and determine what content needs to be inserted
 function findChangelogInsertionPoint(changelogContent, sectionName) {
   const lines = changelogContent.split('\n');
 
@@ -99,15 +99,38 @@ function findChangelogInsertionPoint(changelogContent, sectionName) {
     }
   }
 
+  // Case 1: No Unreleased section exists
   if (unreleasedIndex === -1) {
-    return null; // No Unreleased section found
+    // Find first ## section or top of changelog to insert before it
+    let insertionPoint = 0;
+
+    // Skip title and initial content, look for first version section
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().match(/^##\s+/)) {
+        insertionPoint = i;
+        break;
+      }
+    }
+
+    // If no version sections exist, insert at end
+    if (insertionPoint === 0) {
+      insertionPoint = lines.length;
+    }
+
+    return {
+      lineNumber: insertionPoint + 1, // 1-indexed for GitHub API
+      insertContent: 'unreleased-and-section'
+    };
   }
 
-  // Find the target subsection (e.g., "### Features")
+  // Case 2: Unreleased section exists, find the target subsection
   let sectionIndex = -1;
+  let nextSectionIndex = lines.length; // End of file by default
+
   for (let i = unreleasedIndex + 1; i < lines.length; i++) {
     // Stop if we hit another main section (##)
     if (lines[i].trim().match(/^##\s+/)) {
+      nextSectionIndex = i;
       break;
     }
 
@@ -118,40 +141,37 @@ function findChangelogInsertionPoint(changelogContent, sectionName) {
     }
   }
 
+  // Case 3: Subsection doesn't exist, need to create it within Unreleased
   if (sectionIndex === -1) {
-    // Section doesn't exist, we need to create it
-    // Find insertion point after "## Unreleased"
+    // Find insertion point after "## Unreleased" but before next main section
     let insertAfter = unreleasedIndex;
 
     // Skip empty lines after "## Unreleased"
-    while (insertAfter + 1 < lines.length && lines[insertAfter + 1].trim() === '') {
+    while (insertAfter + 1 < nextSectionIndex && lines[insertAfter + 1].trim() === '') {
       insertAfter++;
     }
 
     return {
       lineNumber: insertAfter + 1, // 1-indexed for GitHub API
-      createSection: true,
-      sectionName: sectionName
+      insertContent: 'section-and-entry'
     };
   }
 
-  // Section exists, find first bullet point or insertion point
+  // Case 4: Both Unreleased and subsection exist, just add entry
   let insertionPoint = sectionIndex + 1;
 
   // Skip empty lines after section header
-  while (insertionPoint < lines.length && lines[insertionPoint].trim() === '') {
+  while (insertionPoint < nextSectionIndex && lines[insertionPoint].trim() === '') {
     insertionPoint++;
   }
 
-  // If next line is a bullet point, insert before it
-  // If it's another section or end of file, insert here
   return {
     lineNumber: insertionPoint + 1, // 1-indexed for GitHub API
-    createSection: false
+    insertContent: 'entry-only'
   };
 }
 
-/// Generate suggestion text for changelog entry
+/// Generate suggestion text for changelog entry based on what needs to be inserted
 function generateChangelogSuggestion(prTitle, prNumber, prUrl, sectionName, insertionInfo) {
   // Clean up PR title (remove conventional commit prefix if present)
   const cleanTitle = prTitle
@@ -162,12 +182,22 @@ function generateChangelogSuggestion(prTitle, prNumber, prUrl, sectionName, inse
 
   const bulletPoint = `- ${cleanTitle} ([#${prNumber}](${prUrl}))`;
 
-  if (insertionInfo.createSection) {
-    // Need to create the section
-    return `\n### ${sectionName}\n\n${bulletPoint}`;
-  } else {
-    // Just add the bullet point
-    return bulletPoint;
+  switch (insertionInfo.insertContent) {
+    case 'unreleased-and-section':
+      // Need to create both Unreleased section and subsection
+      return `## Unreleased\n\n### ${sectionName}\n\n${bulletPoint}\n`;
+
+    case 'section-and-entry':
+      // Need to create subsection within existing Unreleased
+      return `\n### ${sectionName}\n\n${bulletPoint}`;
+
+    case 'entry-only':
+      // Just add the bullet point to existing section
+      return bulletPoint;
+
+    default:
+      // Fallback to entry-only
+      return bulletPoint;
   }
 }
 

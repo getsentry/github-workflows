@@ -297,7 +297,7 @@ Released content`;
       const result = findChangelogInsertionPoint(changelog, 'Features');
       assert.deepStrictEqual(result, {
         lineNumber: 7, // Before "- Existing feature"
-        createSection: false
+        insertContent: 'entry-only'
       });
     });
 
@@ -315,7 +315,7 @@ Released content`;
       const result = findChangelogInsertionPoint(changelog, 'Features');
       assert.deepStrictEqual(result, {
         lineNumber: 7, // Right after "### Features" and empty line
-        createSection: false
+        insertContent: 'entry-only'
       });
     });
 
@@ -331,8 +331,7 @@ Released content`;
       const result = findChangelogInsertionPoint(changelog, 'Features');
       assert.deepStrictEqual(result, {
         lineNumber: 4, // Right after "## Unreleased"
-        createSection: true,
-        sectionName: 'Features'
+        insertContent: 'section-and-entry'
       });
     });
 
@@ -348,12 +347,11 @@ Released content`;
       const result = findChangelogInsertionPoint(changelog, 'Features');
       assert.deepStrictEqual(result, {
         lineNumber: 4, // Right after "## Unreleased"
-        createSection: true,
-        sectionName: 'Features'
+        insertContent: 'section-and-entry'
       });
     });
 
-    it('should return null when no Unreleased section found', () => {
+    it('should create Unreleased section when none exists', () => {
       const changelog = `# Changelog
 
 ## 1.0.0
@@ -361,7 +359,10 @@ Released content`;
 Released content`;
 
       const result = findChangelogInsertionPoint(changelog, 'Features');
-      assert.strictEqual(result, null);
+      assert.deepStrictEqual(result, {
+        lineNumber: 3, // Before "## 1.0.0"
+        insertContent: 'unreleased-and-section'
+      });
     });
 
     it('should handle case-insensitive Unreleased section', () => {
@@ -376,7 +377,7 @@ Released content`;
       const result = findChangelogInsertionPoint(changelog, 'Features');
       assert.deepStrictEqual(result, {
         lineNumber: 7,
-        createSection: false
+        insertContent: 'entry-only'
       });
     });
 
@@ -392,8 +393,7 @@ Released content`;
       const result = findChangelogInsertionPoint(changelog, 'Fixes');
       assert.deepStrictEqual(result, {
         lineNumber: 4, // After "## Unreleased"
-        createSection: true,
-        sectionName: 'Fixes'
+        insertContent: 'section-and-entry'
       });
     });
 
@@ -409,14 +409,14 @@ Released content`;
       const result = findChangelogInsertionPoint(changelog, 'Features');
       assert.deepStrictEqual(result, {
         lineNumber: 7, // Before "   - Existing feature"
-        createSection: false
+        insertContent: 'entry-only'
       });
     });
   });
 
   describe('generateChangelogSuggestion', () => {
     it('should generate bullet point for existing section', () => {
-      const insertionInfo = { lineNumber: 7, createSection: false };
+      const insertionInfo = { lineNumber: 7, insertContent: 'entry-only' };
       const result = generateChangelogSuggestion(
         'feat: add new feature',
         123,
@@ -429,7 +429,7 @@ Released content`;
     });
 
     it('should generate section with bullet point for new section', () => {
-      const insertionInfo = { lineNumber: 4, createSection: true, sectionName: 'Features' };
+      const insertionInfo = { lineNumber: 4, insertContent: 'section-and-entry' };
       const result = generateChangelogSuggestion(
         'feat: add new feature',
         123,
@@ -441,8 +441,21 @@ Released content`;
       assert.strictEqual(result, '\n### Features\n\n- add new feature ([#123](https://github.com/repo/pull/123))');
     });
 
+    it('should generate full Unreleased section when none exists', () => {
+      const insertionInfo = { lineNumber: 3, insertContent: 'unreleased-and-section' };
+      const result = generateChangelogSuggestion(
+        'feat: add new feature',
+        123,
+        'https://github.com/repo/pull/123',
+        'Features',
+        insertionInfo
+      );
+
+      assert.strictEqual(result, '## Unreleased\n\n### Features\n\n- add new feature ([#123](https://github.com/repo/pull/123))\n');
+    });
+
     it('should clean up PR title by removing conventional commit prefix', () => {
-      const insertionInfo = { lineNumber: 7, createSection: false };
+      const insertionInfo = { lineNumber: 7, insertContent: 'entry-only' };
 
       const result1 = generateChangelogSuggestion(
         'feat(auth): add OAuth support',
@@ -464,7 +477,7 @@ Released content`;
     });
 
     it('should handle non-conventional PR titles', () => {
-      const insertionInfo = { lineNumber: 7, createSection: false };
+      const insertionInfo = { lineNumber: 7, insertContent: 'entry-only' };
 
       const result = generateChangelogSuggestion(
         'Fix memory leak in authentication',
@@ -477,7 +490,7 @@ Released content`;
     });
 
     it('should remove trailing periods from title', () => {
-      const insertionInfo = { lineNumber: 7, createSection: false };
+      const insertionInfo = { lineNumber: 7, insertContent: 'entry-only' };
 
       const result = generateChangelogSuggestion(
         'feat: add new feature...',
@@ -490,7 +503,7 @@ Released content`;
     });
 
     it('should handle various section names', () => {
-      const insertionInfo = { lineNumber: 4, createSection: true };
+      const insertionInfo = { lineNumber: 4, insertContent: 'section-and-entry' };
 
       const securityResult = generateChangelogSuggestion(
         'sec: fix vulnerability',
@@ -509,6 +522,129 @@ Released content`;
         insertionInfo
       );
       assert.strictEqual(perfResult, '\n### Performance\n\n- optimize queries ([#128](url))');
+    });
+  });
+
+  describe('Edge Cases and Missing Sections', () => {
+    it('should handle completely empty changelog', () => {
+      const changelog = '';
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 2, // Insert at end of empty file (lines.length + 1)
+        insertContent: 'unreleased-and-section'
+      });
+    });
+
+    it('should handle changelog with only title', () => {
+      const changelog = '# Changelog';
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 2, // Insert after title
+        insertContent: 'unreleased-and-section'
+      });
+    });
+
+    it('should handle changelog with title and description but no versions', () => {
+      const changelog = `# Changelog
+
+This is a description of the changelog.
+
+Some additional notes.`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 6, // Insert at end since no version sections
+        insertContent: 'unreleased-and-section'
+      });
+    });
+
+    it('should insert before first version when no Unreleased exists', () => {
+      const changelog = `# Changelog
+
+## 2.0.0
+
+### Features
+
+- Feature in 2.0.0
+
+## 1.0.0
+
+### Features
+
+- Feature in 1.0.0`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 3, // Before "## 2.0.0"
+        insertContent: 'unreleased-and-section'
+      });
+    });
+
+    it('should handle Unreleased section with only other subsections', () => {
+      const changelog = `# Changelog
+
+## Unreleased
+
+### Dependencies
+
+- Update lodash to v4.17.21
+
+### Documentation
+
+- Update README`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 4, // Right after "## Unreleased"
+        insertContent: 'section-and-entry'
+      });
+    });
+
+    it('should handle mixed case and spacing in section headers', () => {
+      const changelog = `# Changelog
+
+##   unreleased
+
+###   features
+
+- Existing feature`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 7, // Before existing feature
+        insertContent: 'entry-only'
+      });
+    });
+
+    it('should handle Unreleased section at end of file', () => {
+      const changelog = `# Changelog
+
+## 1.0.0
+
+### Features
+
+- Old feature
+
+## Unreleased`;
+
+      const result = findChangelogInsertionPoint(changelog, 'Features');
+      assert.deepStrictEqual(result, {
+        lineNumber: 9, // After "## Unreleased"
+        insertContent: 'section-and-entry'
+      });
+    });
+
+    it('should create full structure for completely new changelog', () => {
+      const insertionInfo = { lineNumber: 1, insertContent: 'unreleased-and-section' };
+      const result = generateChangelogSuggestion(
+        'feat: initial release',
+        1,
+        'https://github.com/repo/pull/1',
+        'Features',
+        insertionInfo
+      );
+
+      assert.strictEqual(result, '## Unreleased\n\n### Features\n\n- initial release ([#1](https://github.com/repo/pull/1))\n');
     });
   });
 });
