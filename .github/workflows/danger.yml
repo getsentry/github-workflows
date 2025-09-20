@@ -18,6 +18,7 @@ jobs:
 
       - name: Download dangerfile.js and utilities
         run: |
+          printenv
           # Extract the ref from GITHUB_WORKFLOW_REF (e.g., getsentry/github-workflows/.github/workflows/danger.yml@refs/pull/109/merge -> refs/pull/109/merge)
           WORKFLOW_REF=$(echo "${{ github.workflow_ref }}" | sed 's/.*@//')
           wget https://raw.githubusercontent.com/getsentry/github-workflows/${WORKFLOW_REF}/danger/dangerfile.js -P ${{ runner.temp }}
