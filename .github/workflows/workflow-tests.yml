@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   # Test PR creation scenario - should create a PR with specific version pattern
-  test-updater-pr-creation:
+  updater-pr-creation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
           echo "✅ PR creation scenario validation passed!"
 
   # Test no-change scenario - should detect no updates needed
-  test-updater-no-changes:
+  updater-no-changes:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
