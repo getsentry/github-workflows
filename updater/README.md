@@ -15,6 +15,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write      # To modify files and create commits
+  pull-requests: write # To create and update pull requests
+  actions: write       # To cancel previous workflow runs
+
 jobs:
   # Update a git submodule
   cocoa:
@@ -103,17 +108,6 @@ jobs:
   If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.
   * type: string
   * required: true
-
-## Required Permissions
-
-For workflows using this action, you need to set the following permissions:
-
-```yaml
-permissions:
-  contents: write      # To modify files and create commits
-  pull-requests: write # To create and update pull requests
-  actions: write       # To cancel previous workflow runs
-```
 
 ## Outputs
 

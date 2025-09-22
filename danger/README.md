@@ -11,6 +11,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
 
+permissions:
+  contents: read       # To read repository files
+  pull-requests: write # To post comments on pull requests
+  statuses: write      # To post commit status checks
+
 jobs:
   danger:
     runs-on: ubuntu-latest
@@ -24,17 +29,6 @@ jobs:
   * type: string
   * required: false
   * default: `${{ github.token }}`
-
-## Required Permissions
-
-For workflows using this action, you need to set the following permissions:
-
-```yaml
-permissions:
-  contents: read       # To read repository files
-  pull-requests: write # To post comments on pull requests
-  statuses: write      # To post commit status checks
-```
 
 ## Outputs
 
