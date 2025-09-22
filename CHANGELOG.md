@@ -2,9 +2,54 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
+
+To update your existing Updater workflows:
+```yaml
+### Before
+  native:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: scripts/update-sentry-native-ndk.sh
+      name: Native SDK
+    secrets:
+      # If a custom token is used instead, a CI would be triggered on a created PR.
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
+### After
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@v3
+        with:
+          path: scripts/update-sentry-native-ndk.sh
+          name: Native SDK
+          api-token: ${{ secrets.CI_DEPLOY_KEY }}
+```
+
+To update your existing Danger workflows:
+```yaml
+### Before
+  danger:
+    uses: getsentry/github-workflows/.github/workflows/danger.yml@v2
+
+### After
+  danger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/danger@v3
+```
+
 ### Features
 
-- Convert reusable workflows to composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
+- Danger - Improve conventional commit scope handling, and non-conventional PR title support ([#105](https://github.com/getsentry/github-workflows/pull/105))
+- Add Proguard artifact endpoint for Android builds in sentry-server ([#100](https://github.com/getsentry/github-workflows/pull/100))
+- Updater - Add CMake FetchContent support for automated dependency updates ([#104](https://github.com/getsentry/github-workflows/pull/104))
+
+### Security
+
+- Updater - Prevent script injection vulnerabilities through workflow inputs ([#98](https://github.com/getsentry/github-workflows/pull/98))
 
 ## 2.14.1
 
