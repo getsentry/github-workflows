@@ -94,7 +94,7 @@ runs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        ssh-key: ${{ inputs.api-token }}
+        token: ${{ inputs.api-token }}
 
     - name: Update to the latest version
       id: target
@@ -211,7 +211,7 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       uses: actions/checkout@v4
       with:
-        ssh-key: ${{ inputs.api-token }}
+        token: ${{ inputs.api-token }}
 
     - name: 'After new PR: redo the update'
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
