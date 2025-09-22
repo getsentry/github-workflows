@@ -30,7 +30,7 @@ foreach ($filePath in $workflowFiles) {
         $oldDefault = $Matches[1]
 
         # Replace the default value for _workflow_version
-        $newContent = $content -replace '((?ms)_workflow_version:.*?default:\s*)([^\s#]+)', "`${1}$NewVersion"
+        $newContent = $content -replace '((?ms)_workflow_version:.*?default:\s*)([^\s#]+)', "`${1}'$NewVersion'"
 
         # Write the updated content back to the file
         $newContent | Out-File -FilePath $filePath -Encoding utf8 -NoNewline
