@@ -10,7 +10,8 @@ permissions:
   issues: write
 
 jobs:
-  updater-create-pr:
+  # Test PR creation scenario - should create a PR with specific version pattern
+  test-updater-pr-creation:
     runs-on: ubuntu-latest
     outputs:
       prUrl: ${{ steps.updater.outputs.prUrl }}
@@ -19,8 +20,10 @@ jobs:
       originalTag: ${{ steps.updater.outputs.originalTag }}
       latestTag: ${{ steps.updater.outputs.latestTag }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Run updater action
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test updater - PR creation scenario
         id: updater
         uses: ./updater
         with:
@@ -30,7 +33,8 @@ jobs:
           pr-strategy: update
           api-token: ${{ github.token }}
 
-  updater-test-args:
+  # Test no-change scenario - should detect no updates needed
+  test-updater-no-changes:
     runs-on: macos-latest
     outputs:
       prUrl: ${{ steps.updater.outputs.prUrl }}
@@ -39,8 +43,10 @@ jobs:
       originalTag: ${{ steps.updater.outputs.originalTag }}
       latestTag: ${{ steps.updater.outputs.latestTag }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Run updater action
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test updater - no changes scenario
         id: updater
         uses: ./updater
         with:
@@ -49,23 +55,103 @@ jobs:
           pattern: '.*'
           api-token: ${{ github.token }}
 
-  updater-test-outputs:
+  validate-test-outputs:
     runs-on: ubuntu-latest
     needs:
-      - updater-create-pr
-      - updater-test-args
+      - test-updater-pr-creation
+      - test-updater-no-changes
     steps:
-      - run: "[[ '${{ needs.updater-create-pr.outputs.baseBranch }}' == 'main' ]]"
-      - run: "[[ '${{ needs.updater-create-pr.outputs.originalTag }}' == '2.0.0' ]]"
-      - run: "[[ '${{ needs.updater-create-pr.outputs.latestTag }}' =~ ^[0-9.]+$ ]]"
-      - run: "[[ '${{ needs.updater-create-pr.outputs.prUrl }}' =~ ^https://github.com/getsentry/github-workflows/pull/[0-9]+$ ]]"
-      - run: "[[ '${{ needs.updater-create-pr.outputs.prBranch }}' == 'deps/updater/tests/sentry-cli.properties' ]]"
+      - name: Validate PR creation scenario outputs
+        env:
+          BASE_BRANCH: ${{ needs.test-updater-pr-creation.outputs.baseBranch }}
+          ORIGINAL_TAG: ${{ needs.test-updater-pr-creation.outputs.originalTag }}
+          LATEST_TAG: ${{ needs.test-updater-pr-creation.outputs.latestTag }}
+          PR_URL: ${{ needs.test-updater-pr-creation.outputs.prUrl }}
+          PR_BRANCH: ${{ needs.test-updater-pr-creation.outputs.prBranch }}
+        run: |
+          echo "🔍 Validating PR creation scenario outputs..."
+          echo "Base Branch: '$BASE_BRANCH'"
+          echo "Original Tag: '$ORIGINAL_TAG'"
+          echo "Latest Tag: '$LATEST_TAG'"
+          echo "PR URL: '$PR_URL'"
+          echo "PR Branch: '$PR_BRANCH'"
 
-      - run: "[[ '${{ needs.updater-test-args.outputs.baseBranch }}' == '' ]]"
-      - run: "[[ '${{ needs.updater-test-args.outputs.originalTag }}' == 'latest' || '${{ needs.updater-test-args.outputs.originalTag }}' =~ ^v?[0-9]+\\.[0-9]+\\.[0-9]+$ ]]"
-      - run: "[[ '${{ needs.updater-test-args.outputs.originalTag }}' == '${{ needs.updater-test-args.outputs.latestTag }}' ]]"
-      - run: "[[ '${{ needs.updater-test-args.outputs.prUrl }}' == '' ]]"
-      - run: "[[ '${{ needs.updater-test-args.outputs.prBranch }}' == '' ]]"
+          # Validate base branch is main
+          if [[ "$BASE_BRANCH" != "main" ]]; then
+            echo "❌ Expected base branch 'main', got '$BASE_BRANCH'"
+            exit 1
+          fi
+
+          # Validate original tag is expected test value
+          if [[ "$ORIGINAL_TAG" != "2.0.0" ]]; then
+            echo "❌ Expected original tag '2.0.0', got '$ORIGINAL_TAG'"
+            exit 1
+          fi
+
+          # Validate latest tag is a valid version
+          if [[ ! "$LATEST_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Latest tag '$LATEST_TAG' is not a valid version format"
+            exit 1
+          fi
+
+          # Validate PR URL format
+          if [[ ! "$PR_URL" =~ ^https://github\.com/getsentry/github-workflows/pull/[0-9]+$ ]]; then
+            echo "❌ PR URL '$PR_URL' is not a valid GitHub PR URL"
+            exit 1
+          fi
+
+          # Validate PR branch format
+          if [[ "$PR_BRANCH" != "deps/updater/tests/sentry-cli.properties" ]]; then
+            echo "❌ Expected PR branch 'deps/updater/tests/sentry-cli.properties', got '$PR_BRANCH'"
+            exit 1
+          fi
+
+          echo "✅ PR creation scenario validation passed!"
+
+      - name: Validate no-changes scenario outputs
+        env:
+          BASE_BRANCH: ${{ needs.test-updater-no-changes.outputs.baseBranch }}
+          ORIGINAL_TAG: ${{ needs.test-updater-no-changes.outputs.originalTag }}
+          LATEST_TAG: ${{ needs.test-updater-no-changes.outputs.latestTag }}
+          PR_URL: ${{ needs.test-updater-no-changes.outputs.prUrl }}
+          PR_BRANCH: ${{ needs.test-updater-no-changes.outputs.prBranch }}
+        run: |
+          echo "🔍 Validating no-changes scenario outputs..."
+          echo "Base Branch: '$BASE_BRANCH'"
+          echo "Original Tag: '$ORIGINAL_TAG'"
+          echo "Latest Tag: '$LATEST_TAG'"
+          echo "PR URL: '$PR_URL'"
+          echo "PR Branch: '$PR_BRANCH'"
+
+          # Validate no PR was created (empty values)
+          if [[ -n "$BASE_BRANCH" ]]; then
+            echo "❌ Expected empty base branch for no-changes, got '$BASE_BRANCH'"
+            exit 1
+          fi
+
+          if [[ -n "$PR_URL" ]]; then
+            echo "❌ Expected no PR URL for no-changes, got '$PR_URL'"
+            exit 1
+          fi
+
+          if [[ -n "$PR_BRANCH" ]]; then
+            echo "❌ Expected no PR branch for no-changes, got '$PR_BRANCH'"
+            exit 1
+          fi
+
+          # Validate original equals latest (no update)
+          if [[ "$ORIGINAL_TAG" != "$LATEST_TAG" ]]; then
+            echo "❌ Expected original tag to equal latest tag, got '$ORIGINAL_TAG' != '$LATEST_TAG'"
+            exit 1
+          fi
+
+          # Validate tag format (should be 'latest' or valid version)
+          if [[ "$ORIGINAL_TAG" != "latest" && ! "$ORIGINAL_TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Original tag '$ORIGINAL_TAG' is not 'latest' or valid version format"
+            exit 1
+          fi
+
+          echo "✅ No-changes scenario validation passed!"
 
   cli-integration:
     runs-on: ${{ matrix.host }}-latest
