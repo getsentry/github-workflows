@@ -134,7 +134,7 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       id: existing-pr
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.api-token }}
       shell: pwsh
       run: |
         $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
