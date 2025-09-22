@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  statuses: write
 
 jobs:
   # Test Danger action on pull requests - should analyze PR and report findings
