@@ -1,0 +1,268 @@
+name: 'Dependency Updater'
+description: 'Updates dependencies to the latest published tag and creates/updates PRs'
+author: 'Sentry'
+
+inputs:
+  path:
+    description: 'Dependency path in the source repository, this can be either a submodule, a .properties file, a shell script, or a CMake file with FetchContent.'
+    required: true
+  name:
+    description: 'Name used in the PR title and the changelog entry.'
+    required: true
+  pattern:
+    description: 'RegEx pattern that will be matched against available versions when picking the latest one.'
+    required: false
+    default: ''
+  changelog-entry:
+    description: 'Whether to add a changelog entry for the update.'
+    required: false
+    default: 'true'
+  changelog-section:
+    description: 'Section header to attach the changelog entry to.'
+    required: false
+    default: 'Dependencies'
+  pr-strategy:
+    description: 'How to handle PRs - can be either "create" (create new PRs for each version) or "update" (keep single PR updated with latest version)'
+    required: false
+    default: 'create'
+  api-token:
+    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
+    required: true
+
+outputs:
+  prUrl:
+    description: 'The created/updated PRs url.'
+    value: ${{ steps.pr.outputs.url }}
+  baseBranch:
+    description: 'The base branch name.'
+    value: ${{ steps.root.outputs.baseBranch }}
+  prBranch:
+    description: 'The created/updated pr branch name.'
+    value: ${{ steps.root.outputs.prBranch }}
+  originalTag:
+    description: 'The original tag from which the dependency was updated from.'
+    value: ${{ steps.target.outputs.originalTag }}
+  latestTag:
+    description: 'The latest tag to which the dependency was updated to.'
+    value: ${{ steps.target.outputs.latestTag }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.api-token }}
+
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # Tag: 0.12.1
+      with:
+        access_token: ${{ github.token }}
+
+    - name: Validate dependency name
+      shell: pwsh
+      run: |
+        # Validate that inputs.name contains only safe characters
+        if ('${{ inputs.name }}' -notmatch '^[a-zA-Z0-9_\./@\s-]+$') {
+          Write-Output "::error::Invalid dependency name: '${{ inputs.name }}'. Only alphanumeric characters, spaces, and _-./@  are allowed."
+          exit 1
+        }
+        Write-Output "✓ Dependency name '${{ inputs.name }}' is valid"
+
+    - name: Validate dependency path
+      shell: pwsh
+      run: |
+        # Validate that inputs.path contains only safe characters (including # for CMake dependencies)
+        if ('${{ inputs.path }}' -notmatch '^[a-zA-Z0-9_\./#-]+$') {
+          Write-Output "::error::Invalid dependency path: '${{ inputs.path }}'. Only alphanumeric characters and _-./#  are allowed."
+          exit 1
+        }
+        Write-Output "✓ Dependency path '${{ inputs.path }}' is valid"
+
+    # What we need to accomplish:
+    # * update to the latest tag
+    # * create a PR
+    # * update changelog (including the link to the just created PR)
+    #
+    # What we actually do is based on whether a PR exists already:
+    # * YES it does:
+    #    * make the update
+    #    * update changelog (with the ID of an existing PR)
+    #    * push to the PR
+    # * NO it doesn't:
+    #    * make the update
+    #    * push to a new PR
+    #    * update changelog (with the ID of the just created PR)
+    #    * push to the PR
+    # We do different approach on subsequent runs because otherwise we would spam users' mailboxes
+    # with notifications about pushes to existing PRs. This way there is actually no push if not needed.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.api-token }}
+
+    - name: Update to the latest version
+      id: target
+      shell: pwsh
+      env:
+        DEPENDENCY_PATH: ${{ inputs.path }}
+        DEPENDENCY_PATTERN: ${{ inputs.pattern }}
+      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN
+
+    - name: Get the base repo info
+      if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
+      id: root
+      shell: pwsh
+      env:
+        PR_STRATEGY: ${{ inputs.pr-strategy }}
+        DEPENDENCY_PATH: ${{ inputs.path }}
+      run: |
+        $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
+        $prBranch = switch ($env:PR_STRATEGY)
+        {
+            'create' { "deps/$env:DEPENDENCY_PATH/${{ steps.target.outputs.latestTag }}" }
+            'update' { "deps/$env:DEPENDENCY_PATH" }
+            default { throw "Unkown PR strategy '$env:PR_STRATEGY'." }
+        }
+        "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
+        "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
+        $nonBotCommits = ${{ github.action_path }}/scripts/nonbot-commits.ps1 `
+          -RepoUrl "$(git config --get remote.origin.url)" -PrBranch $prBranch -MainBranch $mainBranch
+        $changed = $nonBotCommits.Length -gt 0 ? 'true' : 'false'
+        "changed=$changed" | Tee-Object $env:GITHUB_OUTPUT -Append
+        if ("$changed" -eq "true")
+        {
+            Write-Output "::warning::Target branch '$prBranch' has been changed manually - skipping updater to avoid overwriting these changes."
+        }
+
+    - name: Parse the existing PR URL
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
+      id: existing-pr
+      env:
+        GH_TOKEN: ${{ inputs.api-token }}
+      shell: pwsh
+      run: |
+        $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
+        if ($urls.Length -eq 0)
+        {
+            "url=" | Tee-Object $env:GITHUB_OUTPUT -Append
+        }
+        elseif ($urls.Length -eq 1)
+        {
+            "url=$($urls[0])" | Tee-Object $env:GITHUB_OUTPUT -Append
+        }
+        else
+        {
+            throw "Unexpected number of PRs matched ($($urls.Length)): $urls"
+        }
+
+    - name: Show git diff
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
+      shell: bash
+      run: git --no-pager diff
+
+    - name: Get target changelog
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
+      shell: pwsh
+      run: |
+        $changelog = ${{ github.action_path }}/scripts/get-changelog.ps1 `
+          -RepoUrl '${{ steps.target.outputs.url }}' `
+          -OldTag '${{ steps.target.outputs.originalTag }}' `
+          -NewTag '${{ steps.target.outputs.latestTag }}'
+        ${{ github.action_path }}/scripts/set-github-env.ps1 TARGET_CHANGELOG $changelog
+
+    # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
+    - name: Create a PR
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
+      uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
+      id: create-pr
+      env:
+        DEPENDENCY_PATH: ${{ inputs.path }}
+        DEPENDENCY_NAME: ${{ inputs.name }}
+      with:
+        base: ${{ steps.root.outputs.baseBranch }}
+        branch: ${{ steps.root.outputs.prBranch }}
+        commit-message: 'chore: update ${{ env.DEPENDENCY_PATH }} to ${{ steps.target.outputs.latestTag }}'
+        author: 'GitHub <noreply@github.com>'
+        title: 'chore(deps): update ${{ env.DEPENDENCY_NAME }} to ${{ steps.target.outputs.latestTagNice }}'
+        body: |
+          Bumps ${{ env.DEPENDENCY_PATH }} from ${{ steps.target.outputs.originalTag }} to ${{ steps.target.outputs.latestTag }}.
+
+          Auto-generated by a [dependency updater](https://github.com/getsentry/github-workflows/blob/main/updater/action.yml).
+          ${{ env.TARGET_CHANGELOG }}
+        labels: dependencies
+
+    - name: Verify we have a PR
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
+      id: pr
+      shell: pwsh
+      run: |
+        if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
+        {
+            "url=${{ steps.create-pr.outputs.pull-request-url }}" | Tee-Object $env:GITHUB_OUTPUT -Append
+        }
+        elseif ('${{ steps.existing-pr.outputs.url }}' -ne '')
+        {
+            "url=${{ steps.existing-pr.outputs.url }}" | Tee-Object $env:GITHUB_OUTPUT -Append
+        }
+        else
+        {
+            throw "PR hasn't been created"
+        }
+
+    # If we had to create a new PR, we must do a clean checkout & update the submodule again.
+    # If we didn't do this, the new PR would only have a changelog...
+    - name: 'After new PR: restore repo'
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
+      uses: actions/checkout@v4
+      with:
+        token: ${{ inputs.api-token }}
+
+    - name: 'After new PR: redo the update'
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
+      shell: pwsh
+      env:
+        DEPENDENCY_PATH: ${{ inputs.path }}
+      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}'
+
+    - name: Update Changelog
+      if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
+      shell: pwsh
+      env:
+        DEPENDENCY_NAME: ${{ inputs.name }}
+        CHANGELOG_SECTION: ${{ inputs.changelog-section }}
+      run: |
+        ${{ github.action_path }}/scripts/update-changelog.ps1 `
+          -Name $env:DEPENDENCY_NAME `
+          -PR '${{ steps.pr.outputs.url }}' `
+          -RepoUrl '${{ steps.target.outputs.url }}' `
+          -MainBranch '${{ steps.target.outputs.mainBranch }}' `
+          -OldTag '${{ steps.target.outputs.originalTag }}' `
+          -NewTag '${{ steps.target.outputs.latestTag }}' `
+          -Section $env:CHANGELOG_SECTION
+
+    - name: Show final git diff
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
+      shell: bash
+      run: git --no-pager diff
+
+    # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
+    - name: Update the PR
+      if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
+      uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
+      id: update
+      env:
+        DEPENDENCY_PATH: ${{ inputs.path }}
+        DEPENDENCY_NAME: ${{ inputs.name }}
+      with:
+        base: ${{ steps.root.outputs.baseBranch }}
+        branch: ${{ steps.root.outputs.prBranch }}
+        commit-message: 'chore: update ${{ env.DEPENDENCY_PATH }} to ${{ steps.target.outputs.latestTag }}'
+        author: 'GitHub <noreply@github.com>'
+        title: 'chore(deps): update ${{ env.DEPENDENCY_NAME }} to ${{ steps.target.outputs.latestTagNice }}'
+        body: |
+          Bumps ${{ env.DEPENDENCY_PATH }} from ${{ steps.target.outputs.originalTag }} to ${{ steps.target.outputs.latestTag }}.
+
+          Auto-generated by a [dependency updater](https://github.com/getsentry/github-workflows/blob/main/updater/action.yml).
+          ${{ env.TARGET_CHANGELOG }}
+        labels: dependencies
