@@ -14,9 +14,11 @@ jobs:
   test-danger-pr-analysis:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Run danger action
         id: danger
-        uses: getsentry/github-workflows/danger@${{ github.sha }}
+        uses: ./danger
 
       - name: Validate danger outputs
         env:

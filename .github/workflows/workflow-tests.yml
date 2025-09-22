@@ -13,9 +13,11 @@ jobs:
   test-updater-pr-creation:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Run updater action
         id: updater
-        uses: getsentry/github-workflows/updater@${{ github.sha }}
+        uses: ./updater
         with:
           path: updater/tests/sentry-cli.properties
           name: WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE
@@ -74,9 +76,11 @@ jobs:
   test-updater-no-changes:
     runs-on: macos-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Run updater action
         id: updater
-        uses: getsentry/github-workflows/updater@${{ github.sha }}
+        uses: ./updater
         with:
           path: updater/tests/workflow-args.sh
           name: Workflow args test script
