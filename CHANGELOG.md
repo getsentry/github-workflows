@@ -17,6 +17,7 @@ To update your existing Updater workflows:
     secrets:
       # If a custom token is used instead, a CI would be triggered on a created PR.
       api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
 ### After
   native:
     runs-on: ubuntu-latest
