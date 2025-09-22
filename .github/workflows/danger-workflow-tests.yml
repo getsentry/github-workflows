@@ -7,9 +7,14 @@ on:
 
 jobs:
   danger:
-    uses: ./.github/workflows/danger.yml
-    with:
-      _workflow_version: ${{ github.sha }}
+    runs-on: ubuntu-latest
+    outputs:
+      outcome: ${{ steps.danger.outputs.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run danger action
+        id: danger
+        uses: ./danger
 
   test-outputs:
     runs-on: ubuntu-latest

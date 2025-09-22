@@ -6,26 +6,43 @@ on:
 
 jobs:
   updater-create-pr:
-    uses: ./.github/workflows/updater.yml
-    with:
-      path: updater/tests/sentry-cli.properties
-      name: WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE
-      pattern: '^2\.0\.'
-      pr-strategy: update
-      _workflow_version: ${{ github.sha }}
-    secrets:
-      api-token: ${{ github.token }}
+    runs-on: ubuntu-latest
+    outputs:
+      prUrl: ${{ steps.updater.outputs.prUrl }}
+      baseBranch: ${{ steps.updater.outputs.baseBranch }}
+      prBranch: ${{ steps.updater.outputs.prBranch }}
+      originalTag: ${{ steps.updater.outputs.originalTag }}
+      latestTag: ${{ steps.updater.outputs.latestTag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run updater action
+        id: updater
+        uses: ./updater
+        with:
+          path: updater/tests/sentry-cli.properties
+          name: WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE
+          pattern: '^2\.0\.'
+          pr-strategy: update
+          api-token: ${{ github.token }}
 
   updater-test-args:
-    uses: ./.github/workflows/updater.yml
-    with:
-      path: updater/tests/workflow-args.sh
-      name: Workflow args test script
-      runs-on: macos-latest
-      pattern: '.*'
-      _workflow_version: ${{ github.sha }}
-    secrets:
-      api-token: ${{ github.token }}
+    runs-on: macos-latest
+    outputs:
+      prUrl: ${{ steps.updater.outputs.prUrl }}
+      baseBranch: ${{ steps.updater.outputs.baseBranch }}
+      prBranch: ${{ steps.updater.outputs.prBranch }}
+      originalTag: ${{ steps.updater.outputs.originalTag }}
+      latestTag: ${{ steps.updater.outputs.latestTag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run updater action
+        id: updater
+        uses: ./updater
+        with:
+          path: updater/tests/workflow-args.sh
+          name: Workflow args test script
+          pattern: '.*'
+          api-token: ${{ github.token }}
 
   updater-test-outputs:
     runs-on: ubuntu-latest
