@@ -2,6 +2,12 @@ name: 'Danger JS'
 description: 'Runs DangerJS with a pre-configured set of rules on a Pull Request'
 author: 'Sentry'
 
+inputs:
+  api-token:
+    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
+    required: false
+    default: ${{ github.token }}
+
 outputs:
   outcome:
     description: 'Whether the Danger run finished successfully. Possible values are success, failure, cancelled, or skipped.'
@@ -13,6 +19,7 @@ runs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
+        token: ${{ inputs.api-token }}
         fetch-depth: 0
 
     # Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
