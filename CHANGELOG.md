@@ -4,7 +4,7 @@
 
 ### Fixes
 
-- Add Craft release automation with PowerShell version update script and revert to `_workflow_version` input parameter instead of `GITHUB_WORKFLOW_REF` which doesn't work when called from other repositories ([#111](https://github.com/getsentry/github-workflows/pull/111))
+- Danger and updater download script URLs cannot use GITHUB_WORKFLOW_REF - add Craft release automation with PowerShell version update script and revert to `_workflow_version` input parameter ([#111](https://github.com/getsentry/github-workflows/pull/111))
 
 ## 2.14.1
 
