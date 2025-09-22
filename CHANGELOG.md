@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Danger and updater download script URLs cannot use GITHUB_WORKFLOW_REF ([#111](https://github.com/getsentry/github-workflows/pull/111))
+
 ## 2.14.1
 
 ### Fixes
