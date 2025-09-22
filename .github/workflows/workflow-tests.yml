@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Run updater action
         id: updater
-        uses: ${{ github.repository }}/updater@${{ github.sha }}
+        uses: getsentry/github-workflows/updater@${{ github.sha }}
         with:
           path: updater/tests/sentry-cli.properties
           name: WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE
@@ -76,7 +76,7 @@ jobs:
     steps:
       - name: Run updater action
         id: updater
-        uses: ${{ github.repository }}/updater@${{ github.sha }}
+        uses: getsentry/github-workflows/updater@${{ github.sha }}
         with:
           path: updater/tests/workflow-args.sh
           name: Workflow args test script
