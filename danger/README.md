@@ -25,6 +25,17 @@ jobs:
   * required: false
   * default: `${{ github.token }}`
 
+## Required Permissions
+
+For workflows using this action, you need to set the following permissions:
+
+```yaml
+permissions:
+  contents: read       # To read repository files
+  pull-requests: write # To post comments on pull requests
+  statuses: write      # To post commit status checks
+```
+
 ## Outputs
 
 * `outcome`: Whether the Danger run finished successfully. Possible values are `success`, `failure`, `cancelled`, or `skipped`.
