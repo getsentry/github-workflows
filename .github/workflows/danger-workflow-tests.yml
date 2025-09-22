@@ -11,18 +11,33 @@ permissions:
   issues: write
 
 jobs:
-  danger:
+  # Test Danger action on pull requests - should analyze PR and report findings
+  test-danger-pr-analysis:
     runs-on: ubuntu-latest
-    outputs:
-      outcome: ${{ steps.danger.outputs.outcome }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Run danger action
         id: danger
         uses: ./danger
 
-  test-outputs:
-    runs-on: ubuntu-latest
-    needs: danger
-    steps:
-      - run: "[[ '${{ needs.danger.outputs.outcome }}' == 'success' ]]"
+      - name: Validate danger outputs
+        env:
+          DANGER_OUTCOME: ${{ steps.danger.outputs.outcome }}
+        run: |
+          echo "🔍 Validating Danger action outputs..."
+          echo "Danger Outcome: '$DANGER_OUTCOME'"
+
+          # Validate that Danger ran successfully
+          if [[ "$DANGER_OUTCOME" != "success" ]]; then
+            echo "❌ Expected Danger outcome 'success', got '$DANGER_OUTCOME'"
+            echo "This could indicate:"
+            echo "  - Danger found issues that caused it to fail"
+            echo "  - The action itself encountered an error"
+            echo "  - Docker container issues"
+            exit 1
+          fi
+
+          echo "✅ Danger PR analysis completed successfully!"
+          echo "ℹ️  Check the PR comments for any Danger findings"
