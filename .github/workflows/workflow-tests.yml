@@ -4,6 +4,11 @@ name: Workflow Tests
 on:
   push:
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   updater-create-pr:
     runs-on: ubuntu-latest
