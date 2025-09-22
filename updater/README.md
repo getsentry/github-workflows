@@ -15,11 +15,6 @@ on:
     branches:
       - main
 
-# Cancel previous runs when new ones are triggered
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   # Update a git submodule
   cocoa:
