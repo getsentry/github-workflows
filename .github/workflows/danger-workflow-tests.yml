@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Run danger action
         id: danger
-        uses: ./danger
+        uses: ${{ github.repository }}/danger@${{ github.sha }}
 
       - name: Validate danger outputs
         env:
