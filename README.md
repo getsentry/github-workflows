@@ -1,124 +1,23 @@
-# Workflows
+# GitHub Workflows
 
-This repository contains reusable workflows and scripts to be used with GitHub Actions.
+This repository contains composite actions and scripts to be used with GitHub Actions.
 
-## Updater
+## Composite Actions
 
-Dependency updater - see [updater.yml](.github/workflows/updater.yml) - updates dependencies to the latest published git tag.
+### Updater
 
-### Example workflow definition
+Dependency updater - updates dependencies to the latest published git tag and creates/updates PRs.
 
-```yaml
-name: Update Dependencies
-on:
-  # Run every day.
-  schedule:
-    - cron: '0 3 * * *'
-  # And on on every PR merge so we get the updated dependencies ASAP, and to make sure the changelog doesn't conflict.
-  push:
-    branches:
-      - main
-jobs:
-  # Update a git submodule
-  cocoa:
-    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
-    with:
-      path: modules/sentry-cocoa
-      name: Cocoa SDK
-      pattern: '^1\.'  # Limit to major version '1'
-    secrets:
-      api-token: ${{ secrets.CI_DEPLOY_KEY }}
+**[📖 View full documentation →](updater/README.md)**
 
-  # Update a properties file
-  cli:
-    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
-    with:
-      path: sentry-cli.properties
-      name: CLI
-    secrets:
-      api-token: ${{ secrets.CI_DEPLOY_KEY }}
+### Danger
 
-  # Update using a custom shell script, see updater/scripts/update-dependency.ps1 for the required arguments
-  agp:
-    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
-    with:
-      path: script.ps1
-      name: Gradle Plugin
-    secrets:
-      api-token: ${{ secrets.CI_DEPLOY_KEY }}
+Runs DangerJS on Pull Requests with a pre-configured set of rules.
 
-  # Update a CMake FetchContent dependency with auto-detection (single dependency only)
-  sentry-native:
-    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
-    with:
-      path: vendor/sentry-native.cmake
-      name: Sentry Native SDK
-    secrets:
-      api-token: ${{ secrets.CI_DEPLOY_KEY }}
+**[📖 View full documentation →](danger/README.md)**
 
-  # Update a CMake FetchContent dependency with explicit dependency name
-  deps:
-    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
-    with:
-      path: vendor/dependencies.cmake#googletest
-      name: GoogleTest
-    secrets:
-      api-token: ${{ secrets.CI_DEPLOY_KEY }}
-```
+## Legacy Reusable Workflows (v2)
 
-### Inputs
+> ⚠️ **Deprecated**: Reusable workflows have been converted to composite actions in v3. Please migrate to the composite actions above.
 
-* `path`: Dependency path in the source repository. Supported formats:
-  * Submodule path
-  * Properties file (`.properties`)
-  * Shell script (`.ps1`, `.sh`)
-  * CMake file with FetchContent:
-    * `path/to/file.cmake#DepName` - specify dependency name
-    * `path/to/file.cmake` - auto-detection (single dependency only)
-  * type: string
-  * required: true
-* `name`: Name used in the PR title and the changelog entry.
-  * type: string
-  * required: true
-* `pattern`: RegEx pattern that will be matched against available versions when picking the latest one.
-  * type: string
-  * required: false
-  * default: ''
-* `changelog-entry`: Whether to add a changelog entry for the update.
-  * type: boolean
-  * required: false
-  * default: true
-* `changelog-section`: Section header to attach the changelog entry to.
-  * type: string
-  * required: false
-  * default: Dependencies
-* `runs-on`: GitHub Actions virtual environment name to run the udpater job on.
-  * type: string
-  * required: false
-  * default: ubuntu-latest
-* `pr-strategy`: How to handle PRs.
-  Can be either of the following:
-  * `create` (default) - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
-  * `update` - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
-
-### Secrets
-
-* `api-token`: GH authentication token to create PRs with & push.
-  If you provide the usual `${{github.token}}`, no followup CI will run on the created PR.
-  If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.
-
-## Danger
-
-Runs DangerJS on Pull Reqeusts in your repository. This uses custom set of rules defined in [this dangerfile](danger/dangerfile.js).
-
-```yaml
-name: Danger
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
-
-jobs:
-  danger:
-    uses: getsentry/github-workflows/.github/workflows/danger.yml@v2
-```
+For v2 migration guide and breaking changes, see [CHANGELOG.md](CHANGELOG.md#3.0.0).
