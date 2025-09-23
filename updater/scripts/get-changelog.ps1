@@ -139,7 +139,19 @@ function Get-ChangelogFromCommits {
 
 # Function to generate changelog from diff between changelog files
 function Get-ChangelogFromDiff {
-    param($oldChangelogPath, $newChangelogPath, $oldTag, $newTag)
+    param($oldTag, $newTag, $tmpDir)
+
+    # Try to fetch changelog files for both tags
+    $oldChangelogPath = Join-Path $tmpDir 'old-changelog.md'
+    $hasOldChangelog = Get-ChangelogContent $oldTag $oldChangelogPath
+
+    $newChangelogPath = Join-Path $tmpDir 'new-changelog.md'
+    $hasNewChangelog = Get-ChangelogContent $newTag $newChangelogPath
+
+    # Return null if we don't have both changelog files
+    if (-not $hasOldChangelog -or -not $hasNewChangelog) {
+        return $null
+    }
 
     Write-Host "Generating changelog diff between $oldTag and $newTag..."
 
@@ -233,20 +245,10 @@ function Format-ChangelogContent {
 try {
     Write-Host 'Fetching CHANGELOG files for comparison...'
 
-    # Fetch old changelog
-    $oldChangelogPath = Join-Path $tmpDir 'old-changelog.md'
-    $hasOldChangelog = Get-ChangelogContent $OldTag $oldChangelogPath
-
-    # Fetch new changelog
-    $newChangelogPath = Join-Path $tmpDir 'new-changelog.md'
-    $hasNewChangelog = Get-ChangelogContent $NewTag $newChangelogPath
-
     $changelog = $null
 
     # Try changelog file diff first, fall back to git commits if not available
-    if ($hasOldChangelog -and $hasNewChangelog) {
-        $changelog = Get-ChangelogFromDiff $oldChangelogPath $newChangelogPath $OldTag $NewTag
-    }
+    $changelog = Get-ChangelogFromDiff $OldTag $NewTag $tmpDir
 
     # Fall back to git commits if no changelog files or no diff found
     if (-not $changelog) {
