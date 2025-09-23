@@ -54,7 +54,7 @@ To update your existing Danger workflows:
 
 ### Fixes
 
-- Improve changelog generation for non-tagged commits and edge cases (#115)
+- Improve changelog generation for non-tagged commits and edge cases ([#115](https://github.com/getsentry/github-workflows/pull/115))
 
 ## 2.14.1
 
