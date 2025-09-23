@@ -54,21 +54,13 @@ function Get-ChangelogFromCommits {
     Write-Host "Cloning repository to generate changelog from commits..."
 
     # Try progressive fallback for cloning
-    $depth = 200
-    git clone --depth=$depth --no-single-branch --quiet $repoUrl $repoDir 2>&1 | Out-Null
+    git clone --depth=200 --no-single-branch --quiet $repoUrl $repoDir
 
-    # If shallow clone fails due to depth, try with more depth
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Shallow clone failed, trying with increased depth..."
-        Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
-        git clone --depth=1000 --no-single-branch --quiet $repoUrl $repoDir 2>&1 | Out-Null
-    }
-
-    # If still failing, try full clone as last resort
+    # If shallow clone fails, try full clone as last resort
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Deep clone failed, trying full clone..."
         Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
-        git clone --quiet $repoUrl $repoDir 2>&1 | Out-Null
+        git clone --quiet $repoUrl $repoDir
     }
 
     if ($LASTEXITCODE -ne 0) {
@@ -84,7 +76,7 @@ function Get-ChangelogFromCommits {
     Push-Location $repoDir
     try {
         # Ensure we have both tags
-        git fetch --tags --quiet 2>&1 | Out-Null
+        git fetch --tags --quiet
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Could not fetch tags from repository"
             return $null
