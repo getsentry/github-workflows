@@ -181,7 +181,6 @@ function Format-ChangelogContent {
     $changelog = $changelog -replace '(?<!\[)#([0-9]+)(?![\]0-9])', ('[#$1](' + $repoUrl + '/issues/$1)')
 
     # Replace any links pointing to github.com so that the target PRs/Issues don't get notification
-    $prefix = 'https?://(www\.)?github.com/'
     $changelog = $changelog -replace ('\(' + $prefix), '(https://github-redirect.dependabot.com/'
 
     # Limit the changelog length to ~60k to allow for other text in the PR body (total PR limit is 65536 characters)

@@ -264,19 +264,21 @@ Features, fixes and improvements in this release have been contributed by:
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
             -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
 
-        # Should contain the header for git commit fallback
-        $actual | Should -Match "## Changelog"
-        $actual | Should -Match "### Commits between v3.9.1 and v3.10.0"
+        $expected = @'
+## Changelog
 
-        # Should contain some expected commits (filtering out version tags)
-        $actual | Should -Match "- Forbid deducing reference types for m_predicate in FilterGenerator"
-        $actual | Should -Match "- Make message macros \(FAIL, WARN, INFO, etc\) thread safe"
+### Commits between v3.9.1 and v3.10.0
 
-        # Should properly format PR links to prevent notifications
-        $actual | Should -Match "github-redirect.dependabot.com"
+- Forbid deducing reference types for m_predicate in FilterGenerator ([#3005](https://github-redirect.dependabot.com/catchorg/Catch2/issues/3005))
+- Make message macros (FAIL, WARN, INFO, etc) thread safe
+- Improve performance of writing XML
+- Improve performance of writing JSON values
+- Don't add / to start of pkg-config file path when DESTDIR is unset
+- Fix color mode detection on FreeBSD by adding platform macro
+- Handle DESTDIR env var when generating pkgconfig files
+'@
 
-        # Should remove @mentions
-        $actual | Should -Not -Match "@\w+"
+        $actual | Should -Be $expected
     }
 
     It 'git commit fallback handles PR references correctly' {
@@ -285,9 +287,9 @@ Features, fixes and improvements in this release have been contributed by:
             -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
 
         # Check that PR references are converted to links with github-redirect
-        if ($actual -match '#(\d+)') {
-            $actual | Should -Match '\[#\d+\]\(https://github-redirect\.dependabot\.com/catchorg/Catch2/issues/\d+\)'
-        }
+        $actual | Should -Match '\[#3005\]\(https://github-redirect\.dependabot\.com/catchorg/Catch2/issues/3005\)'
+        # Should not contain raw @mentions
+        $actual | Should -Not -Match "@\w+"
     }
 
     It 'git commit fallback returns empty when no commits found' {
@@ -301,10 +303,14 @@ Features, fixes and improvements in this release have been contributed by:
     It 'git commit fallback filters out version tag commits' {
         # Test that version commits like "v3.10.0" are filtered out
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
+            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.0' -NewTag 'v3.10.0'
 
-        # Should not contain version tag lines
+        # Should not contain version tag lines (v3.9.1 and v3.10.0 are version tags in this range)
+        $actual | Should -Not -Match "- v3\.9\.1"
         $actual | Should -Not -Match "- v3\.10\.0"
+        $actual | Should -Not -Match "- 3\.9\.1"
         $actual | Should -Not -Match "- 3\.10\.0"
+        # But should contain meaningful commits
+        $actual | Should -Match "- Forbid deducing reference types"
     }
 }

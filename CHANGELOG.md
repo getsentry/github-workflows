@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Updater now supports repositories without changelog files by falling back to git commit messages ([#116](https://github.com/getsentry/github-workflows/pull/116))
+
 ### Breaking Changes
 
 Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
