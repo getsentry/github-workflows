@@ -82,7 +82,9 @@ try {
 
     if ([string]::IsNullOrEmpty($fullDiff)) {
         Write-Host "No differences found between $OldTag and $NewTag"
-        return ''
+        return
+    } else {
+        Write-Host "Successfully created a changelog diff - $($fullDiff.Count) lines"
     }
 
     # Extract only the added lines (lines starting with + but not ++)
@@ -130,6 +132,7 @@ try {
                 $changelog += "`n`n> :warning: **Changelog content truncated by $($oldLength - $changelog.Length) characters because it was over the limit ($limit) and wouldn't fit into PR description.**"
             }
 
+            Write-Host "Final changelog length: $($changelog.Length) characters"
             return $changelog
         }
     }
@@ -142,8 +145,6 @@ try {
     if (Test-Path $tmpDir) {
         Write-Host 'Cleaning up temporary files...'
         Remove-Item -Recurse -Force -ErrorAction Continue $tmpDir
+        Write-Host 'Cleanup complete.'
     }
 }
-
-# Ensure clean exit
-exit 0
