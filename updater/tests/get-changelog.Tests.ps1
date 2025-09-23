@@ -18,7 +18,7 @@ Describe 'get-changelog' {
 
     It 'with missing versions' {
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-            -RepoUrl 'https://github.com/getsentry/sentry-javascript' -OldTag 'XXXXXXX' -NewTag 'YYYYYYYYY'
+            -RepoUrl 'https://github.com/getsentry/github-workflows' -OldTag 'XXXXXXX' -NewTag 'YYYYYYYYY'
         $actual | Should -BeNullOrEmpty
     }
 
