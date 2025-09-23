@@ -52,6 +52,10 @@ To update your existing Danger workflows:
 
 - Updater - Prevent script injection vulnerabilities through workflow inputs ([#98](https://github.com/getsentry/github-workflows/pull/98))
 
+### Fixes
+
+- Improve changelog generation for non-tagged commits and edge cases (#115)
+
 ## 2.14.1
 
 ### Fixes
