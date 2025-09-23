@@ -74,8 +74,7 @@ function Get-ChangelogFromCommits {
 
         # Get commit messages between tags
         Write-Host "Getting commits between $oldTag and $newTag..."
-        $commitMessages = git log "$oldTag..$newTag" --pretty=format:'%s' 2>&1
-
+        $commitMessages = git log "$oldTag..$newTag" --pretty=format:'%s'
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Could not get commits between $oldTag and $newTag (exit code: $LASTEXITCODE)"
             return $null
