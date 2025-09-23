@@ -2,10 +2,6 @@
 
 ## Unreleased
 
-### Features
-
-- Updater now supports repositories without changelog files by falling back to git commit messages ([#116](https://github.com/getsentry/github-workflows/pull/116))
-
 ### Breaking Changes
 
 Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
@@ -48,6 +44,7 @@ To update your existing Danger workflows:
 
 ### Features
 
+- Updater now supports dependencies without changelog files by falling back to git commit messages ([#116](https://github.com/getsentry/github-workflows/pull/116))
 - Danger - Improve conventional commit scope handling, and non-conventional PR title support ([#105](https://github.com/getsentry/github-workflows/pull/105))
 - Add Proguard artifact endpoint for Android builds in sentry-server ([#100](https://github.com/getsentry/github-workflows/pull/100))
 - Updater - Add CMake FetchContent support for automated dependency updates ([#104](https://github.com/getsentry/github-workflows/pull/104))
