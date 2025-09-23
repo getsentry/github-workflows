@@ -5,6 +5,8 @@ param(
 )
 
 Set-StrictMode -Version latest
+$PSNativeCommandErrorActionPreference = $true
+$ErrorActionPreference = 'Stop'
 
 $prefix = 'https?://(www\.)?github.com/'
 if (-not ($RepoUrl -match "^$prefix([^/]+)/([^/]+?)(?:\.git)?/?$")) {
@@ -63,7 +65,17 @@ try {
     Write-Host "Generating changelog diff between $OldTag and $NewTag..."
 
     # Generate diff using git diff --no-index
-    $fullDiff = git diff --no-index $oldChangelogPath $newChangelogPath
+    # git diff returns exit code 1 when differences are found, which is expected behavior
+    # We need to handle this properly when PSNativeCommandErrorActionPreference is enabled
+    $fullDiff = & {
+        $oldErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            git diff --no-index $oldChangelogPath $newChangelogPath
+        } finally {
+            $ErrorActionPreference = $oldErrorActionPreference
+        }
+    }
 
     # The first lines are diff metadata, skip them
     $fullDiff = $fullDiff -split "`n" | Select-Object -Skip 4
@@ -132,3 +144,6 @@ try {
         Remove-Item -Recurse -Force -ErrorAction Continue $tmpDir
     }
 }
+
+# Ensure clean exit
+exit 0
