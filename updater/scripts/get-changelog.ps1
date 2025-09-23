@@ -53,22 +53,90 @@ function Get-ChangelogFromCommits {
     $repoDir = Join-Path $tmpDir 'repo'
     Write-Host "Cloning repository to generate changelog from commits..."
 
-    # Clone with limited depth for performance, but ensure we have both tags
-    git clone --depth=200 --no-single-branch --quiet $repoUrl $repoDir 2>&1 | Out-Null
+    # Clone with error handling to prevent script termination
+    $cloneResult = & {
+        $oldErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            # Try increasing depth if needed
+            $depth = 200
+            git clone --depth=$depth --no-single-branch --quiet $repoUrl $repoDir 2>&1
+            $cloneExitCode = $LASTEXITCODE
+
+            # If shallow clone fails due to depth, try with more depth
+            if ($cloneExitCode -ne 0 -and $depth -eq 200) {
+                Write-Host "Shallow clone failed, trying with increased depth..."
+                Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
+                git clone --depth=1000 --no-single-branch --quiet $repoUrl $repoDir 2>&1
+                $cloneExitCode = $LASTEXITCODE
+            }
+
+            # If still failing, try full clone as last resort
+            if ($cloneExitCode -ne 0) {
+                Write-Host "Deep clone failed, trying full clone..."
+                Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
+                git clone --quiet $repoUrl $repoDir 2>&1
+                $cloneExitCode = $LASTEXITCODE
+            }
+
+            return $cloneExitCode
+        } finally {
+            $ErrorActionPreference = $oldErrorActionPreference
+        }
+    }
+
+    if ($cloneResult -ne 0) {
+        Write-Warning "Could not clone repository $repoUrl"
+        return $null
+    }
+
+    if (-not (Test-Path $repoDir)) {
+        Write-Warning "Repository directory was not created successfully"
+        return $null
+    }
 
     Push-Location $repoDir
     try {
-        # Ensure we have both tags
-        git fetch --tags --quiet 2>&1 | Out-Null
+        # Ensure we have both tags with error handling
+        $fetchResult = & {
+            $oldErrorActionPreference = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                git fetch --tags --quiet 2>&1 | Out-Null
+                return $LASTEXITCODE
+            } finally {
+                $ErrorActionPreference = $oldErrorActionPreference
+            }
+        }
 
-        # Get commit messages between tags
-        Write-Host "Getting commits between $oldTag and $newTag..."
-        $commitMessages = git log "$oldTag..$newTag" --pretty=format:'%s' 2>&1
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Could not get commits between $oldTag and $newTag"
+        if ($fetchResult -ne 0) {
+            Write-Warning "Could not fetch tags from repository"
             return $null
         }
+
+        # Get commit messages between tags with error handling
+        Write-Host "Getting commits between $oldTag and $newTag..."
+        $commitResult = & {
+            $oldErrorActionPreference = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $output = git log "$oldTag..$newTag" --pretty=format:'%s' 2>&1
+                $exitCode = $LASTEXITCODE
+                return @{
+                    Output = $output
+                    ExitCode = $exitCode
+                }
+            } finally {
+                $ErrorActionPreference = $oldErrorActionPreference
+            }
+        }
+
+        if ($commitResult.ExitCode -ne 0) {
+            Write-Warning "Could not get commits between $oldTag and $newTag (exit code: $($commitResult.ExitCode))"
+            return $null
+        }
+
+        $commitMessages = $commitResult.Output
 
         if ([string]::IsNullOrEmpty($commitMessages)) {
             Write-Host "No commits found between $oldTag and $newTag"
@@ -97,8 +165,22 @@ function Get-ChangelogFromCommits {
         Write-Host "Generated changelog from $($commits.Count) commits"
         return $changelog
     }
+    catch {
+        Write-Warning "Error generating changelog from commits: $($_.Exception.Message)"
+        return $null
+    }
     finally {
         Pop-Location
+        # Ensure repository directory is cleaned up
+        if (Test-Path $repoDir) {
+            try {
+                Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
+                Write-Host "Cleaned up temporary repository directory"
+            }
+            catch {
+                Write-Warning "Could not clean up temporary repository directory: $repoDir"
+            }
+        }
     }
 }
 
