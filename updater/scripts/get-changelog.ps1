@@ -79,7 +79,6 @@ try {
 
     # The first lines are diff metadata, skip them
     $fullDiff = $fullDiff -split "`n" | Select-Object -Skip 4
-
     if ([string]::IsNullOrEmpty($fullDiff)) {
         Write-Host "No differences found between $OldTag and $NewTag"
         return
@@ -133,12 +132,11 @@ try {
             }
 
             Write-Host "Final changelog length: $($changelog.Length) characters"
-            return $changelog
+            Write-Output $changelog
         }
     }
 
     Write-Host "No changelog additions found between $OldTag and $NewTag"
-    return ''
 } catch {
     Write-Warning "Failed to get changelog: $($_.Exception.Message)"
 } finally {
@@ -148,3 +146,7 @@ try {
         Write-Host 'Cleanup complete.'
     }
 }
+
+# This resets the $LASTEXITCODE set by git diff above.
+# Note that this only runs in the successful path.
+exit 0
