@@ -1,6 +1,4 @@
 
-$testCases =
-
 Describe 'update-changelog' {
     It '<_>' -ForEach @(Get-ChildItem "$PSScriptRoot/testdata/changelog/") {
         $testCase = $_
