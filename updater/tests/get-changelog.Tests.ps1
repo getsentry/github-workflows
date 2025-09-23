@@ -262,20 +262,19 @@ Features, fixes and improvements in this release have been contributed by:
     It 'falls back to git commits when no changelog files exist' {
         # Test with a repository that doesn't have changelog files
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
+            -RepoUrl 'https://github.com/getsentry/responses.git' -OldTag '0.7.0' -NewTag '0.8.0'
 
         $expected = @'
 ## Changelog
 
-### Commits between v3.9.1 and v3.10.0
+### Commits between 0.7.0 and 0.8.0
 
-- Forbid deducing reference types for m_predicate in FilterGenerator ([#3005](https://github-redirect.dependabot.com/catchorg/Catch2/issues/3005))
-- Make message macros (FAIL, WARN, INFO, etc) thread safe
-- Improve performance of writing XML
-- Improve performance of writing JSON values
-- Don't add / to start of pkg-config file path when DESTDIR is unset
-- Fix color mode detection on FreeBSD by adding platform macro
-- Handle DESTDIR env var when generating pkgconfig files
+- Note passthru changes
+- Add support for removing and replacing existing mocked URLs
+- Add support for removing and replacing existing mocked URLs
+- Use inspect.getfullargspec() in Python 3
+- ci: add codecov dep
+- Changes for 0.7.0
 '@
 
         $actual | Should -Be $expected
@@ -284,21 +283,40 @@ Features, fixes and improvements in this release have been contributed by:
     It 'git commit fallback handles PR references correctly' {
         # Test with a known repository and tags that contain PR references
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
+            -RepoUrl 'https://github.com/getsentry/responses.git' -OldTag '0.8.0' -NewTag '0.9.0'
 
-        # This test verifies the same content as the main test, but focuses on PR link formatting
+        # This test verifies PR link formatting in commit messages
         $expected = @'
 ## Changelog
 
-### Commits between v3.9.1 and v3.10.0
+### Commits between 0.8.0 and 0.9.0
 
-- Forbid deducing reference types for m_predicate in FilterGenerator ([#3005](https://github-redirect.dependabot.com/catchorg/Catch2/issues/3005))
-- Make message macros (FAIL, WARN, INFO, etc) thread safe
-- Improve performance of writing XML
-- Improve performance of writing JSON values
-- Don't add / to start of pkg-config file path when DESTDIR is unset
-- Fix color mode detection on FreeBSD by adding platform macro
-- Handle DESTDIR env var when generating pkgconfig files
+- Update CHANGES for 0.9.0
+- Merge pull request [#196](https://github-redirect.dependabot.com/getsentry/responses.git/issues/196) from getsentry/fix/python-37
+- fix: Adapt to re.Pattern in Python 3.7
+- test: Correct paths to artifacts
+- test: Correct paths to artifacts
+- test: Add Zeus
+- Merge pull request [#192](https://github-redirect.dependabot.com/getsentry/responses.git/issues/192) from xmo-odoo/patch-1
+- force rebuild
+- Merge pull request [#189](https://github-redirect.dependabot.com/getsentry/responses.git/issues/189) from wimglenn/issue_188
+- Add stream attribute to BaseResponse
+- add 3.5 support
+- add support for custom patch target
+- Merge pull request [#187](https://github-redirect.dependabot.com/getsentry/responses.git/issues/187) from rmad17/master
+- Update README.rst
+- Adding installing section
+- Merge pull request [#181](https://github-redirect.dependabot.com/getsentry/responses.git/issues/181) from feliperuhland/master
+- Merge pull request [#178](https://github-redirect.dependabot.com/getsentry/responses.git/issues/178) from kathawala/unicode_passthru
+- Fix README examples with import of requests library
+- Satisfy linter
+- Better test which doesn't rely on external requests
+- Add unicode support for passthru urls
+- Add support for unicode in domain names and tlds ([#177](https://github-redirect.dependabot.com/getsentry/responses.git/issues/177))
+- Attempt to satisfy linter
+- All tests passed for fixing issue [#175](https://github-redirect.dependabot.com/getsentry/responses.git/issues/175)
+- Adds unicode handling to BaseRequest init, fixes issue [#175](https://github-redirect.dependabot.com/getsentry/responses.git/issues/175)
+- fix: Maintain 'method' param on 'add'
 '@
 
         $actual | Should -Be $expected
@@ -307,40 +325,49 @@ Features, fixes and improvements in this release have been contributed by:
     It 'git commit fallback returns empty when no commits found' {
         # Test with same tags (no commits between them)
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.10.0' -NewTag 'v3.10.0'
+            -RepoUrl 'https://github.com/getsentry/responses.git' -OldTag '0.9.0' -NewTag '0.9.0'
 
         $actual | Should -BeNullOrEmpty
     }
 
     It 'git commit fallback filters out version tag commits' {
-        # Test that version commits like "v3.10.0" are filtered out
+        # Test that version commits like "0.8.0" are filtered out
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.0' -NewTag 'v3.10.0'
+            -RepoUrl 'https://github.com/getsentry/responses.git' -OldTag '0.6.0' -NewTag '0.8.0'
 
         # Expected output should not contain version tag commits but should have meaningful commits
-        # This range includes v3.9.1 and v3.10.0 version commits that should be filtered out
+        # This range includes version commits that should be filtered out
         $expected = @'
 ## Changelog
 
-### Commits between v3.9.0 and v3.10.0
+### Commits between 0.6.0 and 0.8.0
 
-- Forbid deducing reference types for m_predicate in FilterGenerator ([#3005](https://github-redirect.dependabot.com/catchorg/Catch2/issues/3005))
-- Make message macros (FAIL, WARN, INFO, etc) thread safe
-- Improve performance of writing XML
-- Improve performance of writing JSON values
-- Don't add / to start of pkg-config file path when DESTDIR is unset
-- Fix color mode detection on FreeBSD by adding platform macro
-- Handle DESTDIR env var when generating pkgconfig files
-- Add tests for comparing & stringifying volatile pointers
-- Refactor CATCH_TRAP selection logic to prefer compiler-specific impls
-- Update generators.md
-- Cleanup WIP changes from last commit
-- Catch exceptions from StringMakers inside Detail::stringify
-- Fix StringMaker for time_point<system_clock> with non-default duration
-- Fix warning in `catch_unique_ptr::bool()`
-- Add enum types to what is captured by value by default
-- Don't follow __assume(false) with std::terminate in NDEBUG builds
-- Fix bad error reporting for nested exceptions in default configuration
+- Note passthru changes
+- Add support for removing and replacing existing mocked URLs
+- Add support for removing and replacing existing mocked URLs
+- Use inspect.getfullargspec() in Python 3
+- ci: add codecov dep
+- Changes for 0.7.0
+- Change behavior for multiple matches per PR comment
+- Issue [#170](https://github-redirect.dependabot.com/getsentry/responses.git/issues/170): Fix bug with handling multiple matches
+- ci: add codecov
+- test: multiple urls same domain (refs GH-170)
+- Changes for 0.6.2
+- compare query params length if match_querystring is set
+- fix: ensuring default path if match_querystring is set
+- update multiple responses example in README.rst
+- fix: fix multiple responses
+- fix: count mocked errors in RequestsMock
+- fix: allow returning arbitrary status codes
+- Changes for 0.6.1
+- Update README.rst
+- drop support for Python 2.6
+- travis: dont setup pre-commit
+- pre-commit 0.16.0
+- fix: restore adding_headers compatibility
+- missing change refs
+- Merge branch 'feature/do_not_remove_urls_when_assert_all_requests_are_fired' of https://github.com/j0hnsmith/responses into j0hnsmith-feature/do_not_remove_urls_when_assert_all_requests_are_fired
+- The only change in behaviour when setting `assert_all_requests_are_fired=True` should be the expected assertion.
 '@
 
         $actual | Should -Be $expected
