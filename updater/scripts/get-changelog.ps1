@@ -33,7 +33,7 @@ function Get-ChangelogContent {
             $content = Invoke-RestMethod -Uri $rawUrl -Method Get -ErrorAction SilentlyContinue
             if ($content) {
                 Set-Content -Path $filePath -Value $content -Encoding UTF8
-                Write-Host "Found changelog for $ref as: $name"
+                Write-Host "Found $name for ref $ref"
                 return $true
             }
         } catch {
