@@ -52,17 +52,7 @@ function Get-ChangelogFromCommits {
     # Clone the repository
     $repoDir = Join-Path $tmpDir 'repo'
     Write-Host "Cloning repository to generate changelog from commits..."
-
-    # Try progressive fallback for cloning
-    git clone --depth=200 --no-single-branch --quiet $repoUrl $repoDir
-
-    # If shallow clone fails, try full clone as last resort
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Deep clone failed, trying full clone..."
-        Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
-        git clone --quiet $repoUrl $repoDir
-    }
-
+    git clone --no-single-branch --quiet $repoUrl $repoDir
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Could not clone repository $repoUrl"
         return $null
