@@ -79,7 +79,7 @@ try {
 
     # The first lines are diff metadata, skip them
     $fullDiff = $fullDiff -split "`n" | Select-Object -Skip 4
-    if ([string]::IsNullOrEmpty($fullDiff)) {
+    if ([string]::IsNullOrEmpty("$fullDiff")) {
         Write-Host "No differences found between $OldTag and $NewTag"
         return
     } else {
@@ -126,7 +126,13 @@ try {
                 $oldLength = $changelog.Length
                 Write-Warning "Truncating changelog because it's $($changelog.Length - $limit) characters longer than the limit $limit."
                 while ($changelog.Length -gt $limit) {
-                    $changelog = $changelog.Substring(0, $changelog.LastIndexOf("`n"))
+                    $lastNewlineIndex = $changelog.LastIndexOf("`n")
+                    if ($lastNewlineIndex -eq -1) {
+                        # No newlines found, just truncate to limit
+                        $changelog = $changelog.Substring(0, $limit)
+                        break
+                    }
+                    $changelog = $changelog.Substring(0, $lastNewlineIndex)
                 }
                 $changelog += "`n`n> :warning: **Changelog content truncated by $($oldLength - $changelog.Length) characters because it was over the limit ($limit) and wouldn't fit into PR description.**"
             }
