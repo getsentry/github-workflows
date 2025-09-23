@@ -264,17 +264,21 @@ Features, fixes and improvements in this release have been contributed by:
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
             -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
 
-        # Verify structure rather than exact content to reduce external dependency brittleness
-        $actual | Should -Match "## Changelog"
-        $actual | Should -Match "### Commits between v3.9.1 and v3.10.0"
+        $expected = @'
+## Changelog
 
-        # Should contain some expected commits (these are stable between these specific tags)
-        $actual | Should -Match "- Forbid deducing reference types for m_predicate in FilterGenerator"
-        $actual | Should -Match "- Make message macros.*thread safe"
+### Commits between v3.9.1 and v3.10.0
 
-        # Verify proper link formatting and sanitization
-        $actual | Should -Match "github-redirect\.dependabot\.com"
-        $actual | Should -Not -Match "@\w+"
+- Forbid deducing reference types for m_predicate in FilterGenerator ([#3005](https://github-redirect.dependabot.com/catchorg/Catch2/issues/3005))
+- Make message macros (FAIL, WARN, INFO, etc) thread safe
+- Improve performance of writing XML
+- Improve performance of writing JSON values
+- Don't add / to start of pkg-config file path when DESTDIR is unset
+- Fix color mode detection on FreeBSD by adding platform macro
+- Handle DESTDIR env var when generating pkgconfig files
+'@
+
+        $actual | Should -Be $expected
     }
 
     It 'git commit fallback handles PR references correctly' {
@@ -282,12 +286,22 @@ Features, fixes and improvements in this release have been contributed by:
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
             -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
 
-        # Check that PR references are converted to links with github-redirect (if any exist)
-        if ($actual -match '#(\d+)') {
-            $actual | Should -Match '\[#\d+\]\(https://github-redirect\.dependabot\.com/catchorg/Catch2/issues/\d+\)'
-        }
-        # Should not contain raw @mentions
-        $actual | Should -Not -Match "@\w+"
+        # This test verifies the same content as the main test, but focuses on PR link formatting
+        $expected = @'
+## Changelog
+
+### Commits between v3.9.1 and v3.10.0
+
+- Forbid deducing reference types for m_predicate in FilterGenerator ([#3005](https://github-redirect.dependabot.com/catchorg/Catch2/issues/3005))
+- Make message macros (FAIL, WARN, INFO, etc) thread safe
+- Improve performance of writing XML
+- Improve performance of writing JSON values
+- Don't add / to start of pkg-config file path when DESTDIR is unset
+- Fix color mode detection on FreeBSD by adding platform macro
+- Handle DESTDIR env var when generating pkgconfig files
+'@
+
+        $actual | Should -Be $expected
     }
 
     It 'git commit fallback returns empty when no commits found' {
@@ -303,15 +317,33 @@ Features, fixes and improvements in this release have been contributed by:
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
             -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.0' -NewTag 'v3.10.0'
 
-        # Should not contain version tag lines (v3.9.1 and v3.10.0 are version tags in this range)
-        $actual | Should -Not -Match "- v3\.9\.1"
-        $actual | Should -Not -Match "- v3\.10\.0"
-        $actual | Should -Not -Match "- 3\.9\.1"
-        $actual | Should -Not -Match "- 3\.10\.0"
-        # But should contain meaningful commits if any exist
-        if ($actual) {
-            $actual | Should -Match "- \w+"  # Should have some commit lines
-        }
+        # Expected output should not contain version tag commits but should have meaningful commits
+        # This range includes v3.9.1 and v3.10.0 version commits that should be filtered out
+        $expected = @'
+## Changelog
+
+### Commits between v3.9.0 and v3.10.0
+
+- Forbid deducing reference types for m_predicate in FilterGenerator ([#3005](https://github-redirect.dependabot.com/catchorg/Catch2/issues/3005))
+- Make message macros (FAIL, WARN, INFO, etc) thread safe
+- Improve performance of writing XML
+- Improve performance of writing JSON values
+- Don't add / to start of pkg-config file path when DESTDIR is unset
+- Fix color mode detection on FreeBSD by adding platform macro
+- Handle DESTDIR env var when generating pkgconfig files
+- Add tests for comparing & stringifying volatile pointers
+- Refactor CATCH_TRAP selection logic to prefer compiler-specific impls
+- Update generators.md
+- Cleanup WIP changes from last commit
+- Catch exceptions from StringMakers inside Detail::stringify
+- Fix StringMaker for time_point<system_clock> with non-default duration
+- Fix warning in `catch_unique_ptr::bool()`
+- Add enum types to what is captured by value by default
+- Don't follow __assume(false) with std::terminate in NDEBUG builds
+- Fix bad error reporting for nested exceptions in default configuration
+'@
+
+        $actual | Should -Be $expected
     }
 
     It 'git commit fallback handles invalid repository gracefully' {
