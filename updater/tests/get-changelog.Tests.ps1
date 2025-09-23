@@ -258,4 +258,53 @@ Features, fixes and improvements in this release have been contributed by:
             $actualLines[$i].Trim() | Should -Be $expectedLines[$i].Trim()
         }
     }
+
+    It 'falls back to git commits when no changelog files exist' {
+        # Test with a repository that doesn't have changelog files
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
+
+        # Should contain the header for git commit fallback
+        $actual | Should -Match "## Changelog"
+        $actual | Should -Match "### Commits between v3.9.1 and v3.10.0"
+
+        # Should contain some expected commits (filtering out version tags)
+        $actual | Should -Match "- Forbid deducing reference types for m_predicate in FilterGenerator"
+        $actual | Should -Match "- Make message macros \(FAIL, WARN, INFO, etc\) thread safe"
+
+        # Should properly format PR links to prevent notifications
+        $actual | Should -Match "github-redirect.dependabot.com"
+
+        # Should remove @mentions
+        $actual | Should -Not -Match "@\w+"
+    }
+
+    It 'git commit fallback handles PR references correctly' {
+        # Test with a known repository and tags that contain PR references
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
+
+        # Check that PR references are converted to links with github-redirect
+        if ($actual -match '#(\d+)') {
+            $actual | Should -Match '\[#\d+\]\(https://github-redirect\.dependabot\.com/catchorg/Catch2/issues/\d+\)'
+        }
+    }
+
+    It 'git commit fallback returns empty when no commits found' {
+        # Test with same tags (no commits between them)
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.10.0' -NewTag 'v3.10.0'
+
+        $actual | Should -BeNullOrEmpty
+    }
+
+    It 'git commit fallback filters out version tag commits' {
+        # Test that version commits like "v3.10.0" are filtered out
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/catchorg/Catch2' -OldTag 'v3.9.1' -NewTag 'v3.10.0'
+
+        # Should not contain version tag lines
+        $actual | Should -Not -Match "- v3\.10\.0"
+        $actual | Should -Not -Match "- 3\.10\.0"
+    }
 }
