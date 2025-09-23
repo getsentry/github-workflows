@@ -5,7 +5,7 @@ param(
 )
 
 Set-StrictMode -Version latest
-$PSNativeCommandErrorActionPreference = $true
+$PSNativeCommandErrorActionPreference = $false
 $ErrorActionPreference = 'Stop'
 
 $prefix = 'https?://(www\.)?github.com/'
@@ -53,39 +53,25 @@ function Get-ChangelogFromCommits {
     $repoDir = Join-Path $tmpDir 'repo'
     Write-Host "Cloning repository to generate changelog from commits..."
 
-    # Clone with error handling to prevent script termination
-    $cloneResult = & {
-        $oldErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            # Try increasing depth if needed
-            $depth = 200
-            git clone --depth=$depth --no-single-branch --quiet $repoUrl $repoDir 2>&1
-            $cloneExitCode = $LASTEXITCODE
+    # Try progressive fallback for cloning
+    $depth = 200
+    git clone --depth=$depth --no-single-branch --quiet $repoUrl $repoDir 2>&1 | Out-Null
 
-            # If shallow clone fails due to depth, try with more depth
-            if ($cloneExitCode -ne 0 -and $depth -eq 200) {
-                Write-Host "Shallow clone failed, trying with increased depth..."
-                Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
-                git clone --depth=1000 --no-single-branch --quiet $repoUrl $repoDir 2>&1
-                $cloneExitCode = $LASTEXITCODE
-            }
-
-            # If still failing, try full clone as last resort
-            if ($cloneExitCode -ne 0) {
-                Write-Host "Deep clone failed, trying full clone..."
-                Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
-                git clone --quiet $repoUrl $repoDir 2>&1
-                $cloneExitCode = $LASTEXITCODE
-            }
-
-            return $cloneExitCode
-        } finally {
-            $ErrorActionPreference = $oldErrorActionPreference
-        }
+    # If shallow clone fails due to depth, try with more depth
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Shallow clone failed, trying with increased depth..."
+        Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
+        git clone --depth=1000 --no-single-branch --quiet $repoUrl $repoDir 2>&1 | Out-Null
     }
 
-    if ($cloneResult -ne 0) {
+    # If still failing, try full clone as last resort
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Deep clone failed, trying full clone..."
+        Remove-Item -Recurse -Force $repoDir -ErrorAction SilentlyContinue
+        git clone --quiet $repoUrl $repoDir 2>&1 | Out-Null
+    }
+
+    if ($LASTEXITCODE -ne 0) {
         Write-Warning "Could not clone repository $repoUrl"
         return $null
     }
@@ -97,46 +83,21 @@ function Get-ChangelogFromCommits {
 
     Push-Location $repoDir
     try {
-        # Ensure we have both tags with error handling
-        $fetchResult = & {
-            $oldErrorActionPreference = $ErrorActionPreference
-            $ErrorActionPreference = 'Continue'
-            try {
-                git fetch --tags --quiet 2>&1 | Out-Null
-                return $LASTEXITCODE
-            } finally {
-                $ErrorActionPreference = $oldErrorActionPreference
-            }
-        }
-
-        if ($fetchResult -ne 0) {
+        # Ensure we have both tags
+        git fetch --tags --quiet 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
             Write-Warning "Could not fetch tags from repository"
             return $null
         }
 
-        # Get commit messages between tags with error handling
+        # Get commit messages between tags
         Write-Host "Getting commits between $oldTag and $newTag..."
-        $commitResult = & {
-            $oldErrorActionPreference = $ErrorActionPreference
-            $ErrorActionPreference = 'Continue'
-            try {
-                $output = git log "$oldTag..$newTag" --pretty=format:'%s' 2>&1
-                $exitCode = $LASTEXITCODE
-                return @{
-                    Output = $output
-                    ExitCode = $exitCode
-                }
-            } finally {
-                $ErrorActionPreference = $oldErrorActionPreference
-            }
-        }
+        $commitMessages = git log "$oldTag..$newTag" --pretty=format:'%s' 2>&1
 
-        if ($commitResult.ExitCode -ne 0) {
-            Write-Warning "Could not get commits between $oldTag and $newTag (exit code: $($commitResult.ExitCode))"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Could not get commits between $oldTag and $newTag (exit code: $LASTEXITCODE)"
             return $null
         }
-
-        $commitMessages = $commitResult.Output
 
         if ([string]::IsNullOrEmpty($commitMessages)) {
             Write-Host "No commits found between $oldTag and $newTag"
@@ -192,16 +153,7 @@ function Get-ChangelogFromDiff {
 
     # Generate diff using git diff --no-index
     # git diff returns exit code 1 when differences are found, which is expected behavior
-    # We need to handle this properly when PSNativeCommandErrorActionPreference is enabled
-    $fullDiff = & {
-        $oldErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            git diff --no-index $oldChangelogPath $newChangelogPath
-        } finally {
-            $ErrorActionPreference = $oldErrorActionPreference
-        }
-    }
+    $fullDiff = git diff --no-index $oldChangelogPath $newChangelogPath
 
     # The first lines are diff metadata, skip them
     $fullDiff = $fullDiff -split "`n" | Select-Object -Skip 4
