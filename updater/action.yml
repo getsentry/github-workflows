@@ -169,8 +169,11 @@ runs:
           -RepoUrl '${{ steps.target.outputs.url }}' `
           -OldTag '${{ steps.target.outputs.originalTag }}' `
           -NewTag '${{ steps.target.outputs.latestTag }}'
+        Write-host "Prev call result: $? | LASTEXITCODE = $LASTEXITCODE"
         Write-Host "Changelog length: $("$changelog".Length) characters"
+        Set-PSDebug -Strict -Trace 2
         ${{ github.action_path }}/scripts/set-github-env.ps1 TARGET_CHANGELOG $changelog
+        Write-host "Prev call result: $? | LASTEXITCODE = $LASTEXITCODE"
 
     # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
     - name: Create a PR
