@@ -98,14 +98,17 @@ Features, fixes and improvements in this release have been contributed by:
 
     It 'truncates too long text' {
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
-            -RepoUrl 'https://github.com/getsentry/sentry-cli' -OldTag '2.40.0' -NewTag '2.54.0'
-
-        # This range doesn't actually trigger truncation, so just verify expected content
-        $actual | Should -BeLike '*## Changelog*'
-        $actual | Should -BeLike '*### 2.54.0*'
-        $actual | Should -BeLike '*### 2.53.0*'
-        $actual.Length | Should -BeLessThan 61000
-        $actual.Length | Should -BeGreaterThan 1000
+            -RepoUrl 'https://github.com/getsentry/sentry-cli' -OldTag '1.60.0' -NewTag '2.32.0'
+        if ($actual.Length -gt 61000)
+        {
+            throw "Expected the content to be truncated to less-than 61k characters, but got: $($actual.Length)"
+        }
+        $msg = "Changelog content truncated by [0-9]+ characters because it was over the limit \(60000\) and wouldn't fit into PR description."
+        if ("$actual" -notmatch $msg)
+        {
+            Write-Host $actual
+            throw "Expected changelog to contain message '$msg'"
+        }
     }
 
     It 'supports cross-repo links' {
