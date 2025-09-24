@@ -170,6 +170,8 @@ runs:
     - name: Get target changelog
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      env:
+        GH_TOKEN: ${{ inputs.api-token }}
       run: |
         $changelog = ${{ github.action_path }}/scripts/get-changelog.ps1 `
           -RepoUrl '${{ steps.target.outputs.url }}' `
@@ -229,6 +231,7 @@ runs:
       shell: pwsh
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
+        GH_TOKEN: ${{ inputs.api-token }}
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}'
 
     - name: Update Changelog
@@ -237,6 +240,7 @@ runs:
       env:
         DEPENDENCY_NAME: ${{ inputs.name }}
         CHANGELOG_SECTION: ${{ inputs.changelog-section }}
+        GH_TOKEN: ${{ inputs.api-token }}
       run: |
         ${{ github.action_path }}/scripts/update-changelog.ps1 `
           -Name $env:DEPENDENCY_NAME `
