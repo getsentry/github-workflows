@@ -30,6 +30,6 @@ Describe 'update-changelog' {
             -Section 'Dependencies'
 
         #  verify the full output matches expected
-        Get-Content -Raw "$testCasePath/CHANGELOG.md" | Should -Be (Get-Content -Raw "$testCasePath/CHANGELOG.md.expected")
+        Get-Content "$testCasePath/CHANGELOG.md" | Should -Be (Get-Content "$testCasePath/CHANGELOG.md.expected")
     }
 }
