@@ -84,6 +84,7 @@ jobs:
           api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
   # Update dependencies on a non-default branch (e.g., alpha, beta, or version branches)
+  # Note: due to limitations in GitHub Actions' schedule trigger, this code needs to be pushed to the default branch.
   cocoa-v7:
     runs-on: ubuntu-latest
     steps:
