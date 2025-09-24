@@ -130,8 +130,8 @@ jobs:
           fi
 
           # Validate PR branch format
-          if [[ "$PR_BRANCH" != "deps/updater/tests/sentry-cli.properties" ]]; then
-            echo "❌ Expected PR branch 'deps/updater/tests/sentry-cli.properties', got '$PR_BRANCH'"
+          if [[ "$PR_BRANCH" != "test/nonbot-commits-deps/updater/tests/sentry-cli.properties" ]]; then
+            echo "❌ Expected PR branch 'test/nonbot-commits-deps/updater/tests/sentry-cli.properties', got '$PR_BRANCH'"
             exit 1
           fi
 
