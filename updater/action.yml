@@ -112,6 +112,7 @@ runs:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_PATTERN: ${{ inputs.pattern }}
         GH_TITLE_PATTERN: ${{ inputs.gh-title-pattern }}
+        GH_TOKEN: ${{ inputs.api-token }}
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN -GhTitlePattern $env:GH_TITLE_PATTERN
 
     - name: Get the base repo info
