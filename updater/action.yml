@@ -134,12 +134,13 @@ runs:
             $mainBranch = $env:TARGET_BRANCH
             $prBranchPrefix = "$mainBranch-"
         }
-        $prBranch = $prBranchPrefix + switch ($env:PR_STRATEGY)
+        $prBranch = switch ($env:PR_STRATEGY)
         {
             'create' { "deps/$env:DEPENDENCY_PATH/${{ steps.target.outputs.latestTag }}" }
             'update' { "deps/$env:DEPENDENCY_PATH" }
             default { throw "Unkown PR strategy '$env:PR_STRATEGY'." }
         }
+        $prBranch = $prBranchPrefix + $prBranch
         "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
         "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
         $nonBotCommits = ${{ github.action_path }}/scripts/nonbot-commits.ps1 `
