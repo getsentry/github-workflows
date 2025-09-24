@@ -13,6 +13,10 @@ inputs:
     description: 'RegEx pattern that will be matched against available versions when picking the latest one.'
     required: false
     default: ''
+  gh-title-pattern:
+    description: 'RegEx pattern to match against GitHub release titles. Only releases with matching titles will be considered.'
+    required: false
+    default: ''
   changelog-entry:
     description: 'Whether to add a changelog entry for the update.'
     required: false
@@ -107,7 +111,9 @@ runs:
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_PATTERN: ${{ inputs.pattern }}
-      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN
+        GH_TITLE_PATTERN: ${{ inputs.gh-title-pattern }}
+        GH_TOKEN: ${{ inputs.api-token }}
+      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN -GhTitlePattern $env:GH_TITLE_PATTERN
 
     - name: Get the base repo info
       if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
@@ -164,6 +170,8 @@ runs:
     - name: Get target changelog
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      env:
+        GH_TOKEN: ${{ inputs.api-token }}
       run: |
         $changelog = ${{ github.action_path }}/scripts/get-changelog.ps1 `
           -RepoUrl '${{ steps.target.outputs.url }}' `
@@ -223,6 +231,7 @@ runs:
       shell: pwsh
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
+        GH_TOKEN: ${{ inputs.api-token }}
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}'
 
     - name: Update Changelog
@@ -231,6 +240,7 @@ runs:
       env:
         DEPENDENCY_NAME: ${{ inputs.name }}
         CHANGELOG_SECTION: ${{ inputs.changelog-section }}
+        GH_TOKEN: ${{ inputs.api-token }}
       run: |
         ${{ github.action_path }}/scripts/update-changelog.ps1 `
           -Name $env:DEPENDENCY_NAME `

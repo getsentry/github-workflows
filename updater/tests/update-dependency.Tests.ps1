@@ -1,7 +1,11 @@
 BeforeAll {
-    function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string] $pattern = $null)
+    function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string] $pattern = $null, [string] $ghTitlePattern = $null)
     {
-        $result = & "$PSScriptRoot/../scripts/update-dependency.ps1" -Path $path -Pattern $pattern
+        $params = @{ Path = $path }
+        if ($pattern) { $params.Pattern = $pattern }
+        if ($ghTitlePattern) { $params.GhTitlePattern = $ghTitlePattern }
+
+        $result = & "$PSScriptRoot/../scripts/update-dependency.ps1" @params
         if (-not $?)
         {
             throw $result
@@ -424,6 +428,64 @@ FetchContent_Declare(
 '@ | Out-File $testFile
 
             { UpdateDependency "$testFile#nonexistent" } | Should -Throw "*FetchContent_Declare for 'nonexistent' not found*"
+        }
+    }
+
+    Context 'gh-title-pattern' {
+        It 'filters by GitHub release title pattern' {
+            $testFile = "$testDir/test.properties"
+            # Use sentry-cocoa repo which has releases with "(Stable)" suffix
+            $repo = 'https://github.com/getsentry/sentry-cocoa'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            # Test filtering for releases with "(Stable)" suffix
+            UpdateDependency $testFile '' '\(Stable\)$'
+
+            $content = Get-Content $testFile
+            $version = ($content | Where-Object { $_ -match '^version\s*=\s*(.+)$' }) -replace '^version\s*=\s*', ''
+
+            # Verify that a version was selected (should be a stable release)
+            $version | Should -Not -Be '0'
+            $version | Should -Match '^\d+\.\d+\.\d+$'
+        }
+
+        It 'throws error when no releases match title pattern' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/github-workflows'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            # Use a pattern that should match no releases
+            { UpdateDependency $testFile '' 'NonExistentPattern' } | Should -Throw '*Found no tags with GitHub releases matching title pattern*'
+        }
+
+        It 'matches specific release version by exact title pattern' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/github-workflows'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            # Target a specific known release by exact title match
+            UpdateDependency $testFile '' '^2\.11\.1$'
+
+            $content = Get-Content $testFile
+            $version = ($content | Where-Object { $_ -match '^version\s*=\s*(.+)$' }) -replace '^version\s*=\s*', ''
+
+            # Should get exactly version 2.11.1 (with or without 'v' prefix)
+            $version | Should -Match '^v?2\.11\.1$'
+        }
+
+        It 'works without title pattern (backward compatibility)' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cocoa'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            # Test without title pattern should work as before
+            UpdateDependency $testFile '^8\.'
+
+            $content = Get-Content $testFile
+            $version = ($content | Where-Object { $_ -match '^version\s*=\s*(.+)$' }) -replace '^version\s*=\s*', ''
+
+            # Should get a version starting with 8
+            $version | Should -Match '^8\.'
         }
     }
 }

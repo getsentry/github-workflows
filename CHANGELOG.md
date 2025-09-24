@@ -44,6 +44,7 @@ To update your existing Danger workflows:
 
 ### Features
 
+- Updater now supports filtering releases by GitHub release title patterns, e.g. to support release channels ([#117](https://github.com/getsentry/github-workflows/pull/117))
 - Updater now supports dependencies without changelog files by falling back to git commit messages ([#116](https://github.com/getsentry/github-workflows/pull/116))
 - Danger - Improve conventional commit scope handling, and non-conventional PR title support ([#105](https://github.com/getsentry/github-workflows/pull/105))
 - Add Proguard artifact endpoint for Android builds in sentry-server ([#100](https://github.com/getsentry/github-workflows/pull/100))
