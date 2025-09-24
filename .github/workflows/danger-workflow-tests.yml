@@ -24,19 +24,13 @@ jobs:
       - name: Validate danger outputs
         env:
           DANGER_OUTCOME: ${{ steps.danger.outputs.outcome }}
+        shell: pwsh
         run: |
-          echo "🔍 Validating Danger action outputs..."
-          echo "Danger Outcome: '$DANGER_OUTCOME'"
+          Write-Host "🔍 Validating Danger action outputs..."
+          Write-Host "Danger Outcome: '$env:DANGER_OUTCOME'"
 
           # Validate that Danger ran successfully
-          if [[ "$DANGER_OUTCOME" != "success" ]]; then
-            echo "❌ Expected Danger outcome 'success', got '$DANGER_OUTCOME'"
-            echo "This could indicate:"
-            echo "  - Danger found issues that caused it to fail"
-            echo "  - The action itself encountered an error"
-            echo "  - Docker container issues"
-            exit 1
-          fi
+          $env:DANGER_OUTCOME | Should -Be "success"
 
-          echo "✅ Danger PR analysis completed successfully!"
-          echo "ℹ️  Check the PR comments for any Danger findings"
+          Write-Host "✅ Danger PR analysis completed successfully!"
+          Write-Host "ℹ️  Check the PR comments for any Danger findings"
