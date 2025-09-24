@@ -18,6 +18,7 @@ param(
     [string] $Tag = ''
 )
 
+$ErrorActionPreference = 'Stop'
 Set-StrictMode -Version latest
 . "$PSScriptRoot/common.ps1"
 
@@ -171,7 +172,10 @@ if ("$Tag" -eq '') {
         $owner, $repo = $Matches[1], $Matches[2]
 
         # Fetch releases from GitHub API
-        $releases = @(gh api "repos/$owner/$repo/releases" --jq '.[] | {tag_name: .tag_name, name: .name}' | ConvertFrom-Json)
+        $releases = @(gh api "repos/$owner/$repo/releases" --paginate --jq '.[] | {tag_name: .tag_name, name: .name}' | ConvertFrom-Json)
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to fetch GitHub releases from $owner/$repo (exit code: $LASTEXITCODE)"
+        }
 
         # Find tags that have matching release titles
         $validTags = @{}
