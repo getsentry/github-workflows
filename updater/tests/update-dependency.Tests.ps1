@@ -451,7 +451,6 @@ FetchContent_Declare(
 
         It 'throws error when no releases match title pattern' {
             $testFile = "$testDir/test.properties"
-            # Use a smaller repo that's less likely to timeout
             $repo = 'https://github.com/getsentry/github-workflows'
             @("repo=$repo", 'version=0') | Out-File $testFile
 
@@ -473,6 +472,5 @@ FetchContent_Declare(
             # Should get a version starting with 8
             $version | Should -Match '^8\.'
         }
-
     }
 }
