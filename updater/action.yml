@@ -29,6 +29,10 @@ inputs:
     description: 'How to handle PRs - can be either "create" (create new PRs for each version) or "update" (keep single PR updated with latest version)'
     required: false
     default: 'create'
+  target-branch:
+    description: 'Branch to use as base for dependency updates. Defaults to repository default branch if not specified.'
+    required: false
+    default: ''
   api-token:
     description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: true
@@ -122,8 +126,13 @@ runs:
       env:
         PR_STRATEGY: ${{ inputs.pr-strategy }}
         DEPENDENCY_PATH: ${{ inputs.path }}
+        TARGET_BRANCH: ${{ inputs.target-branch }}
       run: |
-        $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
+        if ([string]::IsNullOrEmpty($env:TARGET_BRANCH)) {
+            $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
+        } else {
+            $mainBranch = $env:TARGET_BRANCH
+        }
         $prBranch = switch ($env:PR_STRATEGY)
         {
             'create' { "deps/$env:DEPENDENCY_PATH/${{ steps.target.outputs.latestTag }}" }
