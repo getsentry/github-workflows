@@ -82,6 +82,19 @@ jobs:
           path: vendor/dependencies.cmake#googletest
           name: GoogleTest
           api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
+  # Update dependencies on a non-default branch (e.g., alpha, beta, or version branches)
+  # Note: due to limitations in GitHub Actions' schedule trigger, this code needs to be pushed to the default branch.
+  cocoa-v7:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@v3
+        with:
+          path: modules/sentry-cocoa
+          name: Cocoa SDK
+          target-branch: v7
+          pattern: '^1\.'  # Limit to major version '1'
+          api-token: ${{ secrets.CI_DEPLOY_KEY }}
 ```
 
 ## Inputs
@@ -118,6 +131,10 @@ jobs:
   Can be either of the following:
   * `create` (default) - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
   * `update` - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
+* `target-branch`: Branch to use as base for dependency updates. Defaults to repository default branch if not specified.
+  * type: string
+  * required: false
+  * default: '' (uses repository default branch)
 * `api-token`: Token for the repo. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`.
   If you provide the usual `${{ github.token }}`, no followup CI will run on the created PR.
   If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.

@@ -29,6 +29,10 @@ inputs:
     description: 'How to handle PRs - can be either "create" (create new PRs for each version) or "update" (keep single PR updated with latest version)'
     required: false
     default: 'create'
+  target-branch:
+    description: 'Branch to use as base for dependency updates. Defaults to repository default branch if not specified.'
+    required: false
+    default: ''
   api-token:
     description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: true
@@ -53,11 +57,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        token: ${{ inputs.api-token }}
-
     - name: Cancel Previous Runs
       uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # Tag: 0.12.1
       with:
@@ -104,10 +103,13 @@ runs:
       uses: actions/checkout@v4
       with:
         token: ${{ inputs.api-token }}
+        ref: ${{ inputs.target-branch || github.ref }}
+        path: caller-repo
 
     - name: Update to the latest version
       id: target
       shell: pwsh
+      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_PATTERN: ${{ inputs.pattern }}
@@ -119,17 +121,26 @@ runs:
       if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
       id: root
       shell: pwsh
+      working-directory: caller-repo
       env:
         PR_STRATEGY: ${{ inputs.pr-strategy }}
         DEPENDENCY_PATH: ${{ inputs.path }}
+        TARGET_BRANCH: ${{ inputs.target-branch }}
       run: |
-        $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
+        if ([string]::IsNullOrEmpty($env:TARGET_BRANCH)) {
+            $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
+            $prBranchPrefix = ''
+        } else {
+            $mainBranch = $env:TARGET_BRANCH
+            $prBranchPrefix = "$mainBranch-"
+        }
         $prBranch = switch ($env:PR_STRATEGY)
         {
             'create' { "deps/$env:DEPENDENCY_PATH/${{ steps.target.outputs.latestTag }}" }
             'update' { "deps/$env:DEPENDENCY_PATH" }
             default { throw "Unkown PR strategy '$env:PR_STRATEGY'." }
         }
+        $prBranch = $prBranchPrefix + $prBranch
         "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
         "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
         $nonBotCommits = ${{ github.action_path }}/scripts/nonbot-commits.ps1 `
@@ -144,9 +155,10 @@ runs:
     - name: Parse the existing PR URL
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       id: existing-pr
+      shell: pwsh
+      working-directory: caller-repo
       env:
         GH_TOKEN: ${{ inputs.api-token }}
-      shell: pwsh
       run: |
         $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
         if ($urls.Length -eq 0)
@@ -165,11 +177,13 @@ runs:
     - name: Show git diff
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       shell: bash
+      working-directory: caller-repo
       run: git --no-pager diff
 
     - name: Get target changelog
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      working-directory: caller-repo
       env:
         GH_TOKEN: ${{ inputs.api-token }}
       run: |
@@ -188,6 +202,7 @@ runs:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_NAME: ${{ inputs.name }}
       with:
+        path: caller-repo
         base: ${{ steps.root.outputs.baseBranch }}
         branch: ${{ steps.root.outputs.prBranch }}
         commit-message: 'chore: update ${{ env.DEPENDENCY_PATH }} to ${{ steps.target.outputs.latestTag }}'
@@ -204,6 +219,7 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       id: pr
       shell: pwsh
+      working-directory: caller-repo
       run: |
         if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
         {
@@ -225,10 +241,13 @@ runs:
       uses: actions/checkout@v4
       with:
         token: ${{ inputs.api-token }}
+        ref: ${{ inputs.target-branch || github.ref }}
+        path: caller-repo
 
     - name: 'After new PR: redo the update'
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         GH_TOKEN: ${{ inputs.api-token }}
@@ -237,6 +256,7 @@ runs:
     - name: Update Changelog
       if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      working-directory: caller-repo
       env:
         DEPENDENCY_NAME: ${{ inputs.name }}
         CHANGELOG_SECTION: ${{ inputs.changelog-section }}
@@ -254,6 +274,7 @@ runs:
     - name: Show final git diff
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: bash
+      working-directory: caller-repo
       run: git --no-pager diff
 
     # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
@@ -265,6 +286,7 @@ runs:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_NAME: ${{ inputs.name }}
       with:
+        path: caller-repo
         base: ${{ steps.root.outputs.baseBranch }}
         branch: ${{ steps.root.outputs.prBranch }}
         commit-message: 'chore: update ${{ env.DEPENDENCY_PATH }} to ${{ steps.target.outputs.latestTag }}'

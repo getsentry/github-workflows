@@ -73,6 +73,70 @@ jobs:
 
           echo "✅ PR creation scenario validation passed!"
 
+  # Test target-branch functionality - should use specified branch as base
+  updater-target-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run updater action with target-branch
+        id: updater
+        uses: ./updater
+        with:
+          path: updater/tests/sentry-cli.properties
+          name: TARGET-BRANCH-TEST-DO-NOT-MERGE
+          pattern: '^2\.0\.'
+          target-branch: test/nonbot-commits
+          pr-strategy: update
+          api-token: ${{ github.token }}
+
+      - name: Validate target-branch outputs
+        env:
+          BASE_BRANCH: ${{ steps.updater.outputs.baseBranch }}
+          ORIGINAL_TAG: ${{ steps.updater.outputs.originalTag }}
+          LATEST_TAG: ${{ steps.updater.outputs.latestTag }}
+          PR_URL: ${{ steps.updater.outputs.prUrl }}
+          PR_BRANCH: ${{ steps.updater.outputs.prBranch }}
+        run: |
+          echo "🔍 Validating target-branch scenario outputs..."
+          echo "Base Branch: '$BASE_BRANCH'"
+          echo "Original Tag: '$ORIGINAL_TAG'"
+          echo "Latest Tag: '$LATEST_TAG'"
+          echo "PR URL: '$PR_URL'"
+          echo "PR Branch: '$PR_BRANCH'"
+
+          # Validate base branch is the specified target-branch
+          if [[ "$BASE_BRANCH" != "test/nonbot-commits" ]]; then
+            echo "❌ Expected base branch 'test/nonbot-commits', got '$BASE_BRANCH'"
+            exit 1
+          fi
+
+          # Validate original tag is expected test value
+          if [[ "$ORIGINAL_TAG" != "2.0.0" ]]; then
+            echo "❌ Expected original tag '2.0.0', got '$ORIGINAL_TAG'"
+            exit 1
+          fi
+
+          # Validate latest tag is a valid version
+          if [[ ! "$LATEST_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Latest tag '$LATEST_TAG' is not a valid version format"
+            exit 1
+          fi
+
+          # Validate PR URL format
+          if [[ ! "$PR_URL" =~ ^https://github\.com/getsentry/github-workflows/pull/[0-9]+$ ]]; then
+            echo "❌ PR URL '$PR_URL' is not a valid GitHub PR URL"
+            exit 1
+          fi
+
+          # Validate PR branch format
+          if [[ "$PR_BRANCH" != "test/nonbot-commits-deps/updater/tests/sentry-cli.properties" ]]; then
+            echo "❌ Expected PR branch 'test/nonbot-commits-deps/updater/tests/sentry-cli.properties', got '$PR_BRANCH'"
+            exit 1
+          fi
+
+          echo "✅ Target-branch scenario validation passed!"
+
   # Test no-change scenario - should detect no updates needed
   updater-no-changes:
     runs-on: macos-latest
