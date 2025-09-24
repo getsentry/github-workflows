@@ -30,7 +30,6 @@ jobs:
           Write-Host "Danger Outcome: '$env:DANGER_OUTCOME'"
 
           # Validate that Danger ran successfully
-          # T
           $env:DANGER_OUTCOME | Should -Be "success"
 
           Write-Host "✅ Danger PR analysis completed successfully!"
