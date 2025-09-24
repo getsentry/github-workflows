@@ -16,11 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: gh-workflow-tests-checkout
+          path: ./gh-workflow-tests-checkout
 
       - name: Run updater action
         id: updater
-        uses: gh-workflow-tests-checkout/updater
+        uses: ./gh-workflow-tests-checkout/updater
         with:
           path: updater/tests/sentry-cli.properties
           name: WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE
@@ -81,11 +81,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: gh-workflow-tests-checkout
+          path: ./gh-workflow-tests-checkout
 
       - name: Run updater action with target-branch
         id: updater
-        uses: gh-workflow-tests-checkout/updater
+        uses: ./gh-workflow-tests-checkout/updater
         with:
           path: updater/tests/sentry-cli.properties
           name: TARGET-BRANCH-TEST-DO-NOT-MERGE
@@ -147,11 +147,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: gh-workflow-tests-checkout
+          path: ./gh-workflow-tests-checkout
 
       - name: Run updater action
         id: updater
-        uses: gh-workflow-tests-checkout/updater
+        uses: ./gh-workflow-tests-checkout/updater
         with:
           path: updater/tests/workflow-args.sh
           name: Workflow args test script
