@@ -1,0 +1,16 @@
+# Changelog
+
+## Unreleased
+
+### Dependencies
+
+- Bump Dependency from v7.16.0 to v7.17.0 ([#123](https://github.com/getsentry/dependant/pulls/123))
+  - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#7170)
+  - [diff](https://github.com/getsentry/dependency/compare/7.16.0...7.17.0)
+
+## 0.14.0
+
+### Dependencies
+
+This section contains only plain text with no bullet points.
+The update-changelog script should handle this case gracefully.

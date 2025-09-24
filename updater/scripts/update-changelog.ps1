@@ -180,7 +180,7 @@ if (!$updated)
 {
     # Find what character is used as a bullet-point separator - look for the first bullet-point object that wasn't created by this script.
     $bulletPoint = $lines | Where-Object { ($_ -match '^ *[-*] ') -and -not ($_ -match '(Bump .* to|\[changelog\]|\[diff\])') } | Select-Object -First 1
-    $bulletPoint = "$($bulletPoint.Trim())-"[0]
+    $bulletPoint = "$("$bulletPoint".Trim())-"[0]
     $entry = @("$bulletPoint Bump $Name from $oldTagNice to $newTagNice ($PullRequestMD)",
         "  $bulletPoint [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
         "  $bulletPoint [diff]($RepoUrl/compare/$OldTag...$NewTag)")

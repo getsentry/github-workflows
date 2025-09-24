@@ -71,6 +71,7 @@
 
 ### Fixes
 
+- Updater - Fix null reference error when changelog has no existing bullet points ([#125](https://github.com/getsentry/github-workflows/pull/125))
 - Updater - Fix bullet-point resolution when plain text precedes bullet points ([#123](https://github.com/getsentry/github-workflows/pull/123))
 - Improve changelog generation for non-tagged commits and edge cases ([#115](https://github.com/getsentry/github-workflows/pull/115))
 
