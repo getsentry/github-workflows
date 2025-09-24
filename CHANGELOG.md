@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- Updater: The default value for `pr-strategy` has been changed from `create` to `update`.
+- Updater: The default value for `pr-strategy` has been changed from `create` to `update`. ([#124](https://github.com/getsentry/github-workflows/pull/124))
   This change means the updater will now maintain a single PR that gets updated with new dependency versions (instead of creating separate PRs for each version).
   If you want to preserve the previous behavior of creating separate PRs, explicitly set `pr-strategy: create` in your workflow:
 
