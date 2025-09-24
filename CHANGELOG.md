@@ -74,24 +74,7 @@
 - Updater - Fix null reference error when changelog has no existing bullet points ([#125](https://github.com/getsentry/github-workflows/pull/125))
 - Updater - Fix bullet-point resolution when plain text precedes bullet points ([#123](https://github.com/getsentry/github-workflows/pull/123))
 - Improve changelog generation for non-tagged commits and edge cases ([#115](https://github.com/getsentry/github-workflows/pull/115))
-
-## 2.14.1
-
-### Fixes
-
 - Use GITHUB_WORKFLOW_REF instead of _workflow_version input parameter to automatically determine workflow script versions ([#109](https://github.com/getsentry/github-workflows/pull/109))
-
-## 2.14.0
-
-### Features
-
-- Danger - Improve conventional commit scope handling, and non-conventional PR title support ([#105](https://github.com/getsentry/github-workflows/pull/105))
-- Add Proguard artifact endpoint for Android builds in sentry-server ([#100](https://github.com/getsentry/github-workflows/pull/100))
-- Updater - Add CMake FetchContent support for automated dependency updates ([#104](https://github.com/getsentry/github-workflows/pull/104))
-
-### Security
-
-- Updater - Prevent script injection vulnerabilities through workflow inputs ([#98](https://github.com/getsentry/github-workflows/pull/98))
 
 ## 2.13.1
 
