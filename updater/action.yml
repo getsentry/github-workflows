@@ -82,6 +82,26 @@ runs:
         }
         Write-Output "✓ Dependency path '${{ inputs.path }}' is valid"
 
+    - name: Validate changelog-entry
+      shell: pwsh
+      run: |
+        # Validate that inputs.changelog-entry is either 'true' or 'false'
+        if ('${{ inputs.changelog-entry }}' -notin @('true', 'false')) {
+          Write-Output "::error::Invalid changelog-entry value: '${{ inputs.changelog-entry }}'. Only 'true' or 'false' are allowed."
+          exit 1
+        }
+        Write-Output "✓ Changelog-entry value '${{ inputs.changelog-entry }}' is valid"
+
+    - name: Validate pr-strategy
+      shell: pwsh
+      run: |
+        # Validate that inputs.pr-strategy is either 'create' or 'update'
+        if ('${{ inputs.pr-strategy }}' -notin @('create', 'update')) {
+          Write-Output "::error::Invalid pr-strategy value: '${{ inputs.pr-strategy }}'. Only 'create' or 'update' are allowed."
+          exit 1
+        }
+        Write-Output "✓ PR strategy value '${{ inputs.pr-strategy }}' is valid"
+
     # What we need to accomplish:
     # * update to the latest tag
     # * create a PR
@@ -254,7 +274,7 @@ runs:
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}'
 
     - name: Update Changelog
-      if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
+      if: ${{ inputs.changelog-entry == 'true' && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
       working-directory: caller-repo
       env:
