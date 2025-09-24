@@ -209,8 +209,8 @@ if ("$Tag" -eq '')
 
             try
             {
-                # Fetch all releases from GitHub API
-                $releases = gh api "repos/$owner/$repo/releases" --paginate --jq '.[] | {tag_name: .tag_name, name: .name}' | ConvertFrom-Json
+                # Fetch releases from GitHub API (first 30 releases should be sufficient for most cases)
+                $releases = gh api "repos/$owner/$repo/releases" --jq '.[] | {tag_name: .tag_name, name: .name}' | ConvertFrom-Json
 
                 # Handle case where releases might be null or single object
                 if ($null -eq $releases)
