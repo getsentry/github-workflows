@@ -86,7 +86,7 @@ jobs:
           path: updater/tests/sentry-cli.properties
           name: TARGET-BRANCH-TEST-DO-NOT-MERGE
           pattern: '^2\.0\.'
-          target-branch: test-branch
+          target-branch: test/nonbot-commits
           pr-strategy: update
           api-token: ${{ github.token }}
 
@@ -106,8 +106,8 @@ jobs:
           echo "PR Branch: '$PR_BRANCH'"
 
           # Validate base branch is the specified target-branch
-          if [[ "$BASE_BRANCH" != "test-branch" ]]; then
-            echo "❌ Expected base branch 'test-branch', got '$BASE_BRANCH'"
+          if [[ "$BASE_BRANCH" != "test/nonbot-commits" ]]; then
+            echo "❌ Expected base branch 'test/nonbot-commits', got '$BASE_BRANCH'"
             exit 1
           fi
 
