@@ -28,7 +28,7 @@ inputs:
   pr-strategy:
     description: 'How to handle PRs - can be either "create" (create new PRs for each version) or "update" (keep single PR updated with latest version)'
     required: false
-    default: 'create'
+    default: 'update'
   target-branch:
     description: 'Branch to use as base for dependency updates. Defaults to repository default branch if not specified.'
     required: false

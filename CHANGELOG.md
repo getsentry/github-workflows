@@ -4,6 +4,19 @@
 
 ### Breaking Changes
 
+Updater: The default value for `pr-strategy` has been changed from `create` to `update`.
+
+This change means the updater will now maintain a single PR that gets updated with new dependency versions (instead of creating separate PRs for each version).
+
+If you want to preserve the previous behavior of creating separate PRs, explicitly set `pr-strategy: create` in your workflow:
+
+```yaml
+- uses: getsentry/github-workflows/updater@v3
+  with:
+    # ... other inputs ...
+    pr-strategy: create  # Add this to preserve previous behavior
+```
+
 Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
 
 To update your existing Updater workflows:
