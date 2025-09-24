@@ -1,60 +1,14 @@
 # Changelog
 
-## 3.0.0
+## Unreleased
 
-### Breaking Changes
+### Dependencies
 
-- Updater: The default value for `pr-strategy` has been changed from `create` to `update`. ([#124](https://github.com/getsentry/github-workflows/pull/124))
-  This change means the updater will now maintain a single PR that gets updated with new dependency versions (instead of creating separate PRs for each version).
-  If you want to preserve the previous behavior of creating separate PRs, explicitly set `pr-strategy: create` in your workflow:
+- Bump Workflow args test script from latest to v3 ([#126](https://github.com/getsentry/github-workflows/pull/126))
+  - [changelog](https://github.com/getsentry/github-workflows/blob/main/CHANGELOG.md#v3)
+  - [diff](https://github.com/getsentry/github-workflows/compare/latest...v3)
 
-  ```yaml
-  - uses: getsentry/github-workflows/updater@v3
-    with:
-      # ... other inputs ...
-      pr-strategy: create  # Add this to preserve previous behavior
-  ```
-
-  In case you have existing open PRs created with the `create` strategy, you will need to remove these old branches
-  manually as the new name would be a prefix of the old PRs, which git doesnt' allow.
-
-- Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
-
-  To update your existing Updater workflows:
-  ```yaml
-  ### Before
-    native:
-      uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
-      with:
-        path: scripts/update-sentry-native-ndk.sh
-        name: Native SDK
-      secrets:
-        # If a custom token is used instead, a CI would be triggered on a created PR.
-        api-token: ${{ secrets.CI_DEPLOY_KEY }}
-
-  ### After
-    native:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: getsentry/github-workflows/updater@v3
-          with:
-            path: scripts/update-sentry-native-ndk.sh
-            name: Native SDK
-            api-token: ${{ secrets.CI_DEPLOY_KEY }}
-  ```
-
-  To update your existing Danger workflows:
-  ```yaml
-  ### Before
-    danger:
-      uses: getsentry/github-workflows/.github/workflows/danger.yml@v2
-
-  ### After
-    danger:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: getsentry/github-workflows/danger@v3
-  ```
+## 2.14.0
 
 ### Features
 

@@ -5,21 +5,7 @@ set -euo pipefail
 
 case $1 in
 get-version)
-    # Return the actual latest tag to ensure no update is needed
-    # Always use remote lookup for consistency with update-dependency.ps1
-    tags=$(git ls-remote --tags --refs https://github.com/getsentry/github-workflows.git | \
-           sed 's/.*refs\/tags\///' | \
-           grep -E '^v?[0-9.]+$')
-
-    # Sort by version number, handling mixed v prefixes
-    latest=$(echo "$tags" | sed 's/^v//' | sort -V | tail -1)
-
-    # Check if original had v prefix and restore it
-    if echo "$tags" | grep -q "^v$latest$"; then
-        echo "v$latest"
-    else
-        echo "$latest"
-    fi
+    echo "v3"
 
     # Run actual tests here.
     if [[ "$(uname)" != 'Darwin' ]]; then
