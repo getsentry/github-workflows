@@ -104,10 +104,12 @@ runs:
       with:
         token: ${{ inputs.api-token }}
         ref: ${{ inputs.target-branch || github.ref }}
+        path: caller-repo
 
     - name: Update to the latest version
       id: target
       shell: pwsh
+      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_PATTERN: ${{ inputs.pattern }}
@@ -119,6 +121,7 @@ runs:
       if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
       id: root
       shell: pwsh
+      working-directory: caller-repo
       env:
         PR_STRATEGY: ${{ inputs.pr-strategy }}
         DEPENDENCY_PATH: ${{ inputs.path }}
@@ -149,9 +152,10 @@ runs:
     - name: Parse the existing PR URL
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       id: existing-pr
+      shell: pwsh
+      working-directory: caller-repo
       env:
         GH_TOKEN: ${{ inputs.api-token }}
-      shell: pwsh
       run: |
         $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
         if ($urls.Length -eq 0)
@@ -170,11 +174,13 @@ runs:
     - name: Show git diff
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       shell: bash
+      working-directory: caller-repo
       run: git --no-pager diff
 
     - name: Get target changelog
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      working-directory: caller-repo
       env:
         GH_TOKEN: ${{ inputs.api-token }}
       run: |
@@ -189,6 +195,7 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
       id: create-pr
+      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_NAME: ${{ inputs.name }}
@@ -209,6 +216,7 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       id: pr
       shell: pwsh
+      working-directory: caller-repo
       run: |
         if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
         {
@@ -231,10 +239,12 @@ runs:
       with:
         token: ${{ inputs.api-token }}
         ref: ${{ inputs.target-branch || github.ref }}
+        path: caller-repo
 
     - name: 'After new PR: redo the update'
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         GH_TOKEN: ${{ inputs.api-token }}
@@ -243,6 +253,7 @@ runs:
     - name: Update Changelog
       if: ${{ inputs.changelog-entry && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: pwsh
+      working-directory: caller-repo
       env:
         DEPENDENCY_NAME: ${{ inputs.name }}
         CHANGELOG_SECTION: ${{ inputs.changelog-section }}
@@ -260,6 +271,7 @@ runs:
     - name: Show final git diff
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       shell: bash
+      working-directory: caller-repo
       run: git --no-pager diff
 
     # Now make the PR in its final state. This way we only have one commit and no updates if there are no changes between runs.
@@ -267,6 +279,7 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
       id: update
+      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_NAME: ${{ inputs.name }}
