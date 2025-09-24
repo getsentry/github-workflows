@@ -25,6 +25,8 @@ jobs:
       - run: Invoke-Pester
         working-directory: updater
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   danger:
     name: Danger JS Tests
