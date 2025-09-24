@@ -12,6 +12,8 @@ param(
     [Parameter(Mandatory = $true)][string] $Path,
     # RegEx pattern that will be matched against available versions when picking the latest one
     [string] $Pattern = '',
+    # RegEx pattern to match against GitHub release titles. Only releases with matching titles will be considered
+    [string] $GhTitlePattern = '',
     # Specific version - if passed, no discovery is performed and the version is set directly
     [string] $Tag = ''
 )
@@ -187,6 +189,75 @@ if ("$Tag" -eq '')
     }
 
     $url = $url -replace '\.git$', ''
+
+    # Filter by GitHub release titles if pattern is provided
+    if ("$GhTitlePattern" -ne '')
+    {
+        Write-Host "Filtering tags by GitHub release title pattern '$GhTitlePattern'"
+
+        # Check if URL is a GitHub URL first
+        if ($url -notmatch 'github\.com')
+        {
+            throw "Could not parse GitHub owner/repo from URL: $url"
+        }
+
+        # Parse GitHub repo owner/name from URL
+        if ($url -match 'github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$')
+        {
+            $owner = $Matches[1]
+            $repo = $Matches[2]
+
+            try
+            {
+                # Fetch all releases from GitHub API
+                $releases = gh api "repos/$owner/$repo/releases" --paginate --jq '.[] | {tag_name: .tag_name, name: .name}' | ConvertFrom-Json
+
+                # Handle case where releases might be null or single object
+                if ($null -eq $releases)
+                {
+                    $releases = @()
+                }
+                elseif ($releases -isnot [array])
+                {
+                    $releases = @($releases)
+                }
+
+                # Create a hashtable of tag->title mappings for releases that match the pattern
+                $validTags = @{}
+                foreach ($release in $releases)
+                {
+                    if ($release.name -match $GhTitlePattern)
+                    {
+                        $validTags[$release.tag_name] = $true
+                    }
+                }
+
+                # Filter tags to only include those with matching release titles
+                $originalTagCount = $tags.Length
+                $tags = @($tags | Where-Object { $validTags.ContainsKey($_) })
+                Write-Host "GitHub release title filtering: $originalTagCount -> $($tags.Count) tags"
+
+                if ($tags.Count -le 0)
+                {
+                    throw "Found no tags with GitHub releases matching title pattern '$GhTitlePattern'"
+                }
+            }
+            catch
+            {
+                # If it's our specific "no matching tags" error, re-throw it
+                if ($_.Exception.Message -like "*Found no tags with GitHub releases matching title pattern*")
+                {
+                    throw
+                }
+                # Otherwise, wrap it as a GitHub API error
+                throw "Failed to fetch GitHub releases for $owner/$repo`: $($_.Exception.Message)"
+            }
+        }
+        else
+        {
+            throw "Could not parse GitHub owner/repo from URL: $url"
+        }
+    }
 
     if ("$Pattern" -eq '')
     {

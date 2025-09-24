@@ -32,6 +32,17 @@ jobs:
           pattern: '^1\.'  # Limit to major version '1'
           api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
+  # Update to stable releases only by filtering GitHub release titles
+  cocoa-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@v3
+        with:
+          path: modules/sentry-cocoa
+          name: Cocoa SDK (Stable)
+          gh-title-pattern: '\(Stable\)$'  # Only releases with "(Stable)" suffix
+          api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
   # Update a properties file
   cli:
     runs-on: ubuntu-latest
@@ -88,6 +99,10 @@ jobs:
   * type: string
   * required: true
 * `pattern`: RegEx pattern that will be matched against available versions when picking the latest one.
+  * type: string
+  * required: false
+  * default: ''
+* `gh-title-pattern`: RegEx pattern to match against GitHub release titles. Only releases with matching titles will be considered. Useful for filtering to specific release channels (e.g., stable releases).
   * type: string
   * required: false
   * default: ''
