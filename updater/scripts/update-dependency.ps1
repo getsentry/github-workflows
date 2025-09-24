@@ -185,6 +185,10 @@ if ("$Tag" -eq '') {
         $originalTagCount = $tags.Length
         $tags = @($tags | Where-Object { $validTags.ContainsKey($_) })
         Write-Host "GitHub release title filtering: $originalTagCount -> $($tags.Count) tags"
+
+        if ($tags.Count -eq 0) {
+            throw "Found no tags with GitHub releases matching title pattern '$GhTitlePattern'"
+        }
     }
 
     if ("$Pattern" -eq '') {
