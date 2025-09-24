@@ -97,7 +97,6 @@ for ($i = 0; $i -lt $lines.Count; $i++)
         throw "Prettier comment format - expected <!-- prettier-ignore-end -->, but found: '$line'"
     }
     # End of prettier comment
-    
 
     # Next, we expect a header
     if (-not $line.StartsWith("#"))
@@ -180,9 +179,8 @@ for ($i = 0; $i -lt $sectionEnd; $i++)
 if (!$updated)
 {
     # Find what character is used as a bullet-point separator - look for the first bullet-point object that wasn't created by this script.
-    $bulletPoint = $lines | Where-Object { ($_ -match "^ *[-*] ") -and -not ($_ -match "(Bump .* to|\[changelog\]|\[diff\])") } | Select-Object -First 1
-    $bulletPoint = "$bulletPoint-"[0]
-
+    $bulletPoint = $lines | Where-Object { ($_ -match '^ *[-*] ') -and -not ($_ -match '(Bump .* to|\[changelog\]|\[diff\])') } | Select-Object -First 1
+    $bulletPoint = "$($bulletPoint.Trim())-"[0]
     $entry = @("$bulletPoint Bump $Name from $oldTagNice to $newTagNice ($PullRequestMD)",
         "  $bulletPoint [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
         "  $bulletPoint [diff]($RepoUrl/compare/$OldTag...$NewTag)")

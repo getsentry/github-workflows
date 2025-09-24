@@ -1,0 +1,55 @@
+# Changelog
+
+## Unreleased
+
+### Breaking Changes
+
+Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
+
+To update your existing Updater workflows:
+```yaml
+### Before
+  native:
+    uses: getsentry/github-workflows/.github/workflows/updater.yml@v2
+    with:
+      path: scripts/update-sentry-native-ndk.sh
+      name: Native SDK
+    secrets:
+      # If a custom token is used instead, a CI would be triggered on a created PR.
+      api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
+### After
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@v3
+        with:
+          path: scripts/update-sentry-native-ndk.sh
+          name: Native SDK
+          api-token: ${{ secrets.CI_DEPLOY_KEY }}
+```
+
+To update your existing Danger workflows:
+```yaml
+### Before
+  danger:
+    uses: getsentry/github-workflows/.github/workflows/danger.yml@v2
+
+### After
+  danger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/danger@v3
+```
+
+### Dependencies
+
+- Bump Dependency from v7.16.0 to v7.17.0 ([#123](https://github.com/getsentry/dependant/pulls/123))
+  - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#7170)
+  - [diff](https://github.com/getsentry/dependency/compare/7.16.0...7.17.0)
+
+## 2.14.1
+
+### Features
+
+- Do something ([#100](https://github.com/getsentry/dependant/pulls/100))
