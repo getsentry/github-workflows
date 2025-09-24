@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Updater - Fix boolean input handling for `changelog-entry` parameter and add input validation ([#127](https://github.com/getsentry/github-workflows/pull/127))
+
 ## 3.0.0
 
 ### Breaking Changes
