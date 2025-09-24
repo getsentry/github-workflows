@@ -129,10 +129,12 @@ runs:
       run: |
         if ([string]::IsNullOrEmpty($env:TARGET_BRANCH)) {
             $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
+            $prBranchPrefix = ''
         } else {
             $mainBranch = $env:TARGET_BRANCH
+            $prBranchPrefix = "$mainBranch-"
         }
-        $prBranch = switch ($env:PR_STRATEGY)
+        $prBranch = $prBranchPrefix + switch ($env:PR_STRATEGY)
         {
             'create' { "deps/$env:DEPENDENCY_PATH/${{ steps.target.outputs.latestTag }}" }
             'update' { "deps/$env:DEPENDENCY_PATH" }
