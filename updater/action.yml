@@ -108,13 +108,7 @@ runs:
       uses: actions/checkout@v4
       with:
         token: ${{ inputs.api-token }}
-
-    - name: Checkout target branch
-      if: inputs.target-branch != ''
-      shell: bash
-      run: |
-        git fetch origin ${{ inputs.target-branch }}:${{ inputs.target-branch }}
-        git checkout ${{ inputs.target-branch }}
+        ref: ${{ inputs.target-branch || github.ref }}
 
     - name: Update to the latest version
       id: target
@@ -241,13 +235,7 @@ runs:
       uses: actions/checkout@v4
       with:
         token: ${{ inputs.api-token }}
-
-    - name: 'After new PR: checkout target branch'
-      if: ${{ inputs.target-branch != '' && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
-      shell: bash
-      run: |
-        git fetch origin ${{ inputs.target-branch }}:${{ inputs.target-branch }}
-        git checkout ${{ inputs.target-branch }}
+        ref: ${{ inputs.target-branch || github.ref }}
 
     - name: 'After new PR: redo the update'
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
