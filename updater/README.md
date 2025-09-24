@@ -129,8 +129,8 @@ jobs:
   * default: Dependencies
 * `pr-strategy`: How to handle PRs.
   Can be either of the following:
-  * `create` (default) - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
-  * `update` - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
+  * `create` - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
+  * `update` (default) - keep a single PR that gets updated with new dependency versions until merged - only the latest version update is available at any time
 * `target-branch`: Branch to use as base for dependency updates. Defaults to repository default branch if not specified.
   * type: string
   * required: false
