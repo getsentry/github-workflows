@@ -195,11 +195,11 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
       id: create-pr
-      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_NAME: ${{ inputs.name }}
       with:
+        path: caller-repo
         base: ${{ steps.root.outputs.baseBranch }}
         branch: ${{ steps.root.outputs.prBranch }}
         commit-message: 'chore: update ${{ env.DEPENDENCY_PATH }} to ${{ steps.target.outputs.latestTag }}'
@@ -279,11 +279,11 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
       uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # pin#v6.0.1
       id: update
-      working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_NAME: ${{ inputs.name }}
       with:
+        path: caller-repo
         base: ${{ steps.root.outputs.baseBranch }}
         branch: ${{ steps.root.outputs.prBranch }}
         commit-message: 'chore: update ${{ env.DEPENDENCY_PATH }} to ${{ steps.target.outputs.latestTag }}'
