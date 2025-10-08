@@ -15,7 +15,10 @@ param(
     # RegEx pattern to match against GitHub release titles. Only releases with matching titles will be considered
     [string] $GhTitlePattern = '',
     # Specific version - if passed, no discovery is performed and the version is set directly
-    [string] $Tag = ''
+    [string] $Tag = '',
+    # Optional post-update script to run after successful dependency update
+    # The script receives the original and new version as arguments
+    [string] $PostUpdateScript = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -249,6 +252,9 @@ if ("$Tag" -eq '') {
     $Tag = $latestTag
 }
 
+$originalTagForPostUpdate = if ($originalTag) { $originalTag } else { '' }
+$newTagForPostUpdate = $Tag
+
 if ($isSubmodule) {
     Write-Host "Updating submodule $Path to $Tag"
     Push-Location $Path
@@ -257,4 +263,26 @@ if ($isSubmodule) {
 } else {
     Write-Host "Updating 'version' in $Path to $Tag"
     DependencyConfig 'set-version' $tag
+}
+
+# Run post-update script if provided
+if ("$PostUpdateScript" -ne '') {
+    Write-Host "Running post-update script: $PostUpdateScript"
+    if (-not (Test-Path $PostUpdateScript)) {
+        throw "Post-update script not found: $PostUpdateScript"
+    }
+
+    if (Get-Command 'chmod' -ErrorAction SilentlyContinue) {
+        chmod +x $PostUpdateScript
+        if ($LastExitCode -ne 0) {
+            throw 'chmod failed';
+        }
+    }
+
+    & $PostUpdateScript "$originalTag" "$tag"
+    if ($LastExitCode -ne 0) {
+        throw "Post-update script failed with exit code $LastExitCode"
+    }
+
+    Write-Host '✓ Post-update script completed successfully'
 }

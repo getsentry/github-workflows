@@ -36,6 +36,10 @@ inputs:
   api-token:
     description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: true
+  post-update-script:
+    description: 'Optional script to run after successful dependency update. Can be a bash script (.sh) or PowerShell script (.ps1). The script will be executed in the caller-repo directory before PR creation.'
+    required: false
+    default: ''
 
 outputs:
   prUrl:
@@ -102,6 +106,17 @@ runs:
         }
         Write-Output "✓ PR strategy value '${{ inputs.pr-strategy }}' is valid"
 
+    - name: Validate post-update-script
+      if: ${{ inputs.post-update-script != '' }}
+      shell: pwsh
+      run: |
+        # Validate that inputs.post-update-script contains only safe characters
+        if ('${{ inputs.post-update-script }}' -notmatch '^[a-zA-Z0-9_\./#\s-]+$') {
+          Write-Output "::error::Invalid post-update-script path: '${{ inputs.post-update-script }}'. Only alphanumeric characters, spaces, and _-./#  are allowed."
+          exit 1
+        }
+        Write-Output "✓ Post-update script path '${{ inputs.post-update-script }}' is valid"
+
     # What we need to accomplish:
     # * update to the latest tag
     # * create a PR
@@ -134,8 +149,9 @@ runs:
         DEPENDENCY_PATH: ${{ inputs.path }}
         DEPENDENCY_PATTERN: ${{ inputs.pattern }}
         GH_TITLE_PATTERN: ${{ inputs.gh-title-pattern }}
+        POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
         GH_TOKEN: ${{ inputs.api-token }}
-      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN -GhTitlePattern $env:GH_TITLE_PATTERN
+      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN -GhTitlePattern $env:GH_TITLE_PATTERN -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Get the base repo info
       if: steps.target.outputs.latestTag != steps.target.outputs.originalTag
@@ -270,8 +286,9 @@ runs:
       working-directory: caller-repo
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
+        POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
         GH_TOKEN: ${{ inputs.api-token }}
-      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}'
+      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}' -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Update Changelog
       if: ${{ inputs.changelog-entry == 'true' && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}

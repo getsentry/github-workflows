@@ -95,6 +95,18 @@ jobs:
           target-branch: v7
           pattern: '^1\.'  # Limit to major version '1'
           api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
+  # Use a post-update script (sh or ps1) to make additional changes after dependency update
+  # The script receives two arguments: original version and new version
+  post-update-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@v3
+        with:
+          path: modules/sentry-cocoa
+          name: Cocoa SDK
+          post-update-script: scripts/post-update.sh  # Receives args: $1=old version, $2=new version
+          api-token: ${{ secrets.CI_DEPLOY_KEY }}
 ```
 
 ## Inputs
@@ -135,11 +147,44 @@ jobs:
   * type: string
   * required: false
   * default: '' (uses repository default branch)
+* `post-update-script`: Optional script to run after successful dependency update. Can be a bash script (`.sh`) or PowerShell script (`.ps1`). The script will be executed in the repository root directory before PR creation. The script receives two arguments:
+  * `$1` / `$args[0]` - The original version (version before update)
+  * `$2` / `$args[1]` - The new version (version after update)
+  * type: string
+  * required: false
+  * default: ''
 * `api-token`: Token for the repo. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`.
   If you provide the usual `${{ github.token }}`, no followup CI will run on the created PR.
   If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.
   * type: string
   * required: true
+
+### Post-Update Script Example
+
+**Bash script** (`scripts/post-update.sh`):
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+ORIGINAL_VERSION="$1"
+NEW_VERSION="$2"
+
+echo "Updated from $ORIGINAL_VERSION to $NEW_VERSION"
+# Make additional changes to repository files here
+```
+
+**PowerShell script** (`scripts/post-update.ps1`):
+
+```powershell
+param(
+    [Parameter(Mandatory = $true)][string] $OriginalVersion,
+    [Parameter(Mandatory = $true)][string] $NewVersion
+)
+
+Write-Output "Updated from $OriginalVersion to $NewVersion"
+# Make additional changes to repository files here
+```
 
 ## Outputs
 

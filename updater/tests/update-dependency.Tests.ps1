@@ -1,9 +1,10 @@
 BeforeAll {
-    function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string] $pattern = $null, [string] $ghTitlePattern = $null)
+    function UpdateDependency([Parameter(Mandatory = $true)][string] $path, [string] $pattern = $null, [string] $ghTitlePattern = $null, [string] $postUpdateScript = $null)
     {
         $params = @{ Path = $path }
         if ($pattern) { $params.Pattern = $pattern }
         if ($ghTitlePattern) { $params.GhTitlePattern = $ghTitlePattern }
+        if ($postUpdateScript) { $params.PostUpdateScript = $postUpdateScript }
 
         $result = & "$PSScriptRoot/../scripts/update-dependency.ps1" @params
         if (-not $?)
@@ -486,6 +487,125 @@ FetchContent_Declare(
 
             # Should get a version starting with 8
             $version | Should -Match '^8\.'
+        }
+    }
+
+    Context 'post-update-script' {
+        It 'runs PowerShell post-update script with version arguments' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/post-update-test.ps1"
+            $markerFile = "$testDir/post-update-marker.txt"
+            @'
+param([string] $originalVersion, [string] $newVersion)
+"$originalVersion|$newVersion" | Out-File
+'@ + " '$markerFile'" | Out-File $postUpdateScript
+
+            UpdateDependency $testFile '^0\.' -postUpdateScript $postUpdateScript
+
+            # Verify post-update script was executed
+            Test-Path $markerFile | Should -Be $true
+            $markerContent = Get-Content $markerFile
+            $markerContent | Should -Match '^0\|0\.28\.0$'
+
+            # Clean up
+            Remove-Item $markerFile -ErrorAction SilentlyContinue
+            Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
+        }
+
+        It 'runs bash post-update script with version arguments' -Skip:$IsWindows {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/post-update-test.sh"
+            $markerFile = "$testDir/post-update-marker.txt"
+            @"
+#!/usr/bin/env bash
+set -euo pipefail
+echo "`$1|`$2" > '$markerFile'
+"@ | Out-File $postUpdateScript
+
+            UpdateDependency $testFile '^0\.' -postUpdateScript $postUpdateScript
+
+            # Verify post-update script was executed
+            Test-Path $markerFile | Should -Be $true
+            $markerContent = Get-Content $markerFile
+            $markerContent | Should -Match '^0\|0\.28\.0$'
+
+            # Clean up
+            Remove-Item $markerFile -ErrorAction SilentlyContinue
+            Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
+        }
+
+        It 'fails when post-update script does not exist' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/nonexistent-script.ps1"
+
+            { UpdateDependency $testFile '^0\.' -postUpdateScript $postUpdateScript } | Should -Throw '*Post-update script not found*'
+        }
+
+        It 'fails when PowerShell post-update script exits with error' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/failing-post-update.ps1"
+            @'
+param([string] $originalVersion, [string] $newVersion)
+throw "Post-update script failed intentionally"
+'@ | Out-File $postUpdateScript
+
+            { UpdateDependency $testFile '^0\.' -postUpdateScript $postUpdateScript } | Should -Throw '*Post-update script failed*'
+
+            # Clean up
+            Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
+        }
+
+        It 'fails when bash post-update script exits with error' -Skip:$IsWindows {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/failing-post-update.sh"
+            @'
+#!/usr/bin/env bash
+exit 1
+'@ | Out-File $postUpdateScript
+
+            { UpdateDependency $testFile '^0\.' -postUpdateScript $postUpdateScript } | Should -Throw '*Post-update script failed*'
+
+            # Clean up
+            Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
+        }
+
+        It 'receives empty string for original version when updating from scratch' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/post-update-empty-original.ps1"
+            $markerFile = "$testDir/post-update-marker-empty.txt"
+            @'
+param([string] $originalVersion, [string] $newVersion)
+"original=[$originalVersion]|new=[$newVersion]" | Out-File
+'@ + " '$markerFile'" | Out-File $postUpdateScript
+
+            UpdateDependency $testFile '^0\.' -postUpdateScript $postUpdateScript
+
+            # Verify post-update script received empty original version
+            Test-Path $markerFile | Should -Be $true
+            $markerContent = Get-Content $markerFile
+            $markerContent | Should -Match 'original=\[\]\|new=\[0\.28\.0\]'
+
+            # Clean up
+            Remove-Item $markerFile -ErrorAction SilentlyContinue
+            Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
         }
     }
 }
