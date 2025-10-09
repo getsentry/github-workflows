@@ -132,18 +132,6 @@ runs:
           exit 1
         }
 
-        # Check token validity and access
-        gh api repos/${{ github.repository }} --silent 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-          Write-Output "::error::GitHub token validation failed. Please verify:"
-          Write-Output "  1. Token is not empty or malformed"
-          Write-Output "  2. Token has not expired"
-          Write-Output "  3. Token has an expiration date set"
-          Write-Output "  4. Token has 'repo' and 'workflow' scopes"
-          Write-Output "  5. Token syntax is correct: "'${{ secrets.TOKEN_NAME }}'"
-          exit 1
-        }
-
         # Check token scopes (works for classic PATs only)
         $headers = curl -sS -I -H "Authorization: token $env:GH_TOKEN" https://api.github.com 2>&1
         $scopeLine = $headers | Select-String -Pattern '^x-oauth-scopes:' -CaseSensitive:$false
@@ -159,6 +147,18 @@ runs:
           }
         } else {
           Write-Output "::notice::Could not detect token scopes (this is normal for fine-grained PATs). Ensure token has Contents (write) and Pull Requests (write) permissions."
+        }
+
+        # Check token validity and access
+        gh api repos/${{ github.repository }} --silent 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          Write-Output "::error::GitHub token validation failed. Please verify:"
+          Write-Output "  1. Token is not empty or malformed"
+          Write-Output "  2. Token has not expired"
+          Write-Output "  3. Token has an expiration date set"
+          Write-Output "  4. Token has 'repo' and 'workflow' scopes"
+          Write-Output "  5. Token syntax is correct: "'${{ secrets.TOKEN_NAME }}'"
+          exit 1
         }
 
         Write-Output "✓ GitHub token is valid and has access to this repository"
