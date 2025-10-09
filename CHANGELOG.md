@@ -4,7 +4,7 @@
 
 ### Features
 
-- Updater - Add `post-update-script` input parameter to run custom scripts after dependency updates ([#130](https://github.com/getsentry/github-workflows/pull/130))
+- Updater - Add `post-update-script` input parameter to run custom scripts after dependency updates ([#130](https://github.com/getsentry/github-workflows/pull/130), [#133](https://github.com/getsentry/github-workflows/pull/133))
   - Scripts receive original and new version as arguments
   - Support both bash (`.sh`) and PowerShell (`.ps1`) scripts
   - Enables workflows like updating lock files, running code generators, or modifying configuration files
