@@ -13,6 +13,12 @@
 
 - Updater - Fix boolean input handling for `changelog-entry` parameter and add input validation ([#127](https://github.com/getsentry/github-workflows/pull/127))
 
+### Dependencies
+
+- Bump Danger JS from v11.3.1 to v13.0.4 ([#132](https://github.com/getsentry/github-workflows/pull/132))
+  - [changelog](https://github.com/danger/danger-js/blob/main/CHANGELOG.md#1304)
+  - [diff](https://github.com/danger/danger-js/compare/11.3.1...13.0.4)
+
 ## 3.0.0
 
 ### Breaking Changes
@@ -34,6 +40,7 @@
 - Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
 
   To update your existing Updater workflows:
+
   ```yaml
   ### Before
     native:
@@ -57,6 +64,7 @@
   ```
 
   To update your existing Danger workflows:
+
   ```yaml
   ### Before
     danger:
