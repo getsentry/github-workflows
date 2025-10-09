@@ -118,39 +118,40 @@ runs:
         Write-Output "✓ Post-update script path '${{ inputs.post-update-script }}' is valid"
 
     - name: Validate GitHub token
-      shell: bash
+      shell: pwsh
       env:
         GH_TOKEN: ${{ inputs.api-token }}
       run: |
-        if [ -z "$GH_TOKEN" ]; then
-          echo "::error::GitHub token is empty. Please verify the token is passed correctly."
+        if ([string]::IsNullOrEmpty($env:GH_TOKEN)) {
+          Write-Output "::error::GitHub token is empty. Please verify the token is passed correctly."
           exit 1
-        fi
+        }
 
-        if echo "$GH_TOKEN" | grep -q '[[:space:]]'; then
-          echo "::error::GitHub token contains whitespace characters (newlines, spaces, etc). This suggests the token secret may be malformed."
+        if ($env:GH_TOKEN -match '\s') {
+          Write-Output "::error::GitHub token contains whitespace characters (newlines, spaces, etc). This suggests the token secret may be malformed."
           exit 1
-        fi
+        }
 
-        if ! gh api repos/${{ github.repository }} --silent 2>&1; then
-          echo "::error::GitHub token validation failed. Please verify:"
-          echo "  1. Token is not empty or malformed"
-          echo "  2. Token has not expired"
-          echo "  3. Token has an expiration date set"
-          echo "  4. Token has 'repo' and 'workflow' scopes"
-          echo "  5. Token syntax is correct: "'${{ secrets.TOKEN_NAME }}'"
+        gh api repos/${{ github.repository }} --silent 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          Write-Output "::error::GitHub token validation failed. Please verify:"
+          Write-Output "  1. Token is not empty or malformed"
+          Write-Output "  2. Token has not expired"
+          Write-Output "  3. Token has an expiration date set"
+          Write-Output "  4. Token has 'repo' and 'workflow' scopes"
+          Write-Output "  5. Token syntax is correct: "'${{ secrets.TOKEN_NAME }}'"
           exit 1
-        fi
-        echo "✓ GitHub token is valid and has access to this repository"
+        }
+        Write-Output "✓ GitHub token is valid and has access to this repository"
 
     - name: Configure git credentials
-      shell: bash
+      shell: pwsh
       env:
         GH_TOKEN: ${{ inputs.api-token }}
       run: |
         git config --global credential.https://github.com.username git
-        git config --global credential.https://github.com.password "$GH_TOKEN"
-        echo "✓ Git credentials configured for GitHub operations"
+        git config --global credential.https://github.com.password $env:GH_TOKEN
+        Write-Output "✓ Git credentials configured for GitHub operations"
 
     # What we need to accomplish:
     # * update to the latest tag
