@@ -157,7 +157,6 @@ runs:
           Write-Output "  2. Token has not expired"
           Write-Output "  3. Token has an expiration date set"
           Write-Output "  4. Token has 'repo' and 'workflow' scopes"
-          Write-Output "  5. Token syntax is correct: "'${{ secrets.TOKEN_NAME }}'"
           exit 1
         }
 
