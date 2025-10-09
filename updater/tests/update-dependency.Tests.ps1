@@ -515,6 +515,63 @@ param([string] $originalVersion, [string] $newVersion)
             Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
         }
 
+        It 'runs PowerShell post-update script when Tag and OriginalTag are explicitly provided' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=0.27.0') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/post-update-explicit.ps1"
+            $markerFile = "$testDir/post-update-marker-explicit.txt"
+            @'
+param([string] $originalVersion, [string] $newVersion)
+"$originalVersion|$newVersion" | Out-File
+'@ + " '$markerFile'" | Out-File $postUpdateScript
+
+            # Simulate the second run where we explicitly set Tag and OriginalTag
+            $params = @{
+                Path = $testFile
+                Tag = '0.28.0'
+                OriginalTag = '0.27.0'
+                PostUpdateScript = $postUpdateScript
+            }
+            $result = & "$PSScriptRoot/../scripts/update-dependency.ps1" @params
+            if (-not $?) {
+                throw $result
+            }
+
+            # Verify post-update script was executed with correct versions
+            Test-Path $markerFile | Should -Be $true
+            $markerContent = Get-Content $markerFile
+            $markerContent | Should -Match '^0\.27\.0\|0\.28\.0$'
+
+            # Clean up
+            Remove-Item $markerFile -ErrorAction SilentlyContinue
+            Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
+        }
+
+        It 'fails when Tag is provided without OriginalTag' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/sentry-cli'
+            @("repo=$repo", 'version=0.27.0') | Out-File $testFile
+
+            $postUpdateScript = "$testDir/post-update-fail.ps1"
+            @'
+param([string] $originalVersion, [string] $newVersion)
+"$originalVersion|$newVersion" | Out-File marker.txt
+'@ | Out-File $postUpdateScript
+
+            # This should fail because Tag requires OriginalTag
+            $params = @{
+                Path = $testFile
+                Tag = '0.28.0'
+                PostUpdateScript = $postUpdateScript
+            }
+            { & "$PSScriptRoot/../scripts/update-dependency.ps1" @params } | Should -Throw '*Expected*to be different*'
+
+            # Clean up
+            Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
+        }
+
         It 'runs bash post-update script with version arguments' -Skip:$IsWindows {
             $testFile = "$testDir/test.properties"
             $repo = 'https://github.com/getsentry/sentry-cli'

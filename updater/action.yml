@@ -288,7 +288,7 @@ runs:
         DEPENDENCY_PATH: ${{ inputs.path }}
         POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
         GH_TOKEN: ${{ inputs.api-token }}
-      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}' -PostUpdateScript $env:POST_UPDATE_SCRIPT
+      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}' -OriginalTag '${{ steps.target.outputs.originalTag }}' -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Update Changelog
       if: ${{ inputs.changelog-entry == 'true' && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
