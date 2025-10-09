@@ -22,6 +22,12 @@ runs:
         token: ${{ inputs.api-token }}
         fetch-depth: 0
 
+    # Read the Danger version from the properties file
+    - name: Get Danger version
+      id: config
+      shell: pwsh
+      run: Get-Content '${{ github.action_path }}/danger.properties' | Tee-Object $env:GITHUB_OUTPUT -Append
+
     # Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
     - name: Run DangerJS
       id: danger
@@ -36,5 +42,5 @@ runs:
           -e "INPUT_ARGS" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e GITHUB_ACTIONS=true -e CI=true \
           -e GITHUB_TOKEN="${{ inputs.api-token }}" \
           -e DANGER_DISABLE_TRANSPILATION="true" \
-          ghcr.io/danger/danger-js:11.3.1 \
+          ghcr.io/danger/danger-js:${{ steps.config.outputs.version }} \
           --failOnErrors --dangerfile ${{ github.action_path }}/dangerfile.js

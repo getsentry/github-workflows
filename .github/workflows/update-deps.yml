@@ -1,0 +1,21 @@
+name: Update Danger JS
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Mondays at 8:00 UTC
+    - cron: '0 8 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  danger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@main
+        with:
+          path: danger/danger.properties
+          name: Danger JS
+          api-token: ${{ secrets.GITHUB_TOKEN }}
