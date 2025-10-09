@@ -232,16 +232,6 @@ runs:
 
         Write-Output "✓ SSH key format appears valid"
 
-    - name: Configure git credentials
-      if: ${{ inputs.api-token != '' }}
-      shell: pwsh
-      env:
-        GH_TOKEN: ${{ inputs.api-token }}
-      run: |
-        git config --global credential.https://github.com.username git
-        git config --global credential.https://github.com.password $env:GH_TOKEN
-        Write-Output "✓ Git credentials configured for GitHub operations"
-
     # What we need to accomplish:
     # * update to the latest tag
     # * create a PR
