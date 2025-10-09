@@ -8,10 +8,17 @@
   - Scripts receive original and new version as arguments
   - Support both bash (`.sh`) and PowerShell (`.ps1`) scripts
   - Enables workflows like updating lock files, running code generators, or modifying configuration files
+- Updater - Add SSH key support and comprehensive authentication validation ([#134](https://github.com/getsentry/github-workflows/pull/134))
+  - Add `ssh-key` input parameter for deploy key authentication
+  - Support using both `ssh-key` (for git) and `api-token` (for GitHub API) together
+  - Add detailed token validation with actionable error messages
+  - Detect common token issues: expiration, whitespace, SSH keys in wrong input, missing scopes
+  - Validate SSH key format when provided
 
 ### Fixes
 
 - Updater - Fix boolean input handling for `changelog-entry` parameter and add input validation ([#127](https://github.com/getsentry/github-workflows/pull/127))
+- Updater - Fix cryptic authentication errors with better validation and error messages ([#134](https://github.com/getsentry/github-workflows/pull/134), closes [#128](https://github.com/getsentry/github-workflows/issues/128))
 
 ### Dependencies
 
@@ -52,7 +59,7 @@
         # If a custom token is used instead, a CI would be triggered on a created PR.
         api-token: ${{ secrets.CI_DEPLOY_KEY }}
 
-  ### After
+  ### After (v3.0)
     native:
       runs-on: ubuntu-latest
       steps:
@@ -61,6 +68,21 @@
             path: scripts/update-sentry-native-ndk.sh
             name: Native SDK
             api-token: ${{ secrets.CI_DEPLOY_KEY }}
+  ```
+
+  **Note**: If you were using SSH deploy keys with the v2 reusable workflow, the v3.0 composite action initially only supported tokens.
+  SSH key support was restored in v3.1 ([#134](https://github.com/getsentry/github-workflows/pull/134)). To use SSH keys, update to v3.1+ and use the `ssh-key` input:
+
+  ```yaml
+  ### With SSH key (v3.1+)
+    native:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: getsentry/github-workflows/updater@v3
+          with:
+            path: scripts/update-sentry-native-ndk.sh
+            name: Native SDK
+            ssh-key: ${{ secrets.CI_DEPLOY_KEY }}
   ```
 
   To update your existing Danger workflows:

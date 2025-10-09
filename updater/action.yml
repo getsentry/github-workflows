@@ -34,8 +34,13 @@ inputs:
     required: false
     default: ''
   api-token:
-    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
-    required: true
+    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}. Not required if ssh-key is provided, but can be used together with ssh-key for GitHub API operations.'
+    required: false
+    default: ''
+  ssh-key:
+    description: 'SSH private key for repository authentication. Can be used alone or together with api-token (SSH for git, token for GitHub API).'
+    required: false
+    default: ''
   post-update-script:
     description: 'Optional script to run after successful dependency update. Can be a bash script (.sh) or PowerShell script (.ps1). The script will be executed in the caller-repo directory before PR creation.'
     required: false
@@ -117,6 +122,116 @@ runs:
         }
         Write-Output "✓ Post-update script path '${{ inputs.post-update-script }}' is valid"
 
+    - name: Validate authentication inputs
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
+        SSH_KEY: ${{ inputs.ssh-key }}
+      run: |
+        $hasToken = -not [string]::IsNullOrEmpty($env:GH_TOKEN)
+        $hasSshKey = -not [string]::IsNullOrEmpty($env:SSH_KEY)
+
+        if (-not $hasToken -and -not $hasSshKey) {
+          Write-Output "::error::Either api-token or ssh-key must be provided for authentication."
+          exit 1
+        }
+
+        if ($hasToken -and $hasSshKey) {
+          Write-Output "✓ Using both SSH key (for git) and token (for GitHub API)"
+        } elseif ($hasToken) {
+          Write-Output "✓ Using token authentication"
+        } else {
+          Write-Output "✓ Using SSH key authentication"
+        }
+
+    - name: Validate API token
+      if: ${{ inputs.api-token != '' }}
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
+      run: |
+        # Check if token is actually an SSH key
+        if ($env:GH_TOKEN -match '-----BEGIN') {
+          Write-Output "::error::The api-token input appears to contain an SSH private key."
+          Write-Output "::error::Please use the ssh-key input for SSH authentication instead of api-token."
+          exit 1
+        }
+
+        # Check for whitespace
+        if ($env:GH_TOKEN -match '\s') {
+          $tokenLength = $env:GH_TOKEN.Length
+          $whitespaceMatch = [regex]::Match($env:GH_TOKEN, '\s')
+          $position = $whitespaceMatch.Index
+          $char = $whitespaceMatch.Value
+          $charName = switch ($char) {
+            "`n" { "newline (LF)" }
+            "`r" { "carriage return (CR)" }
+            "`t" { "tab" }
+            " " { "space" }
+            default { "whitespace character (code: $([int][char]$char))" }
+          }
+          Write-Output "::error::GitHub token contains whitespace at position $position of $tokenLength characters: $charName"
+          Write-Output "::error::This suggests the token secret may be malformed. Check for extra newlines when setting the secret."
+          exit 1
+        }
+
+        # Check token scopes (works for classic PATs only)
+        $headers = curl -sS -I -H "Authorization: token $env:GH_TOKEN" https://api.github.com 2>&1
+        $scopeLine = $headers | Select-String -Pattern '^x-oauth-scopes:' -CaseSensitive:$false
+        if ($scopeLine) {
+          $scopes = $scopeLine -replace '^x-oauth-scopes:\s*', '' -replace '\r', ''
+          if ([string]::IsNullOrWhiteSpace($scopes)) {
+            Write-Output "::warning::Token has no scopes. If using a fine-grained PAT, ensure it has Contents (write) and Pull Requests (write) permissions."
+          } else {
+            Write-Output "Token scopes: $scopes"
+            if ($scopes -notmatch '\brepo\b' -and $scopes -notmatch '\bpublic_repo\b') {
+              Write-Output "::warning::Token may be missing 'repo' or 'public_repo' scope. This may cause issues with private repositories."
+            }
+          }
+        } else {
+          Write-Output "::notice::Could not detect token scopes (this is normal for fine-grained PATs). Ensure token has Contents (write) and Pull Requests (write) permissions."
+        }
+
+        # Check token validity and access
+        gh api repos/${{ github.repository }} --silent 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+          Write-Output "::error::GitHub token validation failed. Please verify:"
+          Write-Output "  1. Token is not empty or malformed"
+          Write-Output "  2. Token has not expired"
+          Write-Output "  3. Token has an expiration date set"
+          Write-Output "  4. Token has 'repo' and 'workflow' scopes"
+          exit 1
+        }
+
+        Write-Output "✓ GitHub token is valid and has access to this repository"
+
+    - name: Validate SSH key
+      if: ${{ inputs.ssh-key != '' }}
+      shell: pwsh
+      env:
+        SSH_KEY: ${{ inputs.ssh-key }}
+      run: |
+        # Check if SSH key looks valid
+        if ($env:SSH_KEY -notmatch '-----BEGIN') {
+          Write-Output "::warning::SSH key does not appear to start with a PEM header (-----BEGIN). Please verify the key format."
+        }
+
+        # Check for common SSH key types
+        $validKeyTypes = @('RSA', 'OPENSSH', 'DSA', 'EC', 'PRIVATE KEY')
+        $hasValidType = $false
+        foreach ($type in $validKeyTypes) {
+          if ($env:SSH_KEY -match "-----BEGIN.*$type") {
+            $hasValidType = $true
+            break
+          }
+        }
+
+        if (-not $hasValidType) {
+          Write-Output "::warning::SSH key type not recognized. Supported types: RSA, OPENSSH, DSA, EC, PRIVATE KEY"
+        }
+
+        Write-Output "✓ SSH key format appears valid"
+
     # What we need to accomplish:
     # * update to the latest tag
     # * create a PR
@@ -137,7 +252,8 @@ runs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ inputs.api-token }}
+        token: ${{ inputs.api-token || github.token }}
+        ssh-key: ${{ inputs.ssh-key }}
         ref: ${{ inputs.target-branch || github.ref }}
         path: caller-repo
 
@@ -150,7 +266,7 @@ runs:
         DEPENDENCY_PATTERN: ${{ inputs.pattern }}
         GH_TITLE_PATTERN: ${{ inputs.gh-title-pattern }}
         POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN -GhTitlePattern $env:GH_TITLE_PATTERN -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Get the base repo info
@@ -194,7 +310,7 @@ runs:
       shell: pwsh
       working-directory: caller-repo
       env:
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: |
         $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
         if ($urls.Length -eq 0)
@@ -221,7 +337,7 @@ runs:
       shell: pwsh
       working-directory: caller-repo
       env:
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: |
         $changelog = ${{ github.action_path }}/scripts/get-changelog.ps1 `
           -RepoUrl '${{ steps.target.outputs.url }}' `
@@ -276,7 +392,8 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       uses: actions/checkout@v4
       with:
-        token: ${{ inputs.api-token }}
+        token: ${{ inputs.api-token || github.token }}
+        ssh-key: ${{ inputs.ssh-key }}
         ref: ${{ inputs.target-branch || github.ref }}
         path: caller-repo
 
@@ -287,7 +404,7 @@ runs:
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}' -OriginalTag '${{ steps.target.outputs.originalTag }}' -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Update Changelog
@@ -297,7 +414,7 @@ runs:
       env:
         DEPENDENCY_NAME: ${{ inputs.name }}
         CHANGELOG_SECTION: ${{ inputs.changelog-section }}
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: |
         ${{ github.action_path }}/scripts/update-changelog.ps1 `
           -Name $env:DEPENDENCY_NAME `
