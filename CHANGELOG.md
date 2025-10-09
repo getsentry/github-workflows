@@ -78,7 +78,7 @@
     native:
       runs-on: ubuntu-latest
       steps:
-        - uses: getsentry/github-workflows/updater@v3.1  # or @v3 for latest
+        - uses: getsentry/github-workflows/updater@v3
           with:
             path: scripts/update-sentry-native-ndk.sh
             name: Native SDK
