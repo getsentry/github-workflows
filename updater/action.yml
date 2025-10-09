@@ -34,11 +34,11 @@ inputs:
     required: false
     default: ''
   api-token:
-    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}. Not required if ssh-key is provided.'
+    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}. Not required if ssh-key is provided, but can be used together with ssh-key for GitHub API operations.'
     required: false
     default: ''
   ssh-key:
-    description: 'SSH private key for repository authentication. Alternative to api-token. Use for deploy key authentication.'
+    description: 'SSH private key for repository authentication. Can be used alone or together with api-token (SSH for git, token for GitHub API).'
     required: false
     default: ''
   post-update-script:
@@ -136,15 +136,14 @@ runs:
           exit 1
         }
 
-        if ($hasToken -and $hasSshKey) {
-          Write-Output "::error::Both api-token and ssh-key were provided. Please provide only one."
-          exit 1
-        }
-
         if ($hasToken -and $env:GH_TOKEN -match '-----BEGIN') {
           Write-Output "::error::The api-token input appears to contain an SSH private key."
           Write-Output "::error::Please use the ssh-key input for SSH authentication instead of api-token."
           exit 1
+        }
+
+        if ($hasToken -and $hasSshKey) {
+          Write-Output "Using both SSH key (for git) and token (for GitHub API)"
         }
 
         # Token-specific validation
