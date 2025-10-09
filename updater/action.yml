@@ -127,7 +127,6 @@ runs:
           echo "  1. Token has not expired"
           echo "  2. Token has an expiration date set"
           echo "  3. Token has 'repo' and 'workflow' scopes"
-          echo "  4. Token syntax is correct: "'${{ secrets.TOKEN_NAME }}'"
           exit 1
         fi
         echo "✓ GitHub token is valid and has access to this repository"
