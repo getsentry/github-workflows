@@ -127,6 +127,13 @@ runs:
           exit 1
         }
 
+        if ($env:GH_TOKEN -match '-----BEGIN') {
+          Write-Output "::error::The provided token appears to be an SSH private key, not a GitHub token."
+          Write-Output "::error::The api-token input requires a GitHub Personal Access Token (PAT) or GITHUB_TOKEN."
+          Write-Output "::error::SSH keys should be configured separately using deploy keys or ssh-key inputs."
+          exit 1
+        }
+
         if ($env:GH_TOKEN -match '\s') {
           $tokenLength = $env:GH_TOKEN.Length
           $whitespaceMatch = [regex]::Match($env:GH_TOKEN, '\s')
@@ -141,9 +148,6 @@ runs:
           }
           Write-Output "::error::GitHub token contains whitespace at position $position of $tokenLength characters: $charName"
           Write-Output "::error::This suggests the token secret may be malformed. Check for extra newlines when setting the secret."
-          # XXX remove
-          $preview = $env:GH_TOKEN.Substring(5, 10)
-          Write-Output "Token around the error: $preview"
           exit 1
         }
 
