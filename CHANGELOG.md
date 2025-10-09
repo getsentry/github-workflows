@@ -83,8 +83,6 @@
             path: scripts/update-sentry-native-ndk.sh
             name: Native SDK
             ssh-key: ${{ secrets.CI_DEPLOY_KEY }}
-            # Optionally also provide api-token for GitHub API operations
-            # api-token: ${{ secrets.GITHUB_TOKEN }}
   ```
 
   To update your existing Danger workflows:
