@@ -125,7 +125,7 @@ runs:
     - name: Validate authentication inputs
       shell: pwsh
       env:
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
         SSH_KEY: ${{ inputs.ssh-key }}
       run: |
         $hasToken = -not [string]::IsNullOrEmpty($env:GH_TOKEN)
@@ -148,7 +148,7 @@ runs:
       if: ${{ inputs.api-token != '' }}
       shell: pwsh
       env:
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: |
         # Check if token is actually an SSH key
         if ($env:GH_TOKEN -match '-----BEGIN') {
@@ -266,7 +266,7 @@ runs:
         DEPENDENCY_PATTERN: ${{ inputs.pattern }}
         GH_TITLE_PATTERN: ${{ inputs.gh-title-pattern }}
         POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Pattern $env:DEPENDENCY_PATTERN -GhTitlePattern $env:GH_TITLE_PATTERN -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Get the base repo info
@@ -310,7 +310,7 @@ runs:
       shell: pwsh
       working-directory: caller-repo
       env:
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: |
         $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
         if ($urls.Length -eq 0)
@@ -337,7 +337,7 @@ runs:
       shell: pwsh
       working-directory: caller-repo
       env:
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: |
         $changelog = ${{ github.action_path }}/scripts/get-changelog.ps1 `
           -RepoUrl '${{ steps.target.outputs.url }}' `
@@ -404,7 +404,7 @@ runs:
       env:
         DEPENDENCY_PATH: ${{ inputs.path }}
         POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}' -OriginalTag '${{ steps.target.outputs.originalTag }}' -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Update Changelog
@@ -414,7 +414,7 @@ runs:
       env:
         DEPENDENCY_NAME: ${{ inputs.name }}
         CHANGELOG_SECTION: ${{ inputs.changelog-section }}
-        GH_TOKEN: ${{ inputs.api-token }}
+        GH_TOKEN: ${{ inputs.api-token || github.token }}
       run: |
         ${{ github.action_path }}/scripts/update-changelog.ps1 `
           -Name $env:DEPENDENCY_NAME `
