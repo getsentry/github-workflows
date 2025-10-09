@@ -34,8 +34,13 @@ inputs:
     required: false
     default: ''
   api-token:
-    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
-    required: true
+    description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}. Not required if ssh-key is provided.'
+    required: false
+    default: ''
+  ssh-key:
+    description: 'SSH private key for repository authentication. Alternative to api-token. Use for deploy key authentication.'
+    required: false
+    default: ''
   post-update-script:
     description: 'Optional script to run after successful dependency update. Can be a bash script (.sh) or PowerShell script (.ps1). The script will be executed in the caller-repo directory before PR creation.'
     required: false
@@ -117,71 +122,85 @@ runs:
         }
         Write-Output "✓ Post-update script path '${{ inputs.post-update-script }}' is valid"
 
-    - name: Validate GitHub token
+    - name: Validate authentication
       shell: pwsh
       env:
         GH_TOKEN: ${{ inputs.api-token }}
+        SSH_KEY: ${{ inputs.ssh-key }}
       run: |
-        if ([string]::IsNullOrEmpty($env:GH_TOKEN)) {
-          Write-Output "::error::GitHub token is empty. Please verify the token is passed correctly."
+        $hasToken = -not [string]::IsNullOrEmpty($env:GH_TOKEN)
+        $hasSshKey = -not [string]::IsNullOrEmpty($env:SSH_KEY)
+
+        if (-not $hasToken -and -not $hasSshKey) {
+          Write-Output "::error::Either api-token or ssh-key must be provided for authentication."
           exit 1
         }
 
-        if ($env:GH_TOKEN -match '-----BEGIN') {
-          Write-Output "::error::The provided token appears to be an SSH private key, not a GitHub token."
-          Write-Output "::error::The api-token input requires a GitHub Personal Access Token (PAT) or GITHUB_TOKEN."
-          Write-Output "::error::SSH keys should be configured separately using deploy keys or ssh-key inputs."
+        if ($hasToken -and $hasSshKey) {
+          Write-Output "::error::Both api-token and ssh-key were provided. Please provide only one."
           exit 1
         }
 
-        if ($env:GH_TOKEN -match '\s') {
-          $tokenLength = $env:GH_TOKEN.Length
-          $whitespaceMatch = [regex]::Match($env:GH_TOKEN, '\s')
-          $position = $whitespaceMatch.Index
-          $char = $whitespaceMatch.Value
-          $charName = switch ($char) {
-            "`n" { "newline (LF)" }
-            "`r" { "carriage return (CR)" }
-            "`t" { "tab" }
-            " " { "space" }
-            default { "whitespace character (code: $([int][char]$char))" }
-          }
-          Write-Output "::error::GitHub token contains whitespace at position $position of $tokenLength characters: $charName"
-          Write-Output "::error::This suggests the token secret may be malformed. Check for extra newlines when setting the secret."
+        if ($hasToken -and $env:GH_TOKEN -match '-----BEGIN') {
+          Write-Output "::error::The api-token input appears to contain an SSH private key."
+          Write-Output "::error::Please use the ssh-key input for SSH authentication instead of api-token."
           exit 1
         }
 
-        # Check token scopes (works for classic PATs only)
-        $headers = curl -sS -I -H "Authorization: token $env:GH_TOKEN" https://api.github.com 2>&1
-        $scopeLine = $headers | Select-String -Pattern '^x-oauth-scopes:' -CaseSensitive:$false
-        if ($scopeLine) {
-          $scopes = $scopeLine -replace '^x-oauth-scopes:\s*', '' -replace '\r', ''
-          if ([string]::IsNullOrWhiteSpace($scopes)) {
-            Write-Output "::warning::Token has no scopes. If using a fine-grained PAT, ensure it has Contents (write) and Pull Requests (write) permissions."
-          } else {
-            Write-Output "Token scopes: $scopes"
-            if ($scopes -notmatch '\brepo\b' -and $scopes -notmatch '\bpublic_repo\b') {
-              Write-Output "::warning::Token may be missing 'repo' or 'public_repo' scope. This may cause issues with private repositories."
+        # Token-specific validation
+        if ($hasToken) {
+          if ($env:GH_TOKEN -match '\s') {
+            $tokenLength = $env:GH_TOKEN.Length
+            $whitespaceMatch = [regex]::Match($env:GH_TOKEN, '\s')
+            $position = $whitespaceMatch.Index
+            $char = $whitespaceMatch.Value
+            $charName = switch ($char) {
+              "`n" { "newline (LF)" }
+              "`r" { "carriage return (CR)" }
+              "`t" { "tab" }
+              " " { "space" }
+              default { "whitespace character (code: $([int][char]$char))" }
             }
+            Write-Output "::error::GitHub token contains whitespace at position $position of $tokenLength characters: $charName"
+            Write-Output "::error::This suggests the token secret may be malformed. Check for extra newlines when setting the secret."
+            exit 1
           }
+
+          # Check token scopes (works for classic PATs only)
+          $headers = curl -sS -I -H "Authorization: token $env:GH_TOKEN" https://api.github.com 2>&1
+          $scopeLine = $headers | Select-String -Pattern '^x-oauth-scopes:' -CaseSensitive:$false
+          if ($scopeLine) {
+            $scopes = $scopeLine -replace '^x-oauth-scopes:\s*', '' -replace '\r', ''
+            if ([string]::IsNullOrWhiteSpace($scopes)) {
+              Write-Output "::warning::Token has no scopes. If using a fine-grained PAT, ensure it has Contents (write) and Pull Requests (write) permissions."
+            } else {
+              Write-Output "Token scopes: $scopes"
+              if ($scopes -notmatch '\brepo\b' -and $scopes -notmatch '\bpublic_repo\b') {
+                Write-Output "::warning::Token may be missing 'repo' or 'public_repo' scope. This may cause issues with private repositories."
+              }
+            }
+          } else {
+            Write-Output "::notice::Could not detect token scopes (this is normal for fine-grained PATs). Ensure token has Contents (write) and Pull Requests (write) permissions."
+          }
+
+          # Check token validity and access
+          gh api repos/${{ github.repository }} --silent 2>&1 | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "::error::GitHub token validation failed. Please verify:"
+            Write-Output "  1. Token is not empty or malformed"
+            Write-Output "  2. Token has not expired"
+            Write-Output "  3. Token has an expiration date set"
+            Write-Output "  4. Token has 'repo' and 'workflow' scopes"
+            exit 1
+          }
+
+          Write-Output "✓ GitHub token is valid and has access to this repository"
         } else {
-          Write-Output "::notice::Could not detect token scopes (this is normal for fine-grained PATs). Ensure token has Contents (write) and Pull Requests (write) permissions."
+          Write-Output "✓ Using SSH key authentication"
         }
-
-        # Check token validity and access
-        gh api repos/${{ github.repository }} --silent 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-          Write-Output "::error::GitHub token validation failed. Please verify:"
-          Write-Output "  1. Token is not empty or malformed"
-          Write-Output "  2. Token has not expired"
-          Write-Output "  3. Token has an expiration date set"
-          Write-Output "  4. Token has 'repo' and 'workflow' scopes"
-          exit 1
-        }
-
-        Write-Output "✓ GitHub token is valid and has access to this repository"
 
     - name: Configure git credentials
+      if: ${{ inputs.api-token != '' }}
       shell: pwsh
       env:
         GH_TOKEN: ${{ inputs.api-token }}
@@ -210,7 +229,8 @@ runs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ inputs.api-token }}
+        token: ${{ inputs.api-token || github.token }}
+        ssh-key: ${{ inputs.ssh-key }}
         ref: ${{ inputs.target-branch || github.ref }}
         path: caller-repo
 
@@ -349,7 +369,8 @@ runs:
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.existing-pr.outputs.url == '') && ( steps.root.outputs.changed == 'false') }}
       uses: actions/checkout@v4
       with:
-        token: ${{ inputs.api-token }}
+        token: ${{ inputs.api-token || github.token }}
+        ssh-key: ${{ inputs.ssh-key }}
         ref: ${{ inputs.target-branch || github.ref }}
         path: caller-repo
 
