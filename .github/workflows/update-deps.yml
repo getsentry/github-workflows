@@ -1,4 +1,4 @@
-name: Update Danger JS
+name: Update dependencies
 
 on:
   workflow_dispatch:
