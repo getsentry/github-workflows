@@ -16,7 +16,7 @@ param(
     [string] $GhTitlePattern = '',
     # Specific version - if passed, no discovery is performed and the version is set directly
     [string] $Tag = '',
-    # Tag that the dependency was before update - should be only passed if $Tag is set. Necessary for PostUpdateScript.
+    # Version that the dependency was on before the update - should be only passed if $Tag is set. Necessary for PostUpdateScript.
     [string] $OriginalTag = '',
     # Optional post-update script to run after successful dependency update
     # The script receives the original and new version as arguments
