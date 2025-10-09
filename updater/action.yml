@@ -128,7 +128,19 @@ runs:
         }
 
         if ($env:GH_TOKEN -match '\s') {
-          Write-Output "::error::GitHub token contains whitespace characters (newlines, spaces, etc). This suggests the token secret may be malformed."
+          $tokenLength = $env:GH_TOKEN.Length
+          $whitespaceMatch = [regex]::Match($env:GH_TOKEN, '\s')
+          $position = $whitespaceMatch.Index
+          $char = $whitespaceMatch.Value
+          $charName = switch ($char) {
+            "`n" { "newline (LF)" }
+            "`r" { "carriage return (CR)" }
+            "`t" { "tab" }
+            " " { "space" }
+            default { "whitespace character (code: $([int][char]$char))" }
+          }
+          Write-Output "::error::GitHub token contains whitespace at position $position of $tokenLength characters: $charName"
+          Write-Output "::error::This suggests the token secret may be malformed. Check for extra newlines when setting the secret."
           exit 1
         }
 
