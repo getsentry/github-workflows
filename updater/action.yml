@@ -132,6 +132,7 @@ runs:
           exit 1
         }
 
+        # Check token validity and access
         gh api repos/${{ github.repository }} --silent 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
           Write-Output "::error::GitHub token validation failed. Please verify:"
@@ -142,6 +143,24 @@ runs:
           Write-Output "  5. Token syntax is correct: "'${{ secrets.TOKEN_NAME }}'"
           exit 1
         }
+
+        # Check token scopes (works for classic PATs only)
+        $headers = curl -sS -I -H "Authorization: token $env:GH_TOKEN" https://api.github.com 2>&1
+        $scopeLine = $headers | Select-String -Pattern '^x-oauth-scopes:' -CaseSensitive:$false
+        if ($scopeLine) {
+          $scopes = $scopeLine -replace '^x-oauth-scopes:\s*', '' -replace '\r', ''
+          if ([string]::IsNullOrWhiteSpace($scopes)) {
+            Write-Output "::warning::Token has no scopes. If using a fine-grained PAT, ensure it has Contents (write) and Pull Requests (write) permissions."
+          } else {
+            Write-Output "Token scopes: $scopes"
+            if ($scopes -notmatch '\brepo\b' -and $scopes -notmatch '\bpublic_repo\b') {
+              Write-Output "::warning::Token may be missing 'repo' or 'public_repo' scope. This may cause issues with private repositories."
+            }
+          }
+        } else {
+          Write-Output "::notice::Could not detect token scopes (this is normal for fine-grained PATs). Ensure token has Contents (write) and Pull Requests (write) permissions."
+        }
+
         Write-Output "✓ GitHub token is valid and has access to this repository"
 
     - name: Configure git credentials
