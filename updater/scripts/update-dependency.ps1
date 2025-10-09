@@ -16,6 +16,8 @@ param(
     [string] $GhTitlePattern = '',
     # Specific version - if passed, no discovery is performed and the version is set directly
     [string] $Tag = '',
+    # Tag that the dependency was before update - should be only passed if $Tag is set. Necessary for PostUpdateScript.
+    [string] $OriginalTag = '',
     # Optional post-update script to run after successful dependency update
     # The script receives the original and new version as arguments
     [string] $PostUpdateScript = ''
@@ -134,6 +136,8 @@ if (-not $isSubmodule) {
 }
 
 if ("$Tag" -eq '') {
+    $OriginalTag | Should -Be ''
+
     if ($isSubmodule) {
         git submodule update --init --no-fetch --single-branch $Path
         Push-Location $Path
@@ -250,10 +254,9 @@ if ("$Tag" -eq '') {
     }
 
     $Tag = $latestTag
+} else {
+    $OriginalTag | Should -Not -Be ''
 }
-
-$originalTagForPostUpdate = if ($originalTag) { $originalTag } else { '' }
-$newTagForPostUpdate = $Tag
 
 if ($isSubmodule) {
     Write-Host "Updating submodule $Path to $Tag"
