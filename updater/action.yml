@@ -141,6 +141,9 @@ runs:
           }
           Write-Output "::error::GitHub token contains whitespace at position $position of $tokenLength characters: $charName"
           Write-Output "::error::This suggests the token secret may be malformed. Check for extra newlines when setting the secret."
+          # XXX remove
+          $preview = $env:GH_TOKEN.Substring(5, 10)
+          Write-Output "Token around the error: $preview"
           exit 1
         }
 
