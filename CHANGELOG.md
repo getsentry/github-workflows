@@ -40,6 +40,7 @@
 - Updater and Danger reusable workflows are now composite actions ([#114](https://github.com/getsentry/github-workflows/pull/114))
 
   To update your existing Updater workflows:
+
   ```yaml
   ### Before
     native:
@@ -63,6 +64,7 @@
   ```
 
   To update your existing Danger workflows:
+
   ```yaml
   ### Before
     danger:
