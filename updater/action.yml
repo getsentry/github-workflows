@@ -117,6 +117,30 @@ runs:
         }
         Write-Output "✓ Post-update script path '${{ inputs.post-update-script }}' is valid"
 
+    - name: Validate GitHub token
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.api-token }}
+      run: |
+        if ! gh api repos/${{ github.repository }} --silent; then
+          echo "::error::GitHub token validation failed. Please verify:"
+          echo "  1. Token has not expired"
+          echo "  2. Token has an expiration date set"
+          echo "  3. Token has 'repo' and 'workflow' scopes"
+          echo "  4. Token syntax is correct: \${{ secrets.TOKEN_NAME }}"
+          exit 1
+        fi
+        echo "✓ GitHub token is valid and has access to this repository"
+
+    - name: Configure git credentials
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.api-token }}
+      run: |
+        git config --global credential.https://github.com.username git
+        git config --global credential.https://github.com.password "$GH_TOKEN"
+        echo "✓ Git credentials configured for GitHub operations"
+
     # What we need to accomplish:
     # * update to the latest tag
     # * create a PR
