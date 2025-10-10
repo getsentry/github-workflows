@@ -29,6 +29,8 @@ jobs:
   * type: string
   * required: false
   * default: `${{ github.token }}`
+  * extra-dangerfile: Path to an additional dangerfile to run custom checks.
+  * extra-install-packages: Additional packages that are required by the extra-dangerfile, you can find a list of packages here: https://packages.debian.org/search?suite=bookworm&keywords=curl.
 
 ## Outputs
 
