@@ -48,7 +48,7 @@ runs:
           exit 1
         fi
 
-    # Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
+# Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
     - name: Setup container
       shell: bash
       run: |
@@ -64,6 +64,7 @@ runs:
           -e GITHUB_TOKEN="${{ inputs.api-token }}" \
           -e DANGER_DISABLE_TRANSPILATION="true" \
           -e EXTRA_DANGERFILE_INPUT="${{ inputs.extra-dangerfile }}" \
+          ghcr.io/danger/danger-js:${{ steps.config.outputs.version }} \
           ghcr.io/danger/danger-js:${{ steps.config.outputs.version }} \
           -c "sleep infinity"
 
