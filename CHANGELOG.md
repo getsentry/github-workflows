@@ -1,6 +1,14 @@
 # Changelog
 
-## 3.1.0
+## Unreleased
+
+### Dependencies
+
+- Bump Workflow args test script from latest to v3.1.0 ([#135](https://github.com/getsentry/github-workflows/pull/135))
+  - [changelog](https://github.com/getsentry/github-workflows/blob/main/CHANGELOG.md#310)
+  - [diff](https://github.com/getsentry/github-workflows/compare/latest...3.1.0)
+
+## 2.14.0
 
 ### Features
 
