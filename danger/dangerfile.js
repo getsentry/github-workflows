@@ -1,4 +1,5 @@
 const { getFlavorConfig, extractPRFlavor } = require('./dangerfile-utils.js');
+const fs = require('fs');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -186,10 +187,36 @@ async function checkActionsArePinned() {
   }
 }
 
+async function CheckFromExternalChecks() {
+  // Get the external dangerfile path from environment variable (passed via workflow input)
+  // Priority: EXTRA_DANGERFILE (absolute path) -> EXTRA_DANGERFILE_INPUT (relative path)
+  const customPath = process.env.EXTRA_DANGERFILE || process.env.EXTRA_DANGERFILE_INPUT;
+  console.log(`::debug:: Checking from external checks: ${customPath}`);
+  if (customPath) {
+    try {
+      const extraModule = require(`/github/workspace/${customPath}`);
+      await extraModule({
+        fail: fail, 
+        warn: warn,
+        message: message, 
+        markdown: markdown,
+        danger: danger,
+      });
+    } catch (err) {
+      if (err.message && err.message.includes('Cannot use import statement outside a module')) {
+        warn(`External dangerfile uses ES6 imports. Please convert to CommonJS syntax (require/module.exports) or use .mjs extension with proper module configuration.\nFile: ${customPath}`);
+      } else {
+        warn(`Could not load custom Dangerfile: ${customPath}\n${err}`);
+      }
+    }
+  }
+}
+
 async function checkAll() {
   await checkDocs();
   await checkChangelog();
   await checkActionsArePinned();
+  await CheckFromExternalChecks();
 }
 
 schedule(checkAll);
