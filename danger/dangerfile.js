@@ -186,10 +186,48 @@ async function checkActionsArePinned() {
   }
 }
 
+async function CheckFromExternalChecks() {
+  // Get the external dangerfile path from environment variable (passed via workflow input)
+  // Priority: EXTRA_DANGERFILE (absolute path) -> EXTRA_DANGERFILE_INPUT (relative path)
+  const extraDangerFilePath = process.env.EXTRA_DANGERFILE || process.env.EXTRA_DANGERFILE_INPUT;
+  console.log(`::debug:: Checking from external checks: ${extraDangerFilePath}`);
+  if (extraDangerFilePath) {
+    try {
+      if (extraDangerFilePath.contains(workspaceDir)) {
+        fail(`Invalid dangerfile path: ${customPath}. Path traversal is not allowed.`);
+        return;
+      }      
+
+      const workspaceDir = '/github/workspace';
+      const customPath = `${workspaceDir}${extraDangerFilePath}`;
+      
+      const extraModule = require(customPath);
+      if (typeof extraModule !== 'function') { 
+        warn(`EXTRA_DANGERFILE must export a function at ${customPath}`); 
+        return; 
+      }
+      await extraModule({
+        fail: fail, 
+        warn: warn,
+        message: message, 
+        markdown: markdown,
+        danger: danger,
+      });
+    } catch (err) {
+      if (err.message && err.message.includes('Cannot use import statement outside a module')) {
+        warn(`External dangerfile uses ES6 imports. Please convert to CommonJS syntax (require/module.exports) or use .mjs extension with proper module configuration.\nFile: ${extraDangerFilePath}`);
+      } else {
+        warn(`Could not load custom Dangerfile: ${extraDangerFilePath}\n${err}`);
+      }
+    }
+  }
+}
+
 async function checkAll() {
   await checkDocs();
   await checkChangelog();
   await checkActionsArePinned();
+  await CheckFromExternalChecks();
 }
 
 schedule(checkAll);
