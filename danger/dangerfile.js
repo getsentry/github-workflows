@@ -195,12 +195,13 @@ async function CheckFromExternalChecks() {
     try {
       const workspaceDir = '/github/workspace';
       const customPath = path.join('/github/workspace', extraDangerFilePath);
+
       if (!customPath.startsWith(workspaceDir)) {
         fail(`Invalid dangerfile path: ${customPath}. Path traversal is not allowed.`);
         return;
       }      
       
-      const extraModule = require(`/github/workspace/${customPath}`);
+      const extraModule = require(customPath);
       if (typeof extraModule !== 'function') { 
         warn(`EXTRA_DANGERFILE must export a function at ${customPath}`); 
         return; 
@@ -216,7 +217,7 @@ async function CheckFromExternalChecks() {
       if (err.message && err.message.includes('Cannot use import statement outside a module')) {
         warn(`External dangerfile uses ES6 imports. Please convert to CommonJS syntax (require/module.exports) or use .mjs extension with proper module configuration.\nFile: ${customPath}`);
       } else {
-        warn(`Could not load custom Dangerfile: ${customPath}\n${err}`);
+        warn(`Could not load custom Dangerfile: ${extraDangerFilePath}\n${err}`);
       }
     }
   }
