@@ -194,6 +194,7 @@ async function CheckFromExternalChecks() {
   if (extraDangerFilePath) {
     try {
       const workspaceDir = '/github/workspace';
+      const path = require('path');
       const customPath = path.join('/github/workspace', extraDangerFilePath);
 
       if (!customPath.startsWith(workspaceDir)) {
