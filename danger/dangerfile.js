@@ -1,5 +1,4 @@
 const { getFlavorConfig, extractPRFlavor } = require('./dangerfile-utils.js');
-const fs = require('fs');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -190,11 +189,22 @@ async function checkActionsArePinned() {
 async function CheckFromExternalChecks() {
   // Get the external dangerfile path from environment variable (passed via workflow input)
   // Priority: EXTRA_DANGERFILE (absolute path) -> EXTRA_DANGERFILE_INPUT (relative path)
-  const customPath = process.env.EXTRA_DANGERFILE || process.env.EXTRA_DANGERFILE_INPUT;
-  console.log(`::debug:: Checking from external checks: ${customPath}`);
-  if (customPath) {
+  const extraDangerFilePath = process.env.EXTRA_DANGERFILE || process.env.EXTRA_DANGERFILE_INPUT;
+  console.log(`::debug:: Checking from external checks: ${extraDangerFilePath}`);
+  if (extraDangerFilePath) {
     try {
+      const workspaceDir = '/github/workspace';
+      const customPath = path.join('/github/workspace', extraDangerFilePath);
+      if (!customPath.startsWith(workspaceDir)) {
+        fail(`Invalid dangerfile path: ${customPath}. Path traversal is not allowed.`);
+        return;
+      }      
+      
       const extraModule = require(`/github/workspace/${customPath}`);
+      if (typeof extraModule !== 'function') { 
+        warn(`EXTRA_DANGERFILE must export a function at ${customPath}`); 
+        return; 
+      }
       await extraModule({
         fail: fail, 
         warn: warn,

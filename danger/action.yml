@@ -65,7 +65,6 @@ runs:
           -e DANGER_DISABLE_TRANSPILATION="true" \
           -e EXTRA_DANGERFILE_INPUT="${{ inputs.extra-dangerfile }}" \
           ghcr.io/danger/danger-js:${{ steps.config.outputs.version }} \
-          ghcr.io/danger/danger-js:${{ steps.config.outputs.version }} \
           -c "sleep infinity"
 
     - name: Setup additional packages
