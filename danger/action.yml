@@ -81,5 +81,4 @@ runs:
       id: danger
       shell: bash
       run: |
-        trap "docker rm -f danger || true" EXIT
         docker exec --user $(id -u) danger danger ci --fail-on-errors --dangerfile ${{ github.action_path }}/dangerfile.js
