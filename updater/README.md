@@ -107,6 +107,28 @@ jobs:
           name: Cocoa SDK
           post-update-script: scripts/post-update.sh  # Receives args: $1=old version, $2=new version
           api-token: ${{ secrets.CI_DEPLOY_KEY }}
+
+  # Authentication with SSH deploy key (git operations via SSH, API via default token)
+  cocoa-ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@v3
+        with:
+          path: modules/sentry-cocoa
+          name: Cocoa SDK
+          ssh-key: ${{ secrets.CI_DEPLOY_KEY }}
+
+  # Authentication with both SSH key and API token (git via SSH, API via token)
+  # This is useful when you need CI to run on created PRs and use a deploy key
+  cocoa-ssh-and-token:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: getsentry/github-workflows/updater@v3
+        with:
+          path: modules/sentry-cocoa
+          name: Cocoa SDK
+          ssh-key: ${{ secrets.CI_DEPLOY_KEY }}
+          api-token: ${{ secrets.CI_GITHUB_TOKEN }}
 ```
 
 ## Inputs
@@ -153,11 +175,53 @@ jobs:
   * type: string
   * required: false
   * default: ''
-* `api-token`: Token for the repo. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`.
+* `api-token`: GitHub API token for repository operations. Can be passed in using `${{ secrets.GITHUB_TOKEN }}`.
   If you provide the usual `${{ github.token }}`, no followup CI will run on the created PR.
-  If you want CI to run on the PRs created by the Updater, you need to provide custom user-specific auth token.
+  If you want CI to run on the PRs created by the Updater, you need to provide a custom user-specific auth token.
+  Not required if `ssh-key` is provided, but can be used together with `ssh-key` for GitHub API operations.
   * type: string
-  * required: true
+  * required: false
+  * default: ''
+* `ssh-key`: SSH private key for repository authentication (e.g., deploy key). Can be used alone or together with `api-token`.
+  When used alone, the action will use SSH for git operations and fall back to the default GitHub token for API operations.
+  When used with `api-token`, SSH is used for git operations and the token is used for GitHub API operations.
+  * type: string
+  * required: false
+  * default: ''
+
+## Authentication
+
+The updater supports multiple authentication methods. Choose based on your requirements:
+
+### Option 1: API Token Only (Default)
+
+```yaml
+api-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+* **Use when**: Standard GitHub token authentication is sufficient
+* **Limitation**: If using `${{ github.token }}`, CI workflows won't run on created PRs
+* **Solution**: Use a personal access token or GitHub App token to enable CI on PRs
+
+### Option 2: SSH Key Only
+
+```yaml
+ssh-key: ${{ secrets.CI_DEPLOY_KEY }}
+```
+
+* **Use when**: Repository access requires SSH (e.g., deploy keys)
+* **Behavior**: Git operations use SSH (CI will run on PRs since commits are made with SSH key), API operations use default GitHub token
+
+### Option 3: SSH Key + API Token (Recommended for Deploy Keys)
+
+```yaml
+ssh-key: ${{ secrets.CI_DEPLOY_KEY }}
+api-token: ${{ secrets.CI_GITHUB_TOKEN }}
+```
+
+* **Use when**: You need both deploy key access AND want to control the API token used for GitHub operations
+* **Behavior**: Git operations use SSH deploy key, API operations use provided token
+* **Benefits**: Full control over authentication for both git and API operations
 
 ### Post-Update Script Example
 
