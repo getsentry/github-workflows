@@ -26,8 +26,10 @@ runs:
   steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      env:
+        API_TOKEN: ${{ inputs.api-token }}
       with:
-        token: ${{ inputs.api-token }}
+        token: ${{ env.API_TOKEN }}
         fetch-depth: 0
 
     # Read the Danger version from the properties file
@@ -40,8 +42,10 @@ runs:
     - name: Validate package names
       if: ${{ inputs.extra-install-packages }}
       shell: bash
+      env:
+        EXTRA_INSTALL_PACKAGES: ${{ inputs.extra-install-packages }}
       run: |
-        packages="${{ inputs.extra-install-packages }}"
+        packages="$EXTRA_INSTALL_PACKAGES"
         # Only allow alphanumeric characters, hyphens, periods, plus signs, underscores, and spaces
         if ! echo "$packages" | grep -E '^[a-zA-Z0-9._+-]+( [a-zA-Z0-9._+-]+)*$' > /dev/null; then
           echo "::error::Invalid package names in extra-install-packages. Only alphanumeric characters, hyphens, periods, plus signs, underscores, and spaces are allowed."
@@ -51,6 +55,9 @@ runs:
     # Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
     - name: Setup container
       shell: bash
+      env:
+        API_TOKEN: ${{ inputs.api-token }}
+        EXTRA_DANGERFILE: ${{ inputs.extra-dangerfile }}
       run: |
         # Start a detached container with all necessary volumes and environment variables
         docker run -td --name danger \
@@ -61,19 +68,21 @@ runs:
           --workdir /github/workspace \
           --user $(id -u) \
           -e "INPUT_ARGS" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e GITHUB_ACTIONS=true -e CI=true \
-          -e GITHUB_TOKEN="${{ inputs.api-token }}" \
+          -e GITHUB_TOKEN="$API_TOKEN" \
           -e DANGER_DISABLE_TRANSPILATION="true" \
-          -e EXTRA_DANGERFILE_INPUT="${{ inputs.extra-dangerfile }}" \
+          -e EXTRA_DANGERFILE_INPUT="$EXTRA_DANGERFILE" \
           ghcr.io/danger/danger-js:${{ steps.config.outputs.version }} \
           -c "sleep infinity"
 
     - name: Setup additional packages
       if: ${{ inputs.extra-install-packages }}
       shell: bash
+      env:
+        EXTRA_INSTALL_PACKAGES: ${{ inputs.extra-install-packages }}
       run: |
         docker exec --user root danger apt-get update
-        echo "Installing packages: ${{ inputs.extra-install-packages }}"
-        docker exec --user root danger sh -c "set -e && apt-get install -y --no-install-recommends ${{ inputs.extra-install-packages }}"
+        echo "Installing packages: $EXTRA_INSTALL_PACKAGES"
+        docker exec --user root danger sh -c "set -e && apt-get install -y --no-install-recommends $EXTRA_INSTALL_PACKAGES"
         echo "All additional packages installed successfully."
 
     - name: Run DangerJS

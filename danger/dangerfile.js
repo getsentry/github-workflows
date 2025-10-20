@@ -193,13 +193,13 @@ async function CheckFromExternalChecks() {
   console.log(`::debug:: Checking from external checks: ${extraDangerFilePath}`);
   if (extraDangerFilePath) {
     try {
-      if (extraDangerFilePath.contains(workspaceDir)) {
+      const workspaceDir = '/github/workspace';
+      const customPath = `${workspaceDir}/${extraDangerFilePath}`;
+      
+      if (extraDangerFilePath.indexOf('..') !== -1) {
         fail(`Invalid dangerfile path: ${customPath}. Path traversal is not allowed.`);
         return;
-      }      
-
-      const workspaceDir = '/github/workspace';
-      const customPath = `${workspaceDir}${extraDangerFilePath}`;
+      }
       
       const extraModule = require(customPath);
       if (typeof extraModule !== 'function') { 
