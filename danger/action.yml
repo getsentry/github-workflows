@@ -80,9 +80,8 @@ runs:
       env:
         EXTRA_INSTALL_PACKAGES: ${{ inputs.extra-install-packages }}
       run: |
-        docker exec --user root danger apt-get update
         echo "Installing packages: $EXTRA_INSTALL_PACKAGES"
-        docker exec --user root danger sh -c "set -e && apt-get install -y --no-install-recommends $EXTRA_INSTALL_PACKAGES"
+        docker exec --user root danger sh -c "set -e && apt-get update && apt-get install -y --no-install-recommends $EXTRA_INSTALL_PACKAGES"
         echo "All additional packages installed successfully."
 
     - name: Run DangerJS

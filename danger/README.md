@@ -37,8 +37,8 @@ jobs:
 
 * `extra-install-packages`: Additional packages that are required by the extra-dangerfile, you can find a list of packages here: https://packages.debian.org/search?suite=bookworm&keywords=curl.
   * type: string
-  required: false
-  default: ""
+  * required: false
+  * default: ""
 
 ## Outputs
 

@@ -186,7 +186,7 @@ async function checkActionsArePinned() {
   }
 }
 
-async function CheckFromExternalChecks() {
+async function checkFromExternalChecks() {
   // Get the external dangerfile path from environment variable (passed via workflow input)
   // Priority: EXTRA_DANGERFILE (absolute path) -> EXTRA_DANGERFILE_INPUT (relative path)
   const extraDangerFilePath = process.env.EXTRA_DANGERFILE || process.env.EXTRA_DANGERFILE_INPUT;
@@ -227,7 +227,7 @@ async function checkAll() {
   await checkDocs();
   await checkChangelog();
   await checkActionsArePinned();
-  await CheckFromExternalChecks();
+  await checkFromExternalChecks();
 }
 
 schedule(checkAll);
