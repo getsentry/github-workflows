@@ -194,13 +194,17 @@ async function checkFromExternalChecks() {
   if (extraDangerFilePath) {
     try {
       const workspaceDir = '/github/workspace';
-      const customPath = `${workspaceDir}/${extraDangerFilePath}`;
       
-      if (extraDangerFilePath.indexOf('..') !== -1) {
-        fail(`Invalid dangerfile path: ${customPath}. Path traversal is not allowed.`);
+      const path = require('path');
+      const fs = require('fs');
+      const customPath = path.join(workspaceDir, extraDangerFilePath);
+      // Ensure the resolved path is within workspace
+      const resolvedPath = fs.realpathSync(customPath);
+      if (!resolvedPath.startsWith(workspaceDir)) {
+        fail(`Invalid dangerfile path: ${extraDangerFilePath}. Must be within workspace.`);
         return;
       }
-      
+
       const extraModule = require(customPath);
       if (typeof extraModule !== 'function') { 
         warn(`EXTRA_DANGERFILE must export a function at ${customPath}`); 
