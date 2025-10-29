@@ -7,6 +7,14 @@ inputs:
     description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: false
     default: ${{ github.token }}
+  extra-dangerfile:
+    description: 'Path to additional dangerfile to run after the main checks'
+    type: string
+    required: false
+  extra-install-packages:
+    description: 'Additional apt packages to install in the DangerJS container (space-separated package names)'
+    type: string
+    required: false
 
 outputs:
   outcome:
@@ -28,19 +36,62 @@ runs:
       shell: pwsh
       run: Get-Content '${{ github.action_path }}/danger.properties' | Tee-Object $env:GITHUB_OUTPUT -Append
 
-    # Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
-    - name: Run DangerJS
-      id: danger
-      shell: bash
+    # Validate extra-install-packages to prevent code injection
+    - name: Validate package names
+      if: ${{ inputs.extra-install-packages }}
+      shell: pwsh
+      env:
+        EXTRA_INSTALL_PACKAGES: ${{ inputs.extra-install-packages }}
       run: |
-        docker run \
+        # Validate against Debian package naming rules: must start with alphanumeric,
+        # contain only lowercase letters, digits, hyphens, plus signs, periods
+        # Package names cannot start with hyphen or period, and must be reasonable length
+        foreach ($pkg in $env:EXTRA_INSTALL_PACKAGES -split '\s+') {
+          if ($pkg -notmatch '^[a-z0-9][a-z0-9.+-]{0,100}$') {
+            Write-Host "::error::Invalid package name '$pkg'. Debian packages must start with lowercase letter or digit and contain only lowercase letters, digits, hyphens, periods, and plus signs."
+            exit 1
+          }
+        }
+
+    # Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
+    - name: Setup container
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.api-token }}
+        EXTRA_DANGERFILE_INPUT: ${{ inputs.extra-dangerfile }}
+      run: |
+        # Start a detached container with all necessary volumes and environment variables
+        docker run -td --name danger \
+          --entrypoint /bin/bash \
           --volume ${{ github.workspace }}:/github/workspace \
           --volume ${{ github.action_path }}:${{ github.action_path }} \
           --volume ${{ github.event_path }}:${{ github.event_path }} \
           --workdir /github/workspace \
           --user $(id -u) \
           -e "INPUT_ARGS" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e GITHUB_ACTIONS=true -e CI=true \
-          -e GITHUB_TOKEN="${{ inputs.api-token }}" \
+          -e "GITHUB_TOKEN" \
           -e DANGER_DISABLE_TRANSPILATION="true" \
+          -e "EXTRA_DANGERFILE_INPUT" \
           ghcr.io/danger/danger-js:${{ steps.config.outputs.version }} \
-          --failOnErrors --dangerfile ${{ github.action_path }}/dangerfile.js
+          -c "sleep infinity"
+
+    - name: Setup additional packages
+      if: ${{ inputs.extra-install-packages }}
+      shell: bash
+      env:
+        EXTRA_INSTALL_PACKAGES: ${{ inputs.extra-install-packages }}
+      run: |
+        echo "Installing packages: $EXTRA_INSTALL_PACKAGES"
+        docker exec --user root danger sh -c "set -e && apt-get update && apt-get install -y --no-install-recommends $EXTRA_INSTALL_PACKAGES"
+        echo "All additional packages installed successfully."
+
+    - name: Run DangerJS
+      id: danger
+      shell: bash
+      run: |
+        docker exec --user $(id -u) danger danger ci --fail-on-errors --dangerfile ${{ github.action_path }}/dangerfile.js
+
+    - name: Cleanup container
+      if: always()
+      shell: bash
+      run: docker rm -f danger || true

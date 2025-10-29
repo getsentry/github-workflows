@@ -30,6 +30,16 @@ jobs:
   * required: false
   * default: `${{ github.token }}`
 
+* `extra-dangerfile`: Path to an additional dangerfile to run custom checks.
+  * type: string
+  * required: false
+  * default: ""
+
+* `extra-install-packages`: Additional packages that are required by the extra-dangerfile, you can find a list of packages here: https://packages.debian.org/search?suite=bookworm&keywords=curl.
+  * type: string
+  * required: false
+  * default: ""
+
 ## Outputs
 
 * `outcome`: Whether the Danger run finished successfully. Possible values are `success`, `failure`, `cancelled`, or `skipped`.
@@ -53,3 +63,17 @@ The Danger action runs the following checks:
 - **Cross-repo links**: Checks for proper formatting of links in changelog entries
 
 For detailed rule implementations, see [dangerfile.js](dangerfile.js).
+
+## Extra Danger File
+
+When using an extra dangerfile, the file must be inside the repository and written in CommonJS syntax. You can use the following snippet to export your dangerfile:
+
+```JavaScript
+module.exports = async function ({ fail, warn, message, markdown, danger }) {
+  ...
+  const gitUrl = danger.github.pr.head.repo.git_url;
+  ...
+  warn('...');
+}
+
+```

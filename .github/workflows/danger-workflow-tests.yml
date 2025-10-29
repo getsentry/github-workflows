@@ -34,3 +34,70 @@ jobs:
 
           Write-Host "✅ Danger PR analysis completed successfully!"
           Write-Host "ℹ️  Check the PR comments for any Danger findings"
+
+  # Test extra-dangerfile feature
+  extra-dangerfile-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run danger with extra dangerfile
+        id: danger-extra
+        uses: ./danger
+        with:
+          extra-dangerfile: '.github/test-dangerfile.js'
+
+      - name: Validate danger with extra-dangerfile outputs
+        env:
+          DANGER_OUTCOME: ${{ steps.danger-extra.outputs.outcome }}
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Validating Danger action with extra-dangerfile..."
+          Write-Host "Danger Outcome: '$env:DANGER_OUTCOME'"
+
+          # Validate that Danger ran successfully
+          $env:DANGER_OUTCOME | Should -Be "success"
+
+          Write-Host "✅ Danger with extra-dangerfile completed successfully!"
+
+  # Test extra-install-packages feature
+  extra-packages-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Create a test dangerfile that requires curl
+      - name: Create test dangerfile requiring curl
+        shell: bash
+        run: |
+          cat > .github/test-dangerfile-curl.js << 'EOF'
+          module.exports = async function ({ message, danger }) {
+            const { execSync } = require('child_process');
+            try {
+              const curlVersion = execSync('curl --version', { encoding: 'utf-8' });
+              message('✅ curl is available: ' + curlVersion.split('\n')[0]);
+            } catch (err) {
+              throw new Error('curl command not found - extra-install-packages failed');
+            }
+          };
+          EOF
+
+      - name: Run danger with extra packages
+        id: danger-packages
+        uses: ./danger
+        with:
+          extra-dangerfile: '.github/test-dangerfile-curl.js'
+          extra-install-packages: 'curl'
+
+      - name: Validate danger with extra-install-packages outputs
+        env:
+          DANGER_OUTCOME: ${{ steps.danger-packages.outputs.outcome }}
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Validating Danger action with extra-install-packages..."
+          Write-Host "Danger Outcome: '$env:DANGER_OUTCOME'"
+
+          # Validate that Danger ran successfully
+          $env:DANGER_OUTCOME | Should -Be "success"
+
+          Write-Host "✅ Danger with extra-install-packages completed successfully!"
