@@ -26,10 +26,8 @@ runs:
   steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      env:
-        API_TOKEN: ${{ inputs.api-token }}
       with:
-        token: ${{ env.API_TOKEN }}
+        token: ${{ inputs.api-token }}
         fetch-depth: 0
 
     # Read the Danger version from the properties file
@@ -41,16 +39,19 @@ runs:
     # Validate extra-install-packages to prevent code injection
     - name: Validate package names
       if: ${{ inputs.extra-install-packages }}
-      shell: bash
+      shell: pwsh
       env:
         EXTRA_INSTALL_PACKAGES: ${{ inputs.extra-install-packages }}
       run: |
-        packages="$EXTRA_INSTALL_PACKAGES"
-        # Only allow alphanumeric characters, hyphens, periods, plus signs, underscores, and spaces
-        if ! echo "$packages" | grep -E '^[a-zA-Z0-9._+-]+( [a-zA-Z0-9._+-]+)*$' > /dev/null; then
-          echo "::error::Invalid package names in extra-install-packages. Only alphanumeric characters, hyphens, periods, plus signs, underscores, and spaces are allowed."
-          exit 1
-        fi
+        # Validate against Debian package naming rules: must start with alphanumeric,
+        # contain only lowercase letters, digits, hyphens, plus signs, periods
+        # Package names cannot start with hyphen or period, and must be reasonable length
+        foreach ($pkg in $env:EXTRA_INSTALL_PACKAGES -split '\s+') {
+          if ($pkg -notmatch '^[a-z0-9][a-z0-9.+-]{0,100}$') {
+            Write-Host "::error::Invalid package name '$pkg'. Debian packages must start with lowercase letter or digit and contain only lowercase letters, digits, hyphens, periods, and plus signs."
+            exit 1
+          }
+        }
 
     # Using a pre-built docker image in GitHub container registry instead of NPM to reduce possible attack vectors.
     - name: Setup container
@@ -89,3 +90,8 @@ runs:
       shell: bash
       run: |
         docker exec --user $(id -u) danger danger ci --fail-on-errors --dangerfile ${{ github.action_path }}/dangerfile.js
+
+    - name: Cleanup container
+      if: always()
+      shell: bash
+      run: docker rm -f danger || true

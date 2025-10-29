@@ -202,7 +202,7 @@ async function checkFromExternalChecks() {
       const resolvedPath = fs.realpathSync(customPath);
       if (!resolvedPath.startsWith(workspaceDir)) {
         fail(`Invalid dangerfile path: ${extraDangerFilePath}. Must be within workspace.`);
-        return;
+        throw new Error('Security violation: dangerfile path outside workspace');
       }
 
       const extraModule = require(customPath);
