@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Danger - Add support for repository-specific dangerfiles ([#129](https://github.com/getsentry/github-workflows/pull/129))
+  - Add `extra-dangerfile` input parameter to run custom Danger checks alongside shared workflow checks
+  - Add `extra-install-packages` input to install additional apt packages required by custom dangerfiles
+  - Custom dangerfiles receive full Danger API access (`fail`, `warn`, `message`, `markdown`, `danger`)
+  - Enables repositories to extend Danger checks without overwriting shared workflow comments
+
 ## 3.1.0
 
 ### Features
