@@ -39,6 +39,36 @@ class InvokeSentryResult
         return $envelopes
     }
 
+    # Events are extracted from envelopes, each event body as single item.
+    # Note: Unlike Envelopes(), this method discards potential duplicates based on event_id.
+    [string[]]Events()
+    {
+        $ids = @()
+        $events = @()
+        foreach ($envelope in $this.Envelopes())
+        {
+            $lines = @($envelope -split "\\n")
+            try
+            {
+                $header = $lines[0].Trim() | ConvertFrom-Json
+                if ($header.event_id -and $ids -notcontains $header.event_id)
+                {
+                    $body = $lines | Select-Object -Skip 1 | Where-Object {
+                        try { ($_ | ConvertFrom-Json).event_id -eq $header.event_id }
+                        catch { $false }
+                    } | Select-Object -First 1
+                    if ($body)
+                    {
+                        $ids += $header.event_id
+                        $events += $body
+                    }
+                }
+            }
+            catch { }
+        }
+        return $events
+    }
+
     [bool]HasErrors()
     {
         return $this.ServerStdErr.Length -gt 0

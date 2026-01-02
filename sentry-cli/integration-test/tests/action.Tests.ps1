@@ -97,4 +97,25 @@ helloworld
         $result.Envelopes().Length | Should -Be 1
         $result.Envelopes()[0].Length | Should -Be 357
     }
+
+    It "discards duplicate events" {
+        $result = Invoke-SentryServer {
+            param([string]$url)
+            Invoke-WebRequest -Uri "$url/api/0/envelope" -Method Post -Body @'
+{"event_id":"9ec79c33ec9942ab8353589fcb2e04dc","dsn":"https://e12d836b15bb49d7bbf99e64295d995b:@sentry.io/42","sent_at":"2025-11-20T03:53:38.929Z"}
+{"type":"event","length":47,"content_type":"application/json"}
+{"event_id":"9ec79c33ec9942ab8353589fcb2e04dc"}
+'@
+            Invoke-WebRequest -Uri "$url/api/0/envelope" -Method Post -Body @'
+{"event_id":"9ec79c33ec9942ab8353589fcb2e04dc","dsn":"https://e12d836b15bb49d7bbf99e64295d995b:@sentry.io/42","sent_at":"2025-11-20T03:53:41.505Z"}
+{"type":"event","length":47,"content_type":"application/json"}
+{"event_id":"9ec79c33ec9942ab8353589fcb2e04dc"}
+'@
+        }
+
+        Should -ActualValue $result.HasErrors() -BeFalse
+        $result.Envelopes().Length | Should -Be 2
+        $result.Events().Length | Should -Be 1
+        $result.Events()[0].Length | Should -Be 47
+    }
 }
