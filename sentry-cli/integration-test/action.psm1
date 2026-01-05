@@ -33,7 +33,7 @@ class InvokeSentryResult
             }
             elseif ($null -ne $envelope)
             {
-                $envelope += $_ + "\n"
+                $envelope += $_ + "`n"
             }
         }
         return $envelopes
@@ -47,7 +47,7 @@ class InvokeSentryResult
         $events = @()
         foreach ($envelope in $this.Envelopes())
         {
-            $lines = @($envelope -split "\\n")
+            $lines = @($envelope -split "`n")
             $header = $lines[0].Trim() | ConvertFrom-Json
             $eventId = $header | Select-Object -ExpandProperty event_id -ErrorAction SilentlyContinue
             if ($eventId -and $ids -notcontains $eventId)
