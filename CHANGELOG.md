@@ -9,6 +9,7 @@
   - Add `extra-install-packages` input to install additional apt packages required by custom dangerfiles
   - Custom dangerfiles receive full Danger API access (`fail`, `warn`, `message`, `markdown`, `danger`)
   - Enables repositories to extend Danger checks without overwriting shared workflow comments
+- Sentry-CLI integration test action - Add `InvokeSentryResult::Events()` method to extract events from envelopes ([#137](https://github.com/getsentry/github-workflows/pull/137))
 
 ## 3.1.0
 
