@@ -53,7 +53,7 @@ class InvokeSentryResult
             if ($eventId -and $ids -notcontains $eventId)
             {
                 $body = $lines | Select-Object -Skip 1 | Where-Object {
-                    ($_ | ConvertFrom-Json | Select-Object -ExpandProperty event_id -ErrorAction SilentlyContinue) -eq $eventId
+                    $_ -like "*`"event_id`":`"$eventId`"*"
                 } | Select-Object -First 1
                 if ($body)
                 {
