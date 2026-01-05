@@ -70,8 +70,8 @@ helloworld
         }
         Should -ActualValue $result.HasErrors() -BeFalse
         $result.Envelopes().Length | Should -Be 2
-        $result.Envelopes()[0].Length | Should -Be 357
-        $result.Envelopes()[1].Length | Should -Be 84
+        $result.Envelopes()[0].Length | Should -Be 352
+        $result.Envelopes()[1].Length | Should -Be 81
     }
 
     It "collects gzip compressed envelopes" {
@@ -95,7 +95,7 @@ helloworld
         
         Should -ActualValue $result.HasErrors() -BeFalse
         $result.Envelopes().Length | Should -Be 1
-        $result.Envelopes()[0].Length | Should -Be 357
+        $result.Envelopes()[0].Length | Should -Be 352
     }
 
     It "discards duplicate events" {

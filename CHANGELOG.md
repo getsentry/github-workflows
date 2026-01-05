@@ -11,6 +11,10 @@
   - Enables repositories to extend Danger checks without overwriting shared workflow comments
 - Sentry-CLI integration test action - Add `InvokeSentryResult::Events()` method to extract events from envelopes ([#137](https://github.com/getsentry/github-workflows/pull/137))
 
+### Fixes
+
+- Sentry-CLI integration test action - Replace literal "\n" with newlines ([#138](https://github.com/getsentry/github-workflows/pull/138))
+
 ## 3.1.0
 
 ### Features
