@@ -102,6 +102,11 @@ helloworld
         $result = Invoke-SentryServer {
             param([string]$url)
             Invoke-WebRequest -Uri "$url/api/0/envelope" -Method Post -Body @'
+{"dsn":"https://e12d836b15bb49d7bbf99e64295d995b:@sentry.io/42","sent_at":"2025-11-20T03:52:42.924Z"}
+{"type":"session","length":42}
+{"sid":"66356dadc138458a8d5cd9e258065175"}
+'@
+            Invoke-WebRequest -Uri "$url/api/0/envelope" -Method Post -Body @'
 {"event_id":"9ec79c33ec9942ab8353589fcb2e04dc","dsn":"https://e12d836b15bb49d7bbf99e64295d995b:@sentry.io/42","sent_at":"2025-11-20T03:53:38.929Z"}
 {"type":"event","length":47,"content_type":"application/json"}
 {"event_id":"9ec79c33ec9942ab8353589fcb2e04dc"}
@@ -114,7 +119,7 @@ helloworld
         }
 
         Should -ActualValue $result.HasErrors() -BeFalse
-        $result.Envelopes().Length | Should -Be 2
+        $result.Envelopes().Length | Should -Be 3
         $result.Events().Length | Should -Be 1
         $result.Events()[0].Length | Should -Be 47
     }

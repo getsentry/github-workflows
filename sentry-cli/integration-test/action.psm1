@@ -48,23 +48,19 @@ class InvokeSentryResult
         foreach ($envelope in $this.Envelopes())
         {
             $lines = @($envelope -split "\\n")
-            try
+            $header = $lines[0].Trim() | ConvertFrom-Json
+            $eventId = $header | Select-Object -ExpandProperty event_id -ErrorAction SilentlyContinue
+            if ($eventId -and $ids -notcontains $eventId)
             {
-                $header = $lines[0].Trim() | ConvertFrom-Json
-                if ($header.event_id -and $ids -notcontains $header.event_id)
+                $body = $lines | Select-Object -Skip 1 | Where-Object {
+                    ($_ | ConvertFrom-Json | Select-Object -ExpandProperty event_id -ErrorAction SilentlyContinue) -eq $eventId
+                } | Select-Object -First 1
+                if ($body)
                 {
-                    $body = $lines | Select-Object -Skip 1 | Where-Object {
-                        try { ($_ | ConvertFrom-Json).event_id -eq $header.event_id }
-                        catch { $false }
-                    } | Select-Object -First 1
-                    if ($body)
-                    {
-                        $ids += $header.event_id
-                        $events += $body
-                    }
+                    $ids += $eventId
+                    $events += $body
                 }
             }
-            catch { }
         }
         return $events
     }
