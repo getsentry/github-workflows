@@ -43,6 +43,18 @@ Describe 'Invoke-SentryServer' {
         $result.UploadedDebugFiles() | Should -Be @('file3.dylib', 'file2.so', 'file1.dll')
     }
 
+    It "accepts chunked uploads" {
+        $result = Invoke-SentryServer {
+            param([string]$url)
+            $response = Invoke-WebRequest -Uri "$url/api/0/organizations/org/chunk-upload/"
+            $json = $response.Content | ConvertFrom-Json
+            @("debug_files", "pdbs", "sources", "portablepdbs", "proguard") | ForEach-Object {
+                $json.accept | Should -Contain $_
+            }
+        }
+        Should -ActualValue $result.HasErrors() -BeFalse
+    }
+
     It "collects proguard mapping" {
         $result = Invoke-SentryServer {
             Param([string]$url)
