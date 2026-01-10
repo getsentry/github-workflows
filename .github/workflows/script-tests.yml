@@ -20,7 +20,7 @@ jobs:
     steps:
       - run: git config --global core.autocrlf false
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v2
 
       - run: Invoke-Pester
         working-directory: updater
@@ -35,7 +35,7 @@ jobs:
       run:
         working-directory: danger
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v2
 
       - uses: actions/setup-node@v4
         with:
