@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Sentry-CLI integration test action - Accept chunked ProGuard uploads for compatibility with Sentry CLI 3.x ([#140](https://github.com/getsentry/github-workflows/pull/140))
+
 ## 3.2.0
 
 ### Features
@@ -14,7 +20,6 @@
 ### Fixes
 
 - Sentry-CLI integration test action - Replace literal "\n" with newlines ([#138](https://github.com/getsentry/github-workflows/pull/138))
-- Sentry-CLI integration test action - Accept chunked ProGuard uploads for compatibility with Sentry CLI 3.x ([#140](https://github.com/getsentry/github-workflows/pull/140))
 
 ## 3.1.0
 
