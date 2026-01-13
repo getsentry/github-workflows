@@ -5,6 +5,10 @@ on:
   # release:
   #  types: [published, edited]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   actions-tagger:
     runs-on: ubuntu-latest
