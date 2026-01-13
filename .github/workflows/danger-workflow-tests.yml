@@ -15,7 +15,7 @@ jobs:
   pr-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
 
       - name: Run danger action
         id: danger
@@ -39,7 +39,7 @@ jobs:
   extra-dangerfile-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
 
       - name: Run danger with extra dangerfile
         id: danger-extra
@@ -64,7 +64,7 @@ jobs:
   extra-packages-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
 
       # Create a test dangerfile that requires curl
       - name: Create test dangerfile requiring curl
