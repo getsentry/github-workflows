@@ -193,7 +193,7 @@ async function checkLegalBoilerplate() {
   const prAuthor = danger.github.pr.user.login;
   const repoOwner = danger.github.pr.base.repo.owner.login;
   
-  // Check if author is a member of the getsentry organization
+  // Check if author is a member of the repository's organization
   let isExternalContributor = false;
   try {
     // Check organization membership
@@ -269,6 +269,7 @@ async function checkLegalBoilerplate() {
       undefined
     );
     
+    const legalBoilerplateContent = extractLegalBoilerplateSection(prTemplateContent);
     markdown(`
 ### ⚖️ Legal Boilerplate Required
 
@@ -276,7 +277,9 @@ As an external contributor, your PR must include the legal boilerplate from the 
 
 Please add the following section to your PR description:
 
-${extractLegalBoilerplateSection(prTemplateContent)}
+\`\`\`markdown
+${legalBoilerplateContent}
+\`\`\`
 
 This is required to ensure proper intellectual property rights for your contributions.
     `.trim());
@@ -286,7 +289,11 @@ This is required to ensure proper intellectual property rights for your contribu
   console.log('::debug:: Legal boilerplate found in PR description ✓');
 }
 
-/// Extract the legal boilerplate section from the PR template
+/**
+ * Extract the legal boilerplate section from the PR template
+ * @param {string} templateContent - The PR template content
+ * @returns {string} The extracted legal boilerplate section
+ */
 function extractLegalBoilerplateSection(templateContent) {
   // Find the legal boilerplate section and extract it
   const lines = templateContent.split('\n');
