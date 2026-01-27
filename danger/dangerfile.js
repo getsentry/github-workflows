@@ -1,4 +1,4 @@
-const { getFlavorConfig, extractPRFlavor } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, extractLegalBoilerplateSection } = require('./dangerfile-utils.js');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -287,40 +287,6 @@ This is required to ensure proper intellectual property rights for your contribu
   }
   
   console.log('::debug:: Legal boilerplate found in PR description ✓');
-}
-
-/**
- * Extract the legal boilerplate section from the PR template
- * @param {string} templateContent - The PR template content
- * @returns {string} The extracted legal boilerplate section
- */
-function extractLegalBoilerplateSection(templateContent) {
-  // Find the legal boilerplate section and extract it
-  const lines = templateContent.split('\n');
-  let inLegalSection = false;
-  let legalSection = [];
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check if this line is the legal boilerplate header
-    if (/^#{1,6}\s+Legal\s+Boilerplate/i.test(line)) {
-      inLegalSection = true;
-      legalSection.push(line);
-      continue;
-    }
-    
-    // If we're in the legal section
-    if (inLegalSection) {
-      // Check if we've reached another header (end of legal section)
-      if (/^#{1,6}\s+/.test(line)) {
-        break;
-      }
-      legalSection.push(line);
-    }
-  }
-  
-  return legalSection.join('\n').trim();
 }
 
 async function checkFromExternalChecks() {
