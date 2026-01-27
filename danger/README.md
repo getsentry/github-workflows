@@ -61,6 +61,7 @@ The Danger action runs the following checks:
 - **Action pinning**: Verifies GitHub Actions are pinned to specific commits for security
 - **Conventional commits**: Validates commit message format and PR title conventions
 - **Cross-repo links**: Checks for proper formatting of links in changelog entries
+- **Legal boilerplate validation**: For external contributors (non-organization members), verifies the presence of required legal notices in PR descriptions when the repository's PR template includes a "Legal Boilerplate" section
 
 For detailed rule implementations, see [dangerfile.js](dangerfile.js).
 

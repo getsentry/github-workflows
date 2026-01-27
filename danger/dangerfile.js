@@ -186,6 +186,136 @@ async function checkActionsArePinned() {
   }
 }
 
+async function checkLegalBoilerplate() {
+  console.log('::debug:: Checking legal boilerplate requirements...');
+  
+  // Check if the PR author is an external contributor
+  const prAuthor = danger.github.pr.user.login;
+  const repoOwner = danger.github.pr.base.repo.owner.login;
+  
+  // Check if author is a member of the getsentry organization
+  let isExternalContributor = false;
+  try {
+    // Check organization membership
+    await danger.github.api.orgs.checkMembershipForUser({
+      org: repoOwner,
+      username: prAuthor
+    });
+    console.log(`::debug:: ${prAuthor} is a member of ${repoOwner} organization`);
+    isExternalContributor = false;
+  } catch (error) {
+    // If the API call fails with 404, the user is not a member
+    if (error.status === 404) {
+      console.log(`::debug:: ${prAuthor} is NOT a member of ${repoOwner} organization`);
+      isExternalContributor = true;
+    } else {
+      // For other errors (like permission issues), log and skip the check
+      console.log(`::warning:: Could not check organization membership for ${prAuthor}: ${error.message}`);
+      return;
+    }
+  }
+  
+  // If not an external contributor, skip the check
+  if (!isExternalContributor) {
+    console.log('::debug:: Skipping legal boilerplate check for organization member');
+    return;
+  }
+  
+  // Check if the PR template contains a legal boilerplate section
+  let prTemplateContent = null;
+  const possibleTemplatePaths = [
+    '.github/PULL_REQUEST_TEMPLATE.md',
+    '.github/pull_request_template.md',
+    'PULL_REQUEST_TEMPLATE.md',
+    'pull_request_template.md',
+    '.github/PULL_REQUEST_TEMPLATE/pull_request_template.md'
+  ];
+  
+  for (const templatePath of possibleTemplatePaths) {
+    try {
+      prTemplateContent = await danger.github.utils.fileContents(templatePath);
+      console.log(`::debug:: Found PR template at ${templatePath}`);
+      break;
+    } catch (error) {
+      // Template not found at this path, try next
+      continue;
+    }
+  }
+  
+  // If no template found, skip the check
+  if (!prTemplateContent) {
+    console.log('::debug:: No PR template found, skipping legal boilerplate check');
+    return;
+  }
+  
+  // Check if the template contains a legal boilerplate section
+  // Look for headers like "### Legal Boilerplate", "## Legal Boilerplate", etc.
+  const legalBoilerplateHeaderRegex = /^#{1,6}\s+Legal\s+Boilerplate/im;
+  if (!legalBoilerplateHeaderRegex.test(prTemplateContent)) {
+    console.log('::debug:: PR template does not contain a Legal Boilerplate section');
+    return;
+  }
+  
+  console.log('::debug:: PR template contains Legal Boilerplate section, checking PR description...');
+  
+  // Check if the PR description contains the legal boilerplate
+  const prBody = danger.github.pr.body || '';
+  
+  // Look for the legal boilerplate header in the PR description
+  if (!legalBoilerplateHeaderRegex.test(prBody)) {
+    fail(
+      'This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.',
+      undefined,
+      undefined
+    );
+    
+    markdown(`
+### ⚖️ Legal Boilerplate Required
+
+As an external contributor, your PR must include the legal boilerplate from the PR template.
+
+Please add the following section to your PR description:
+
+${extractLegalBoilerplateSection(prTemplateContent)}
+
+This is required to ensure proper intellectual property rights for your contributions.
+    `.trim());
+    return;
+  }
+  
+  console.log('::debug:: Legal boilerplate found in PR description ✓');
+}
+
+/// Extract the legal boilerplate section from the PR template
+function extractLegalBoilerplateSection(templateContent) {
+  // Find the legal boilerplate section and extract it
+  const lines = templateContent.split('\n');
+  let inLegalSection = false;
+  let legalSection = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Check if this line is the legal boilerplate header
+    if (/^#{1,6}\s+Legal\s+Boilerplate/i.test(line)) {
+      inLegalSection = true;
+      legalSection.push(line);
+      continue;
+    }
+    
+    // If we're in the legal section
+    if (inLegalSection) {
+      // Check if we've reached another header (end of legal section)
+      if (/^#{1,6}\s+/.test(line)) {
+        break;
+      }
+      legalSection.push(line);
+    }
+  }
+  
+  return legalSection.join('\n').trim();
+}
+
 async function checkFromExternalChecks() {
   // Get the external dangerfile path from environment variable (passed via workflow input)
   // Priority: EXTRA_DANGERFILE (absolute path) -> EXTRA_DANGERFILE_INPUT (relative path)
@@ -231,6 +361,7 @@ async function checkAll() {
   await checkDocs();
   await checkChangelog();
   await checkActionsArePinned();
+  await checkLegalBoilerplate();
   await checkFromExternalChecks();
 }
 
