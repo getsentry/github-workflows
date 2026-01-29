@@ -5,3 +5,6 @@ artifactProvider:
   name: none
 targets:
   - name: github
+    floatingTags:
+      - 'v{major}'
+      - 'latest'
