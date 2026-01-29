@@ -190,19 +190,15 @@ async function checkLegalBoilerplate() {
   console.log('::debug:: Checking legal boilerplate requirements...');
   
   // Check if the PR author is an external contributor using author_association
-  // Values: OWNER, MEMBER, COLLABORATOR, CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER, NONE
   const authorAssociation = danger.github.pr.author_association;
   const isExternalContributor = !['OWNER', 'MEMBER', 'COLLABORATOR'].includes(authorAssociation);
   
-  console.log(`::debug:: Author association: ${authorAssociation}, isExternal: ${isExternalContributor}`);
-  
-  // If not an external contributor, skip the check
   if (!isExternalContributor) {
     console.log('::debug:: Skipping legal boilerplate check for organization member/collaborator');
     return;
   }
   
-  // Check if the PR template contains a legal boilerplate section
+  // Find PR template
   let prTemplateContent = null;
   const possibleTemplatePaths = [
     '.github/PULL_REQUEST_TEMPLATE.md',
@@ -221,33 +217,28 @@ async function checkLegalBoilerplate() {
     }
   }
   
-  // If no template found, skip the check
   if (!prTemplateContent) {
     console.log('::debug:: No PR template found, skipping legal boilerplate check');
     return;
   }
   
-  // Check if the template contains a legal boilerplate section
-  // Look for headers like "### Legal Boilerplate", "## Legal Boilerplate", etc.
+  // Check if template contains a Legal Boilerplate section
   const legalBoilerplateHeaderRegex = /^#{1,6}\s+Legal\s+Boilerplate/im;
   if (!legalBoilerplateHeaderRegex.test(prTemplateContent)) {
     console.log('::debug:: PR template does not contain a Legal Boilerplate section');
     return;
   }
   
-  console.log('::debug:: PR template contains Legal Boilerplate section, checking PR description...');
-  
-  // Extract the legal boilerplate content from the template
+  // Extract expected boilerplate from template
   const expectedBoilerplate = extractLegalBoilerplateSection(prTemplateContent);
-  
-  // Check if the PR description contains the legal boilerplate
   const prBody = danger.github.pr.body || '';
   
-  // Look for the legal boilerplate header in the PR description
-  if (!legalBoilerplateHeaderRegex.test(prBody)) {
-    fail(
-      'This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.'
-    );
+  // Extract actual boilerplate from PR body
+  const actualBoilerplate = extractLegalBoilerplateSection(prBody);
+  
+  // Check if PR body contains the legal boilerplate section
+  if (!actualBoilerplate) {
+    fail('This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.');
     
     markdown(`
 ### ⚖️ Legal Boilerplate Required
@@ -265,22 +256,21 @@ This is required to ensure proper intellectual property rights for your contribu
     return;
   }
   
-  // Extract the actual boilerplate from PR body and verify it has meaningful content
-  const actualBoilerplate = extractLegalBoilerplateSection(prBody);
+  // Verify the actual boilerplate matches the expected one
+  // Normalize whitespace for comparison
+  const normalizeWhitespace = (str) => str.replace(/\s+/g, ' ').trim();
+  const expectedNormalized = normalizeWhitespace(expectedBoilerplate);
+  const actualNormalized = normalizeWhitespace(actualBoilerplate);
   
-  // Check if the boilerplate has substantial content (at least 50 characters beyond the header)
-  const contentWithoutHeader = actualBoilerplate.replace(/^#{1,6}\s+Legal\s+Boilerplate\s*/i, '').trim();
-  if (contentWithoutHeader.length < 50) {
-    fail(
-      'The legal boilerplate section in your PR description appears to be incomplete. Please include the full legal text from the PR template.'
-    );
+  if (expectedNormalized !== actualNormalized) {
+    fail('The legal boilerplate in your PR description does not match the template. Please ensure you include the complete, unmodified legal text from the PR template.');
     
     markdown(`
-### ⚖️ Incomplete Legal Boilerplate
+### ⚖️ Legal Boilerplate Mismatch
 
-Your PR contains a "Legal Boilerplate" header but the content appears incomplete.
+Your PR contains a "Legal Boilerplate" section, but it doesn't match the required text from the template.
 
-Please ensure you include the complete legal text from the template:
+Please replace it with the exact text from the template:
 
 \`\`\`markdown
 ${expectedBoilerplate}
@@ -291,7 +281,7 @@ This is required to ensure proper intellectual property rights for your contribu
     return;
   }
   
-  console.log('::debug:: Legal boilerplate found in PR description ✓');
+  console.log('::debug:: Legal boilerplate validated successfully ✓');
 }
 
 async function checkFromExternalChecks() {
