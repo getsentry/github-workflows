@@ -1,4 +1,4 @@
-const { getFlavorConfig, extractPRFlavor, extractLegalBoilerplateSection } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, extractLegalBoilerplateSection, checkLegalBoilerplate } = require('./dangerfile-utils.js');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -186,102 +186,8 @@ async function checkActionsArePinned() {
   }
 }
 
-async function checkLegalBoilerplate() {
-  console.log('::debug:: Checking legal boilerplate requirements...');
-  
-  // Check if the PR author is an external contributor using author_association
-  const authorAssociation = danger.github.pr.author_association;
-  const isExternalContributor = !['OWNER', 'MEMBER', 'COLLABORATOR'].includes(authorAssociation);
-  
-  if (!isExternalContributor) {
-    console.log('::debug:: Skipping legal boilerplate check for organization member/collaborator');
-    return;
-  }
-  
-  // Find PR template
-  let prTemplateContent = null;
-  const possibleTemplatePaths = [
-    '.github/PULL_REQUEST_TEMPLATE.md',
-    '.github/pull_request_template.md',
-    'PULL_REQUEST_TEMPLATE.md',
-    'pull_request_template.md',
-    '.github/PULL_REQUEST_TEMPLATE/pull_request_template.md'
-  ];
-  
-  for (const templatePath of possibleTemplatePaths) {
-    const content = await danger.github.utils.fileContents(templatePath);
-    if (content) {
-      prTemplateContent = content;
-      console.log(`::debug:: Found PR template at ${templatePath}`);
-      break;
-    }
-  }
-  
-  if (!prTemplateContent) {
-    console.log('::debug:: No PR template found, skipping legal boilerplate check');
-    return;
-  }
-  
-  // Check if template contains a Legal Boilerplate section
-  const legalBoilerplateHeaderRegex = /^#{1,6}\s+Legal\s+Boilerplate/im;
-  if (!legalBoilerplateHeaderRegex.test(prTemplateContent)) {
-    console.log('::debug:: PR template does not contain a Legal Boilerplate section');
-    return;
-  }
-  
-  // Extract expected boilerplate from template
-  const expectedBoilerplate = extractLegalBoilerplateSection(prTemplateContent);
-  const prBody = danger.github.pr.body || '';
-  
-  // Extract actual boilerplate from PR body
-  const actualBoilerplate = extractLegalBoilerplateSection(prBody);
-  
-  // Check if PR body contains the legal boilerplate section
-  if (!actualBoilerplate) {
-    fail('This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.');
-    
-    markdown(`
-### ⚖️ Legal Boilerplate Required
-
-As an external contributor, your PR must include the legal boilerplate from the PR template.
-
-Please add the following section to your PR description:
-
-\`\`\`markdown
-${expectedBoilerplate}
-\`\`\`
-
-This is required to ensure proper intellectual property rights for your contributions.
-    `.trim());
-    return;
-  }
-  
-  // Verify the actual boilerplate matches the expected one
-  // Normalize whitespace for comparison
-  const normalizeWhitespace = (str) => str.replace(/\s+/g, ' ').trim();
-  const expectedNormalized = normalizeWhitespace(expectedBoilerplate);
-  const actualNormalized = normalizeWhitespace(actualBoilerplate);
-  
-  if (expectedNormalized !== actualNormalized) {
-    fail('The legal boilerplate in your PR description does not match the template. Please ensure you include the complete, unmodified legal text from the PR template.');
-    
-    markdown(`
-### ⚖️ Legal Boilerplate Mismatch
-
-Your PR contains a "Legal Boilerplate" section, but it doesn't match the required text from the template.
-
-Please replace it with the exact text from the template:
-
-\`\`\`markdown
-${expectedBoilerplate}
-\`\`\`
-
-This is required to ensure proper intellectual property rights for your contributions.
-    `.trim());
-    return;
-  }
-  
-  console.log('::debug:: Legal boilerplate validated successfully ✓');
+async function checkLegalBoilerplateRule() {
+  await checkLegalBoilerplate({ danger, fail, markdown });
 }
 
 async function checkFromExternalChecks() {
@@ -329,7 +235,7 @@ async function checkAll() {
   await checkDocs();
   await checkChangelog();
   await checkActionsArePinned();
-  await checkLegalBoilerplate();
+  await checkLegalBoilerplateRule();
   await checkFromExternalChecks();
 }
 
