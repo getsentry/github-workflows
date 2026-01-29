@@ -189,35 +189,16 @@ async function checkActionsArePinned() {
 async function checkLegalBoilerplate() {
   console.log('::debug:: Checking legal boilerplate requirements...');
   
-  // Check if the PR author is an external contributor
-  const prAuthor = danger.github.pr.user.login;
-  const repoOwner = danger.github.pr.base.repo.owner.login;
+  // Check if the PR author is an external contributor using author_association
+  // Values: OWNER, MEMBER, COLLABORATOR, CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR, FIRST_TIMER, NONE
+  const authorAssociation = danger.github.pr.author_association;
+  const isExternalContributor = !['OWNER', 'MEMBER', 'COLLABORATOR'].includes(authorAssociation);
   
-  // Check if author is a member of the repository's organization
-  let isExternalContributor = false;
-  try {
-    // Check organization membership
-    await danger.github.api.orgs.checkMembershipForUser({
-      org: repoOwner,
-      username: prAuthor
-    });
-    console.log(`::debug:: ${prAuthor} is a member of ${repoOwner} organization`);
-    isExternalContributor = false;
-  } catch (error) {
-    // If the API call fails with 404, the user is not a member
-    if (error.status === 404) {
-      console.log(`::debug:: ${prAuthor} is NOT a member of ${repoOwner} organization`);
-      isExternalContributor = true;
-    } else {
-      // For other errors (like permission issues), log and skip the check
-      console.log(`::warning:: Could not check organization membership for ${prAuthor}: ${error.message}`);
-      return;
-    }
-  }
+  console.log(`::debug:: Author association: ${authorAssociation}, isExternal: ${isExternalContributor}`);
   
   // If not an external contributor, skip the check
   if (!isExternalContributor) {
-    console.log('::debug:: Skipping legal boilerplate check for organization member');
+    console.log('::debug:: Skipping legal boilerplate check for organization member/collaborator');
     return;
   }
   
@@ -232,13 +213,11 @@ async function checkLegalBoilerplate() {
   ];
   
   for (const templatePath of possibleTemplatePaths) {
-    try {
-      prTemplateContent = await danger.github.utils.fileContents(templatePath);
+    const content = await danger.github.utils.fileContents(templatePath);
+    if (content) {
+      prTemplateContent = content;
       console.log(`::debug:: Found PR template at ${templatePath}`);
       break;
-    } catch (error) {
-      // Template not found at this path, try next
-      continue;
     }
   }
   
@@ -258,18 +237,18 @@ async function checkLegalBoilerplate() {
   
   console.log('::debug:: PR template contains Legal Boilerplate section, checking PR description...');
   
+  // Extract the legal boilerplate content from the template
+  const expectedBoilerplate = extractLegalBoilerplateSection(prTemplateContent);
+  
   // Check if the PR description contains the legal boilerplate
   const prBody = danger.github.pr.body || '';
   
   // Look for the legal boilerplate header in the PR description
   if (!legalBoilerplateHeaderRegex.test(prBody)) {
     fail(
-      'This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.',
-      undefined,
-      undefined
+      'This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.'
     );
     
-    const legalBoilerplateContent = extractLegalBoilerplateSection(prTemplateContent);
     markdown(`
 ### ⚖️ Legal Boilerplate Required
 
@@ -278,7 +257,33 @@ As an external contributor, your PR must include the legal boilerplate from the 
 Please add the following section to your PR description:
 
 \`\`\`markdown
-${legalBoilerplateContent}
+${expectedBoilerplate}
+\`\`\`
+
+This is required to ensure proper intellectual property rights for your contributions.
+    `.trim());
+    return;
+  }
+  
+  // Extract the actual boilerplate from PR body and verify it has meaningful content
+  const actualBoilerplate = extractLegalBoilerplateSection(prBody);
+  
+  // Check if the boilerplate has substantial content (at least 50 characters beyond the header)
+  const contentWithoutHeader = actualBoilerplate.replace(/^#{1,6}\s+Legal\s+Boilerplate\s*/i, '').trim();
+  if (contentWithoutHeader.length < 50) {
+    fail(
+      'The legal boilerplate section in your PR description appears to be incomplete. Please include the full legal text from the PR template.'
+    );
+    
+    markdown(`
+### ⚖️ Incomplete Legal Boilerplate
+
+Your PR contains a "Legal Boilerplate" header but the content appears incomplete.
+
+Please ensure you include the complete legal text from the template:
+
+\`\`\`markdown
+${expectedBoilerplate}
 \`\`\`
 
 This is required to ensure proper intellectual property rights for your contributions.
