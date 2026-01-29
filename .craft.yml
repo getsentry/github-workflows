@@ -7,3 +7,4 @@ targets:
   - name: github
     floatingTags:
       - 'v{major}'
+      - 'latest'
