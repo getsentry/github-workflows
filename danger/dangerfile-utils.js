@@ -117,12 +117,12 @@ const PR_TEMPLATE_PATHS = [
   '.github/PULL_REQUEST_TEMPLATE/pull_request_template.md'
 ];
 
-/** Collapse all whitespace runs into single spaces for comparison. */
+/// Collapse all whitespace runs into single spaces for comparison.
 function normalizeWhitespace(str) {
   return str.replace(/\s+/g, ' ').trim();
 }
 
-/** Try each known PR template path and return the first one with content. */
+/// Try each known PR template path and return the first one with content.
 async function findPRTemplate(danger) {
   for (const templatePath of PR_TEMPLATE_PATHS) {
     const content = await danger.github.utils.fileContents(templatePath);
@@ -134,7 +134,7 @@ async function findPRTemplate(danger) {
   return null;
 }
 
-/** Build a markdown hint showing the expected boilerplate text. */
+/// Build a markdown hint showing the expected boilerplate text.
 function formatBoilerplateHint(title, description, expectedBoilerplate) {
   return `### ⚖️ ${title}
 
@@ -147,14 +147,13 @@ ${expectedBoilerplate}
 This is required to ensure proper intellectual property rights for your contributions.`;
 }
 
-/**
- * Check that external contributors include the required legal boilerplate in their PR body.
- * Accepts danger context and reporting functions as parameters for testability.
- */
+/// Check that external contributors include the required legal boilerplate in their PR body.
+/// Accepts danger context and reporting functions as parameters for testability.
 async function checkLegalBoilerplate({ danger, fail, markdown }) {
   console.log('::debug:: Checking legal boilerplate requirements...');
 
   const authorAssociation = danger.github.pr.author_association;
+  console.log(`::debug:: PR author_association: ${authorAssociation}`);
   if (INTERNAL_ASSOCIATIONS.includes(authorAssociation)) {
     console.log('::debug:: Skipping legal boilerplate check for organization member/collaborator');
     return;
