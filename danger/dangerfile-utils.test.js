@@ -513,7 +513,7 @@ Second paragraph with blank lines above.
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('First paragraph.'), 'Should include first paragraph');
       assert.ok(result.includes('Second paragraph'), 'Should include second paragraph');
       // Should preserve blank lines
@@ -521,11 +521,9 @@ Second paragraph with blank lines above.
       assert.ok(blankLineCount >= 1, 'Should preserve blank lines');
     });
   });
-});
 
-// --- Integration tests for checkLegalBoilerplate ---
-
-const PR_TEMPLATE_WITH_BOILERPLATE = `# Pull Request Template
+  describe('checkLegalBoilerplate', () => {
+    const PR_TEMPLATE_WITH_BOILERPLATE = `# Pull Request Template
 
 ## Description
 Please describe your changes
@@ -536,228 +534,226 @@ Look, I get it. The entity doing business as "Sentry" was incorporated in the St
 ## Checklist
 - [ ] Tests added`;
 
-// Derived from the template to stay in sync automatically
-const LEGAL_BOILERPLATE_SECTION = extractLegalBoilerplateSection(PR_TEMPLATE_WITH_BOILERPLATE);
-const LEGAL_TEXT = LEGAL_BOILERPLATE_SECTION.replace('### Legal Boilerplate\n', '');
+    // Derived from the template to stay in sync automatically
+    const LEGAL_BOILERPLATE_SECTION = extractLegalBoilerplateSection(PR_TEMPLATE_WITH_BOILERPLATE);
+    const LEGAL_TEXT = LEGAL_BOILERPLATE_SECTION.replace('### Legal Boilerplate\n', '');
 
-function buildMockContext({ prOverrides = {}, templateContent = PR_TEMPLATE_WITH_BOILERPLATE } = {}) {
-  const failMessages = [];
-  const markdownMessages = [];
+    function buildMockContext({ prOverrides = {}, templateContent = PR_TEMPLATE_WITH_BOILERPLATE } = {}) {
+      const failMessages = [];
+      const markdownMessages = [];
 
-  const danger = {
-    github: {
-      pr: {
-        author_association: 'CONTRIBUTOR',
-        body: '',
-        ...prOverrides
-      },
-      utils: {
-        fileContents: async (path) => {
-          if (templateContent && path === '.github/PULL_REQUEST_TEMPLATE.md') {
-            return templateContent;
+      const danger = {
+        github: {
+          pr: {
+            author_association: 'CONTRIBUTOR',
+            body: '',
+            ...prOverrides
+          },
+          utils: {
+            fileContents: async (path) => {
+              if (templateContent && path === '.github/PULL_REQUEST_TEMPLATE.md') {
+                return templateContent;
+              }
+              return '';
+            }
           }
-          return '';
         }
-      }
+      };
+
+      return {
+        danger,
+        fail: (msg) => failMessages.push(msg),
+        markdown: (msg) => markdownMessages.push(msg),
+        failMessages,
+        markdownMessages
+      };
     }
-  };
 
-  return {
-    danger,
-    fail: (msg) => failMessages.push(msg),
-    markdown: (msg) => markdownMessages.push(msg),
-    failMessages,
-    markdownMessages
-  };
-}
+    // --- Skips for internal contributors ---
 
-describe('checkLegalBoilerplate', () => {
-  // --- Skips for internal contributors ---
-
-  it('should skip check for OWNER association', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'OWNER' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0);
-    assert.strictEqual(ctx.markdownMessages.length, 0);
-  });
-
-  it('should skip check for MEMBER association', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'MEMBER' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0);
-  });
-
-  it('should skip check for COLLABORATOR association', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'COLLABORATOR' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0);
-  });
-
-  // --- External contributor associations that should be checked ---
-
-  it('should check for CONTRIBUTOR association', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'CONTRIBUTOR', body: '' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1, 'Should fail for external CONTRIBUTOR without boilerplate');
-  });
-
-  it('should check for FIRST_TIME_CONTRIBUTOR association', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'FIRST_TIME_CONTRIBUTOR', body: '' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1);
-  });
-
-  it('should check for NONE association', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'NONE', body: '' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1);
-  });
-
-  // --- Template discovery ---
-
-  it('should skip when no PR template is found', async () => {
-    const ctx = buildMockContext({ templateContent: null });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0, 'Should not fail when no template exists');
-  });
-
-  it('should skip when template has no Legal Boilerplate section', async () => {
-    const ctx = buildMockContext({ templateContent: '# Template\n\n## Description\nJust a normal template.' });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0, 'Should not fail when template lacks legal section');
-  });
-
-  it('should find template at the first matching path', async () => {
-    const calledPaths = [];
-    const ctx = buildMockContext();
-    ctx.danger.github.utils.fileContents = async (path) => {
-      calledPaths.push(path);
-      // Return content for the second path to verify it tries multiple
-      if (path === '.github/pull_request_template.md') {
-        return PR_TEMPLATE_WITH_BOILERPLATE;
-      }
-      return '';
-    };
-    ctx.danger.github.pr.body = `## My PR\n\n### Legal Boilerplate\n${LEGAL_TEXT}`;
-    await checkLegalBoilerplate(ctx);
-    assert.ok(calledPaths.includes('.github/PULL_REQUEST_TEMPLATE.md'), 'Should try uppercase path first');
-    assert.ok(calledPaths.includes('.github/pull_request_template.md'), 'Should try lowercase path second');
-    // Should stop after finding the template (not try remaining paths)
-    assert.ok(!calledPaths.includes('PULL_REQUEST_TEMPLATE.md'), 'Should stop after finding template');
-  });
-
-  // --- Missing boilerplate in PR body ---
-
-  it('should fail when external contributor PR body is empty', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'NONE', body: '' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1);
-    assert.ok(ctx.failMessages[0].includes('missing the required legal boilerplate'));
-    assert.strictEqual(ctx.markdownMessages.length, 1);
-    assert.ok(ctx.markdownMessages[0].includes('Legal Boilerplate Required'));
-  });
-
-  it('should fail when external contributor PR body is null', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'CONTRIBUTOR', body: null } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1);
-    assert.ok(ctx.failMessages[0].includes('missing the required legal boilerplate'));
-  });
-
-  it('should fail when PR body has no legal section', async () => {
-    const ctx = buildMockContext({
-      prOverrides: {
-        author_association: 'FIRST_TIME_CONTRIBUTOR',
-        body: '## Description\nMy cool changes\n\n## Checklist\n- [x] Tests'
-      }
+    it('should skip check for OWNER association', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'OWNER' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0);
+      assert.strictEqual(ctx.markdownMessages.length, 0);
     });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1);
-    assert.ok(ctx.failMessages[0].includes('missing the required legal boilerplate'));
-  });
 
-  // --- Boilerplate mismatch ---
-
-  it('should fail when boilerplate text is modified', async () => {
-    const ctx = buildMockContext({
-      prOverrides: {
-        author_association: 'CONTRIBUTOR',
-        body: '### Legal Boilerplate\nI changed the legal text to something else entirely.'
-      }
+    it('should skip check for MEMBER association', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'MEMBER' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0);
     });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1);
-    assert.ok(ctx.failMessages[0].includes('does not match the template'));
-    assert.strictEqual(ctx.markdownMessages.length, 1);
-    assert.ok(ctx.markdownMessages[0].includes('Legal Boilerplate Mismatch'));
-  });
 
-  it('should fail when boilerplate is truncated', async () => {
-    const ctx = buildMockContext({
-      prOverrides: {
-        author_association: 'CONTRIBUTOR',
-        body: '### Legal Boilerplate\nLook, I get it. The entity doing business as "Sentry" was incorporated in the State of Delaware in 2015.'
-      }
+    it('should skip check for COLLABORATOR association', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'COLLABORATOR' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0);
     });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 1);
-    assert.ok(ctx.failMessages[0].includes('does not match the template'));
-  });
 
-  // --- Matching boilerplate (success cases) ---
+    // --- External contributor associations that should be checked ---
 
-  it('should pass when boilerplate matches exactly', async () => {
-    const ctx = buildMockContext({
-      prOverrides: {
-        author_association: 'CONTRIBUTOR',
-        body: `## Description\nMy changes\n\n### Legal Boilerplate\n${LEGAL_TEXT}\n\n## Checklist\n- [x] Done`
-      }
+    it('should check for CONTRIBUTOR association', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'CONTRIBUTOR', body: '' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1, 'Should fail for external CONTRIBUTOR without boilerplate');
     });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0, 'Should not fail when boilerplate matches');
-    assert.strictEqual(ctx.markdownMessages.length, 0);
-  });
 
-  it('should pass when boilerplate matches with different whitespace', async () => {
-    const ctx = buildMockContext({
-      prOverrides: {
-        author_association: 'CONTRIBUTOR',
-        body: `### Legal Boilerplate\n${LEGAL_TEXT.replace(/\. /g, '.\n')}`
-      }
+    it('should check for FIRST_TIME_CONTRIBUTOR association', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'FIRST_TIME_CONTRIBUTOR', body: '' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1);
     });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0, 'Should pass with normalized whitespace differences');
-  });
 
-  it('should pass when boilerplate has extra surrounding whitespace', async () => {
-    const ctx = buildMockContext({
-      prOverrides: {
-        author_association: 'CONTRIBUTOR',
-        body: `### Legal Boilerplate\n\n  ${LEGAL_TEXT}  \n\n## Next`
-      }
+    it('should check for NONE association', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'NONE', body: '' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1);
     });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.failMessages.length, 0);
-  });
 
-  // --- Markdown message content ---
+    // --- Template discovery ---
 
-  it('should include expected boilerplate in the markdown hint when missing', async () => {
-    const ctx = buildMockContext({ prOverrides: { author_association: 'NONE', body: '' } });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.markdownMessages.length, 1);
-    assert.ok(ctx.markdownMessages[0].includes('Functional Software, Inc.'), 'Markdown should include the expected legal text');
-  });
-
-  it('should include expected boilerplate in the markdown hint on mismatch', async () => {
-    const ctx = buildMockContext({
-      prOverrides: {
-        author_association: 'CONTRIBUTOR',
-        body: '### Legal Boilerplate\nWrong text here.'
-      }
+    it('should skip when no PR template is found', async () => {
+      const ctx = buildMockContext({ templateContent: null });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0, 'Should not fail when no template exists');
     });
-    await checkLegalBoilerplate(ctx);
-    assert.strictEqual(ctx.markdownMessages.length, 1);
-    assert.ok(ctx.markdownMessages[0].includes('Functional Software, Inc.'));
+
+    it('should skip when template has no Legal Boilerplate section', async () => {
+      const ctx = buildMockContext({ templateContent: '# Template\n\n## Description\nJust a normal template.' });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0, 'Should not fail when template lacks legal section');
+    });
+
+    it('should find template at the first matching path', async () => {
+      const calledPaths = [];
+      const ctx = buildMockContext();
+      ctx.danger.github.utils.fileContents = async (path) => {
+        calledPaths.push(path);
+        if (path === '.github/pull_request_template.md') {
+          return PR_TEMPLATE_WITH_BOILERPLATE;
+        }
+        return '';
+      };
+      ctx.danger.github.pr.body = `## My PR\n\n### Legal Boilerplate\n${LEGAL_TEXT}`;
+      await checkLegalBoilerplate(ctx);
+      assert.ok(calledPaths.includes('.github/PULL_REQUEST_TEMPLATE.md'), 'Should try uppercase path first');
+      assert.ok(calledPaths.includes('.github/pull_request_template.md'), 'Should try lowercase path second');
+      assert.ok(!calledPaths.includes('PULL_REQUEST_TEMPLATE.md'), 'Should stop after finding template');
+    });
+
+    // --- Missing boilerplate in PR body ---
+
+    it('should fail when external contributor PR body is empty', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'NONE', body: '' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1);
+      assert.ok(ctx.failMessages[0].includes('missing the required legal boilerplate'));
+      assert.strictEqual(ctx.markdownMessages.length, 1);
+      assert.ok(ctx.markdownMessages[0].includes('Legal Boilerplate Required'));
+    });
+
+    it('should fail when external contributor PR body is null', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'CONTRIBUTOR', body: null } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1);
+      assert.ok(ctx.failMessages[0].includes('missing the required legal boilerplate'));
+    });
+
+    it('should fail when PR body has no legal section', async () => {
+      const ctx = buildMockContext({
+        prOverrides: {
+          author_association: 'FIRST_TIME_CONTRIBUTOR',
+          body: '## Description\nMy cool changes\n\n## Checklist\n- [x] Tests'
+        }
+      });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1);
+      assert.ok(ctx.failMessages[0].includes('missing the required legal boilerplate'));
+    });
+
+    // --- Boilerplate mismatch ---
+
+    it('should fail when boilerplate text is modified', async () => {
+      const ctx = buildMockContext({
+        prOverrides: {
+          author_association: 'CONTRIBUTOR',
+          body: '### Legal Boilerplate\nI changed the legal text to something else entirely.'
+        }
+      });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1);
+      assert.ok(ctx.failMessages[0].includes('does not match the template'));
+      assert.strictEqual(ctx.markdownMessages.length, 1);
+      assert.ok(ctx.markdownMessages[0].includes('Legal Boilerplate Mismatch'));
+    });
+
+    it('should fail when boilerplate is truncated', async () => {
+      const ctx = buildMockContext({
+        prOverrides: {
+          author_association: 'CONTRIBUTOR',
+          body: '### Legal Boilerplate\nLook, I get it. The entity doing business as "Sentry" was incorporated in the State of Delaware in 2015.'
+        }
+      });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 1);
+      assert.ok(ctx.failMessages[0].includes('does not match the template'));
+    });
+
+    // --- Matching boilerplate (success cases) ---
+
+    it('should pass when boilerplate matches exactly', async () => {
+      const ctx = buildMockContext({
+        prOverrides: {
+          author_association: 'CONTRIBUTOR',
+          body: `## Description\nMy changes\n\n### Legal Boilerplate\n${LEGAL_TEXT}\n\n## Checklist\n- [x] Done`
+        }
+      });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0, 'Should not fail when boilerplate matches');
+      assert.strictEqual(ctx.markdownMessages.length, 0);
+    });
+
+    it('should pass when boilerplate matches with different whitespace', async () => {
+      const ctx = buildMockContext({
+        prOverrides: {
+          author_association: 'CONTRIBUTOR',
+          body: `### Legal Boilerplate\n${LEGAL_TEXT.replace(/\. /g, '.\n')}`
+        }
+      });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0, 'Should pass with normalized whitespace differences');
+    });
+
+    it('should pass when boilerplate has extra surrounding whitespace', async () => {
+      const ctx = buildMockContext({
+        prOverrides: {
+          author_association: 'CONTRIBUTOR',
+          body: `### Legal Boilerplate\n\n  ${LEGAL_TEXT}  \n\n## Next`
+        }
+      });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.failMessages.length, 0);
+    });
+
+    // --- Markdown message content ---
+
+    it('should include expected boilerplate in the markdown hint when missing', async () => {
+      const ctx = buildMockContext({ prOverrides: { author_association: 'NONE', body: '' } });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.markdownMessages.length, 1);
+      assert.ok(ctx.markdownMessages[0].includes('Functional Software, Inc.'), 'Markdown should include the expected legal text');
+    });
+
+    it('should include expected boilerplate in the markdown hint on mismatch', async () => {
+      const ctx = buildMockContext({
+        prOverrides: {
+          author_association: 'CONTRIBUTOR',
+          body: '### Legal Boilerplate\nWrong text here.'
+        }
+      });
+      await checkLegalBoilerplate(ctx);
+      assert.strictEqual(ctx.markdownMessages.length, 1);
+      assert.ok(ctx.markdownMessages[0].includes('Functional Software, Inc.'));
+    });
   });
 });

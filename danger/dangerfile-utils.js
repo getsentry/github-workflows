@@ -117,6 +117,36 @@ const PR_TEMPLATE_PATHS = [
   '.github/PULL_REQUEST_TEMPLATE/pull_request_template.md'
 ];
 
+/** Collapse all whitespace runs into single spaces for comparison. */
+function normalizeWhitespace(str) {
+  return str.replace(/\s+/g, ' ').trim();
+}
+
+/** Try each known PR template path and return the first one with content. */
+async function findPRTemplate(danger) {
+  for (const templatePath of PR_TEMPLATE_PATHS) {
+    const content = await danger.github.utils.fileContents(templatePath);
+    if (content) {
+      console.log(`::debug:: Found PR template at ${templatePath}`);
+      return content;
+    }
+  }
+  return null;
+}
+
+/** Build a markdown hint showing the expected boilerplate text. */
+function formatBoilerplateHint(title, description, expectedBoilerplate) {
+  return `### ⚖️ ${title}
+
+${description}
+
+\`\`\`markdown
+${expectedBoilerplate}
+\`\`\`
+
+This is required to ensure proper intellectual property rights for your contributions.`;
+}
+
 /**
  * Check that external contributors include the required legal boilerplate in their PR body.
  * Accepts danger context and reporting functions as parameters for testability.
@@ -146,58 +176,25 @@ async function checkLegalBoilerplate({ danger, fail, markdown }) {
 
   if (!actualBoilerplate) {
     fail('This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.');
-
-    markdown(`
-### ⚖️ Legal Boilerplate Required
-
-As an external contributor, your PR must include the legal boilerplate from the PR template.
-
-Please add the following section to your PR description:
-
-\`\`\`markdown
-${expectedBoilerplate}
-\`\`\`
-
-This is required to ensure proper intellectual property rights for your contributions.
-    `.trim());
+    markdown(formatBoilerplateHint(
+      'Legal Boilerplate Required',
+      'As an external contributor, your PR must include the legal boilerplate from the PR template.\n\nPlease add the following section to your PR description:',
+      expectedBoilerplate
+    ));
     return;
   }
-
-  // Normalize whitespace so minor formatting differences don't cause false negatives
-  const normalizeWhitespace = (str) => str.replace(/\s+/g, ' ').trim();
 
   if (normalizeWhitespace(expectedBoilerplate) !== normalizeWhitespace(actualBoilerplate)) {
     fail('The legal boilerplate in your PR description does not match the template. Please ensure you include the complete, unmodified legal text from the PR template.');
-
-    markdown(`
-### ⚖️ Legal Boilerplate Mismatch
-
-Your PR contains a "Legal Boilerplate" section, but it doesn't match the required text from the template.
-
-Please replace it with the exact text from the template:
-
-\`\`\`markdown
-${expectedBoilerplate}
-\`\`\`
-
-This is required to ensure proper intellectual property rights for your contributions.
-    `.trim());
+    markdown(formatBoilerplateHint(
+      'Legal Boilerplate Mismatch',
+      'Your PR contains a "Legal Boilerplate" section, but it doesn\'t match the required text from the template.\n\nPlease replace it with the exact text from the template:',
+      expectedBoilerplate
+    ));
     return;
   }
 
-  console.log('::debug:: Legal boilerplate validated successfully ✓');
-}
-
-/** Try each known PR template path and return the first one with content. */
-async function findPRTemplate(danger) {
-  for (const templatePath of PR_TEMPLATE_PATHS) {
-    const content = await danger.github.utils.fileContents(templatePath);
-    if (content) {
-      console.log(`::debug:: Found PR template at ${templatePath}`);
-      return content;
-    }
-  }
-  return null;
+  console.log('::debug:: Legal boilerplate validated successfully');
 }
 
 module.exports = {
