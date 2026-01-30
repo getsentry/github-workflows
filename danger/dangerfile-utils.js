@@ -86,100 +86,64 @@ function extractPRFlavor(prTitle, prBranchRef) {
   return "";
 }
 
-/**
- * Extract the legal boilerplate section from the PR template
- * @param {string} templateContent - The PR template content
- * @returns {string} The extracted legal boilerplate section
- */
-function extractLegalBoilerplateSection(templateContent) {
-  // Find the legal boilerplate section and extract it
-  const lines = templateContent.split('\n');
-  let inLegalSection = false;
-  let legalSection = [];
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check if this line is the legal boilerplate header
-    if (/^#{1,6}\s+Legal\s+Boilerplate/i.test(line)) {
-      inLegalSection = true;
-      legalSection.push(line);
-      continue;
-    }
-    
-    // If we're in the legal section
-    if (inLegalSection) {
-      // Check if we've reached another header (end of legal section)
-      if (/^#{1,6}\s+/.test(line)) {
-        break;
-      }
-      legalSection.push(line);
-    }
+/** @returns {string} The legal boilerplate section extracted from the content, or empty string if none found */
+function extractLegalBoilerplateSection(content) {
+  const lines = content.split('\n');
+  const legalHeaderIndex = lines.findIndex(line => /^#{1,6}\s+Legal\s+Boilerplate/i.test(line));
+
+  if (legalHeaderIndex === -1) {
+    return '';
   }
-  
-  return legalSection.join('\n').trim();
+
+  const sectionLines = [lines[legalHeaderIndex]];
+
+  for (let i = legalHeaderIndex + 1; i < lines.length; i++) {
+    if (/^#{1,6}\s+/.test(lines[i])) {
+      break;
+    }
+    sectionLines.push(lines[i]);
+  }
+
+  return sectionLines.join('\n').trim();
 }
+
+const INTERNAL_ASSOCIATIONS = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+
+const PR_TEMPLATE_PATHS = [
+  '.github/PULL_REQUEST_TEMPLATE.md',
+  '.github/pull_request_template.md',
+  'PULL_REQUEST_TEMPLATE.md',
+  'pull_request_template.md',
+  '.github/PULL_REQUEST_TEMPLATE/pull_request_template.md'
+];
 
 /**
  * Check that external contributors include the required legal boilerplate in their PR body.
  * Accepts danger context and reporting functions as parameters for testability.
- *
- * @param {object} options
- * @param {object} options.danger - The DangerJS danger object
- * @param {Function} options.fail - DangerJS fail function
- * @param {Function} options.markdown - DangerJS markdown function
  */
 async function checkLegalBoilerplate({ danger, fail, markdown }) {
   console.log('::debug:: Checking legal boilerplate requirements...');
 
-  // Check if the PR author is an external contributor using author_association
   const authorAssociation = danger.github.pr.author_association;
-  const isExternalContributor = !['OWNER', 'MEMBER', 'COLLABORATOR'].includes(authorAssociation);
-
-  if (!isExternalContributor) {
+  if (INTERNAL_ASSOCIATIONS.includes(authorAssociation)) {
     console.log('::debug:: Skipping legal boilerplate check for organization member/collaborator');
     return;
   }
 
-  // Find PR template
-  let prTemplateContent = null;
-  const possibleTemplatePaths = [
-    '.github/PULL_REQUEST_TEMPLATE.md',
-    '.github/pull_request_template.md',
-    'PULL_REQUEST_TEMPLATE.md',
-    'pull_request_template.md',
-    '.github/PULL_REQUEST_TEMPLATE/pull_request_template.md'
-  ];
-
-  for (const templatePath of possibleTemplatePaths) {
-    const content = await danger.github.utils.fileContents(templatePath);
-    if (content) {
-      prTemplateContent = content;
-      console.log(`::debug:: Found PR template at ${templatePath}`);
-      break;
-    }
-  }
-
+  const prTemplateContent = await findPRTemplate(danger);
   if (!prTemplateContent) {
     console.log('::debug:: No PR template found, skipping legal boilerplate check');
     return;
   }
 
-  // Check if template contains a Legal Boilerplate section
-  const legalBoilerplateHeaderRegex = /^#{1,6}\s+Legal\s+Boilerplate/im;
-  if (!legalBoilerplateHeaderRegex.test(prTemplateContent)) {
+  const expectedBoilerplate = extractLegalBoilerplateSection(prTemplateContent);
+  if (!expectedBoilerplate) {
     console.log('::debug:: PR template does not contain a Legal Boilerplate section');
     return;
   }
 
-  // Extract expected boilerplate from template
-  const expectedBoilerplate = extractLegalBoilerplateSection(prTemplateContent);
-  const prBody = danger.github.pr.body || '';
+  const actualBoilerplate = extractLegalBoilerplateSection(danger.github.pr.body || '');
 
-  // Extract actual boilerplate from PR body
-  const actualBoilerplate = extractLegalBoilerplateSection(prBody);
-
-  // Check if PR body contains the legal boilerplate section
   if (!actualBoilerplate) {
     fail('This PR is missing the required legal boilerplate. As an external contributor, please include the "Legal Boilerplate" section from the PR template in your PR description.');
 
@@ -199,13 +163,10 @@ This is required to ensure proper intellectual property rights for your contribu
     return;
   }
 
-  // Verify the actual boilerplate matches the expected one
-  // Normalize whitespace for comparison
+  // Normalize whitespace so minor formatting differences don't cause false negatives
   const normalizeWhitespace = (str) => str.replace(/\s+/g, ' ').trim();
-  const expectedNormalized = normalizeWhitespace(expectedBoilerplate);
-  const actualNormalized = normalizeWhitespace(actualBoilerplate);
 
-  if (expectedNormalized !== actualNormalized) {
+  if (normalizeWhitespace(expectedBoilerplate) !== normalizeWhitespace(actualBoilerplate)) {
     fail('The legal boilerplate in your PR description does not match the template. Please ensure you include the complete, unmodified legal text from the PR template.');
 
     markdown(`
@@ -225,6 +186,18 @@ This is required to ensure proper intellectual property rights for your contribu
   }
 
   console.log('::debug:: Legal boilerplate validated successfully ✓');
+}
+
+/** Try each known PR template path and return the first one with content. */
+async function findPRTemplate(danger) {
+  for (const templatePath of PR_TEMPLATE_PATHS) {
+    const content = await danger.github.utils.fileContents(templatePath);
+    if (content) {
+      console.log(`::debug:: Found PR template at ${templatePath}`);
+      return content;
+    }
+  }
+  return null;
 }
 
 module.exports = {

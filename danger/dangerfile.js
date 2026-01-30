@@ -1,4 +1,4 @@
-const { getFlavorConfig, extractPRFlavor, extractLegalBoilerplateSection, checkLegalBoilerplate } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, checkLegalBoilerplate } = require('./dangerfile-utils.js');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -186,10 +186,6 @@ async function checkActionsArePinned() {
   }
 }
 
-async function checkLegalBoilerplateRule() {
-  await checkLegalBoilerplate({ danger, fail, markdown });
-}
-
 async function checkFromExternalChecks() {
   // Get the external dangerfile path from environment variable (passed via workflow input)
   // Priority: EXTRA_DANGERFILE (absolute path) -> EXTRA_DANGERFILE_INPUT (relative path)
@@ -235,7 +231,7 @@ async function checkAll() {
   await checkDocs();
   await checkChangelog();
   await checkActionsArePinned();
-  await checkLegalBoilerplateRule();
+  await checkLegalBoilerplate({ danger, fail, markdown });
   await checkFromExternalChecks();
 }
 

@@ -536,13 +536,10 @@ Look, I get it. The entity doing business as "Sentry" was incorporated in the St
 ## Checklist
 - [ ] Tests added`;
 
-const LEGAL_TEXT = 'Look, I get it. The entity doing business as "Sentry" was incorporated in the State of Delaware in 2015 as Functional Software, Inc. and is gonna need some rights from me in order to utilize my contributions in this here PR. So here\'s the deal: I retain all rights, title and interest in and to my contributions, and by keeping this boilerplate intact I confirm that Sentry can use, modify, copy, and redistribute my contributions, under Sentry\'s choice of terms.';
+// Derived from the template to stay in sync automatically
+const LEGAL_BOILERPLATE_SECTION = extractLegalBoilerplateSection(PR_TEMPLATE_WITH_BOILERPLATE);
+const LEGAL_TEXT = LEGAL_BOILERPLATE_SECTION.replace('### Legal Boilerplate\n', '');
 
-/**
- * Build a mock danger context for checkLegalBoilerplate tests.
- * @param {object} overrides - Properties to override on danger.github.pr
- * @param {string|null} templateContent - Content returned by fileContents for template paths (null = no template)
- */
 function buildMockContext({ prOverrides = {}, templateContent = PR_TEMPLATE_WITH_BOILERPLATE } = {}) {
   const failMessages = [];
   const markdownMessages = [];
@@ -556,7 +553,6 @@ function buildMockContext({ prOverrides = {}, templateContent = PR_TEMPLATE_WITH
       },
       utils: {
         fileContents: async (path) => {
-          // Only return content for the first standard template path
           if (templateContent && path === '.github/PULL_REQUEST_TEMPLATE.md') {
             return templateContent;
           }
