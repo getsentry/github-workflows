@@ -1,4 +1,4 @@
-const { getFlavorConfig, extractPRFlavor } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, checkLegalBoilerplate } = require('./dangerfile-utils.js');
 
 const headRepoName = danger.github.pr.head.repo.git_url;
 const baseRepoName = danger.github.pr.base.repo.git_url;
@@ -231,6 +231,7 @@ async function checkAll() {
   await checkDocs();
   await checkChangelog();
   await checkActionsArePinned();
+  await checkLegalBoilerplate({ danger, fail, markdown });
   await checkFromExternalChecks();
 }
 
