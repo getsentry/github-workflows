@@ -202,5 +202,7 @@ module.exports = {
   getFlavorConfig,
   extractPRFlavor,
   extractLegalBoilerplateSection,
+  normalizeWhitespace,
+  formatBoilerplateHint,
   checkLegalBoilerplate
 };

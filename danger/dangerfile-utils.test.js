@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { getFlavorConfig, extractPRFlavor, extractLegalBoilerplateSection, checkLegalBoilerplate, FLAVOR_CONFIG } = require('./dangerfile-utils.js');
+const { getFlavorConfig, extractPRFlavor, extractLegalBoilerplateSection, normalizeWhitespace, formatBoilerplateHint, checkLegalBoilerplate, FLAVOR_CONFIG } = require('./dangerfile-utils.js');
 
 describe('dangerfile-utils', () => {
   describe('getFlavorConfig', () => {
@@ -292,7 +292,7 @@ Look, I get it. The entity doing business as "Sentry" was incorporated in the St
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('### Legal Boilerplate'), 'Should include the header');
       assert.ok(result.includes('Functional Software, Inc.'), 'Should include the legal text');
       assert.ok(!result.includes('## Checklist'), 'Should not include the next section');
@@ -311,7 +311,7 @@ More content
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.strictEqual(result.trim(), '## Legal Boilerplate\n\nThis is a legal notice.');
     });
 
@@ -328,7 +328,7 @@ More content
       testCases.forEach(({ header, text }) => {
         const template = `${header}\n${text}\n## Next Section`;
         const result = extractLegalBoilerplateSection(template);
-        
+
         assert.ok(result.includes(header), `Should extract section with ${header}`);
         assert.ok(result.includes(text), `Should include text for ${header}`);
         assert.ok(!result.includes('Next Section'), `Should not include next section for ${header}`);
@@ -364,7 +364,7 @@ Third paragraph of legal text.
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('First paragraph'), 'Should include first paragraph');
       assert.ok(result.includes('Second paragraph'), 'Should include second paragraph');
       assert.ok(result.includes('Third paragraph'), 'Should include third paragraph');
@@ -383,7 +383,7 @@ Legal text at the end.
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('### Legal Boilerplate'), 'Should include header');
       assert.ok(result.includes('Legal text at the end.'), 'Should include text');
     });
@@ -400,7 +400,7 @@ Please describe your changes
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.strictEqual(result, '', 'Should return empty string when no legal section found');
     });
 
@@ -412,7 +412,7 @@ Please describe your changes
     it('should handle template with only legal boilerplate section', () => {
       const template = '### Legal Boilerplate\nThis is the only content.';
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('### Legal Boilerplate'), 'Should include header');
       assert.ok(result.includes('This is the only content.'), 'Should include content');
     });
@@ -427,7 +427,7 @@ And some unicode: 你好世界 🎉
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('special chars'), 'Should handle special characters');
       assert.ok(result.includes('你好世界'), 'Should handle unicode');
       assert.ok(result.includes('🎉'), 'Should handle emoji');
@@ -449,7 +449,7 @@ More text.
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('const legal = true;'), 'Should include code blocks');
       assert.ok(result.includes('More text.'), 'Should include text after code block');
       assert.ok(!result.includes('Next Section'), 'Should not include next section');
@@ -468,7 +468,7 @@ You agree to:
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('- Item 1'), 'Should include list items');
       assert.ok(result.includes('- Item 2'), 'Should include list items');
       assert.ok(result.includes('- Item 3'), 'Should include list items');
@@ -476,13 +476,13 @@ You agree to:
 
     it('should handle legal boilerplate with extra whitespace', () => {
       const template = `
-###    Legal     Boilerplate   
+###    Legal     Boilerplate
 Content with spaces.
 ## Next
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('Content with spaces.'), 'Should handle extra whitespace in header');
     });
 
@@ -495,7 +495,7 @@ This should not be included.
 `;
 
       const result = extractLegalBoilerplateSection(template);
-      
+
       assert.ok(result.includes('First section content.'), 'Should include first section');
       assert.ok(!result.includes('This should not be included.'), 'Should stop at next header');
     });
@@ -519,6 +519,50 @@ Second paragraph with blank lines above.
       // Should preserve blank lines
       const blankLineCount = (result.match(/\n\n/g) || []).length;
       assert.ok(blankLineCount >= 1, 'Should preserve blank lines');
+    });
+  });
+
+  describe('normalizeWhitespace', () => {
+    it('should collapse multiple spaces into one', () => {
+      assert.strictEqual(normalizeWhitespace('hello   world'), 'hello world');
+    });
+
+    it('should collapse tabs and newlines into spaces', () => {
+      assert.strictEqual(normalizeWhitespace("hello\t\nworld"), 'hello world');
+    });
+
+    it('should trim leading and trailing whitespace', () => {
+      assert.strictEqual(normalizeWhitespace('  hello world  '), 'hello world');
+    });
+
+    it('should return empty string for whitespace-only input', () => {
+      assert.strictEqual(normalizeWhitespace('   \t\n  '), '');
+    });
+
+    it('should leave single-spaced text unchanged', () => {
+      assert.strictEqual(normalizeWhitespace('already clean'), 'already clean');
+    });
+  });
+
+  describe('formatBoilerplateHint', () => {
+    it('should include the title with emoji prefix', () => {
+      const result = formatBoilerplateHint('My Title', 'Some description.', 'boilerplate text');
+      assert.ok(result.includes('### ⚖️ My Title'));
+    });
+
+    it('should include the description', () => {
+      const result = formatBoilerplateHint('Title', 'Please fix this.', 'boilerplate');
+      assert.ok(result.includes('Please fix this.'));
+    });
+
+    it('should include the boilerplate in a markdown code block', () => {
+      const result = formatBoilerplateHint('Title', 'Desc', 'expected legal text');
+      assert.ok(result.includes('```markdown\nexpected legal text\n```'));
+    });
+
+    it('should include the IP rights notice', () => {
+      const result = formatBoilerplateHint('Title', 'Desc', 'text');
+      assert.ok(result.includes('intellectual property rights'));
     });
   });
 
