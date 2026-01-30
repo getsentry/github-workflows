@@ -1,5 +1,16 @@
 # Contributing
 
+## Running tests
+
+The test suite uses Node.js's built-in test runner (requires Node 18+):
+
+```sh
+cd danger
+node --test
+```
+
+No dependencies to install — the tests use only `node:test` and `node:assert`.
+
 ## How to run dangerfile locally
 
 - [Working on your Dangerfile](https://danger.systems/js/guides/the_dangerfile.html#working-on-your-dangerfile)
