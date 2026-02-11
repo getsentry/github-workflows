@@ -4,16 +4,36 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (automatically inferred form commits if not provided)'
+        description: 'Version to release (automatically inferred from commits if not provided)'
         required: false
       force:
         description: Force a release even when there are release-blockers (optional)
         required: false
 
+permissions:
+  contents: write
+
 jobs:
   release:
-    uses: getsentry/craft/.github/workflows/release.yml@v2
-    with:
-      version: ${{ inputs.version || 'auto' }}
-      force: ${{ inputs.force || 'false' }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    name: 'Release a new version'
+    steps:
+      - name: Get auth token
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.SENTRY_RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.SENTRY_RELEASE_BOT_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Prepare release
+        uses: getsentry/craft@v2
+        env:
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+        with:
+          version: ${{ inputs.version || 'auto' }}
+          force: ${{ inputs.force || 'false' }}
