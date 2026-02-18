@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Updater - Support CMake `GIT_TAG` with variable references like `${FOO_REF}`, resolving and updating the corresponding `set()` definition ([#149](https://github.com/getsentry/github-workflows/pull/149))
+
 ## 3.2.1
 
 ### Fixes
