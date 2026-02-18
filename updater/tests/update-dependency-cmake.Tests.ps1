@@ -147,6 +147,92 @@ FetchContent_MakeAvailable(sentry-native googletest)
         }
     }
 
+    Context 'Variable reference GIT_TAG' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
+
+            $script:varRefFile = "$tempDir/varref.cmake"
+            @'
+include(FetchContent)
+
+set(SENTRY_NATIVE_REF "v0.9.1" CACHE STRING "The sentry-native ref")
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG ${SENTRY_NATIVE_REF}
+    GIT_SHALLOW FALSE
+)
+
+FetchContent_MakeAvailable(sentry-native)
+'@ | Out-File $varRefFile
+
+            $script:varRefHashFile = "$tempDir/varref-hash.cmake"
+            @'
+include(FetchContent)
+
+set(SENTRY_NATIVE_REF a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2) # 0.9.1
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG ${SENTRY_NATIVE_REF}
+)
+
+FetchContent_MakeAvailable(sentry-native)
+'@ | Out-File $varRefHashFile
+
+            $script:varRefDirectFile = "$tempDir/varref-direct.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG v0.9.1
+)
+'@ | Out-File $varRefDirectFile
+
+            $script:varRefMissingFile = "$tempDir/varref-missing.cmake"
+            @'
+include(FetchContent)
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG ${UNDEFINED_VAR}
+)
+'@ | Out-File $varRefMissingFile
+        }
+
+        It 'resolves quoted variable to actual value' {
+            $result = Parse-CMakeFetchContent $varRefFile 'sentry-native'
+
+            $result.GitRepository | Should -Be 'https://github.com/getsentry/sentry-native'
+            $result.GitTag | Should -Be 'v0.9.1'
+            $result.GitTagVariable | Should -Be 'SENTRY_NATIVE_REF'
+            $result.DepName | Should -Be 'sentry-native'
+        }
+
+        It 'resolves unquoted variable with hash value' {
+            $result = Parse-CMakeFetchContent $varRefHashFile 'sentry-native'
+
+            $result.GitTag | Should -Be 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
+            $result.GitTagVariable | Should -Be 'SENTRY_NATIVE_REF'
+        }
+
+        It 'throws when variable definition is missing' {
+            { Parse-CMakeFetchContent $varRefMissingFile 'sentry-native' } | Should -Throw "*CMake variable 'UNDEFINED_VAR' referenced by GIT_TAG not found*"
+        }
+
+        It 'returns null GitTagVariable for direct values' {
+            $result = Parse-CMakeFetchContent $varRefDirectFile 'sentry-native'
+
+            $result.GitTagVariable | Should -BeNullOrEmpty
+        }
+    }
+
     Context 'Malformed files' {
         BeforeAll {
             $script:tempDir = "$TestDrive/cmake-tests"
@@ -339,6 +425,91 @@ FetchContent_MakeAvailable(sentry-native)
             $content = Get-Content $complexTestFile -Raw
             $content | Should -Match 'GIT_TAG\s+v0.9.2'
             $content | Should -Not -Match 'v0.9.1'
+        }
+    }
+
+    Context 'Variable reference tag updates' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-update-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
+
+            $script:varRefTagTemplate = @'
+include(FetchContent)
+
+set(SENTRY_NATIVE_REF "v0.9.1" CACHE STRING "The sentry-native ref")
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG ${SENTRY_NATIVE_REF}
+    GIT_SHALLOW FALSE
+)
+
+FetchContent_MakeAvailable(sentry-native)
+'@
+        }
+
+        BeforeEach {
+            $script:varRefTagTestFile = "$tempDir/varref-tag-test.cmake"
+        }
+
+        It 'updates set() value and leaves GIT_TAG variable reference untouched' {
+            $varRefTagTemplate | Out-File $varRefTagTestFile
+
+            Update-CMakeFile $varRefTagTestFile 'sentry-native' 'v0.9.2'
+
+            $content = Get-Content $varRefTagTestFile -Raw
+            $content | Should -Match 'set\(SENTRY_NATIVE_REF "v0.9.2"'
+            $content | Should -Match 'GIT_TAG \$\{SENTRY_NATIVE_REF\}'
+            $content | Should -Not -Match 'v0.9.1'
+        }
+
+        It 'preserves file structure' {
+            $varRefTagTemplate | Out-File $varRefTagTestFile
+
+            Update-CMakeFile $varRefTagTestFile 'sentry-native' 'v0.9.2'
+
+            $content = Get-Content $varRefTagTestFile -Raw
+            $content | Should -Match 'include\(FetchContent\)'
+            $content | Should -Match 'FetchContent_MakeAvailable'
+            $content | Should -Match 'GIT_SHALLOW FALSE'
+        }
+    }
+
+    Context 'Variable reference hash updates' {
+        BeforeAll {
+            $script:tempDir = "$TestDrive/cmake-update-tests"
+            New-Item $tempDir -ItemType Directory -Force | Out-Null
+
+            $script:varRefHashTemplate = @'
+include(FetchContent)
+
+set(SENTRY_NATIVE_REF a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2) # 0.9.1
+
+FetchContent_Declare(
+    sentry-native
+    GIT_REPOSITORY https://github.com/getsentry/sentry-native
+    GIT_TAG ${SENTRY_NATIVE_REF}
+)
+
+FetchContent_MakeAvailable(sentry-native)
+'@
+        }
+
+        BeforeEach {
+            $script:varRefHashTestFile = "$tempDir/varref-hash-test.cmake"
+        }
+
+        It 'updates set() value with new hash and comment' {
+            $varRefHashTemplate | Out-File $varRefHashTestFile
+
+            Update-CMakeFile $varRefHashTestFile 'sentry-native' '0.11.0'
+
+            $content = Get-Content $varRefHashTestFile -Raw
+            $content | Should -Match 'set\(SENTRY_NATIVE_REF 3bd091313ae97be90be62696a2babe591a988eb8\) # 0.11.0'
+            $content | Should -Match 'GIT_TAG \$\{SENTRY_NATIVE_REF\}'
+            $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
+            $content | Should -Not -Match '# 0.9.1'
         }
     }
 

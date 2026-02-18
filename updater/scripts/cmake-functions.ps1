@@ -44,7 +44,18 @@ function Parse-CMakeFetchContent {
         throw "Could not parse GIT_REPOSITORY or GIT_TAG from FetchContent_Declare block"
     }
 
-    return @{ GitRepository = $repo; GitTag = $tag; DepName = $depName }
+    # Resolve CMake variable references like ${FOO_REF}
+    $gitTagVariable = $null
+    if ($tag -match '^\$\{(\w+)\}$') {
+        $gitTagVariable = $Matches[1]
+        $setMatch = [regex]::Match($content, "(?m)^\s*set\s*\(\s*$gitTagVariable\s+`"?([^`"\s)]+)")
+        if (-not $setMatch.Success) {
+            throw "CMake variable '$gitTagVariable' referenced by GIT_TAG not found in $filePath"
+        }
+        $tag = $setMatch.Groups[1].Value
+    }
+
+    return @{ GitRepository = $repo; GitTag = $tag; DepName = $depName; GitTagVariable = $gitTagVariable }
 }
 
 function Find-TagForHash {
@@ -167,10 +178,20 @@ function Update-CMakeFile {
         $replacement = $newValue
     }
 
-    # Update GIT_TAG value, replacing entire line content after GIT_TAG
+    # Update the value, replacing entire line content after the value
     # This removes potentially outdated version-specific comments
-    $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)[^\r\n]+(\r?\n[^)]*\))"
-    $newContent = [regex]::Replace($content, $pattern, "`${1}$replacement`${2}", 'Singleline')
+    $gitTagVariable = $fetchContent.GitTagVariable
+    if ($gitTagVariable) {
+        # Update the set() line that defines the variable
+        $pattern = "(?m)(^\s*set\s*\(\s*$gitTagVariable\s+`"?)([^`"\s)]+)(`"?[^)]*\))[^\r\n]*"
+        $valueOnly = if ($wasHash) { $newHash } else { $newValue }
+        $trailingComment = if ($wasHash) { " # $newValue" } else { "" }
+        $newContent = [regex]::Replace($content, $pattern, "`${1}$valueOnly`${3}$trailingComment")
+    } else {
+        # Update GIT_TAG value in FetchContent_Declare block
+        $pattern = "(FetchContent_Declare\s*\(\s*$depName\s+[^)]*GIT_TAG\s+)[^\r\n]+(\r?\n[^)]*\))"
+        $newContent = [regex]::Replace($content, $pattern, "`${1}$replacement`${2}", 'Singleline')
+    }
 
     if ($newContent -eq $content) {
         throw "Failed to update GIT_TAG in $filePath - pattern may not have matched"
