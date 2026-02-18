@@ -73,54 +73,64 @@ runs:
 
     - name: Validate dependency name
       shell: pwsh
+      env:
+        DEPENDENCY_NAME: ${{ inputs.name }}
       run: |
         # Validate that inputs.name contains only safe characters
-        if ('${{ inputs.name }}' -notmatch '^[a-zA-Z0-9_\./@\s-]+$') {
-          Write-Output "::error::Invalid dependency name: '${{ inputs.name }}'. Only alphanumeric characters, spaces, and _-./@  are allowed."
+        if ("$env:DEPENDENCY_NAME" -notmatch '^[a-zA-Z0-9_\./@\s-]+$') {
+          Write-Output "::error::Invalid dependency name: '$env:DEPENDENCY_NAME'. Only alphanumeric characters, spaces, and _-./@  are allowed."
           exit 1
         }
-        Write-Output "✓ Dependency name '${{ inputs.name }}' is valid"
+        Write-Output "✓ Dependency name '$env:DEPENDENCY_NAME' is valid"
 
     - name: Validate dependency path
       shell: pwsh
+      env:
+        DEPENDENCY_PATH: ${{ inputs.path }}
       run: |
         # Validate that inputs.path contains only safe characters (including # for CMake dependencies)
-        if ('${{ inputs.path }}' -notmatch '^[a-zA-Z0-9_\./#-]+$') {
-          Write-Output "::error::Invalid dependency path: '${{ inputs.path }}'. Only alphanumeric characters and _-./#  are allowed."
+        if ("$env:DEPENDENCY_PATH" -notmatch '^[a-zA-Z0-9_\./#-]+$') {
+          Write-Output "::error::Invalid dependency path: '$env:DEPENDENCY_PATH'. Only alphanumeric characters and _-./#  are allowed."
           exit 1
         }
-        Write-Output "✓ Dependency path '${{ inputs.path }}' is valid"
+        Write-Output "✓ Dependency path '$env:DEPENDENCY_PATH' is valid"
 
     - name: Validate changelog-entry
       shell: pwsh
+      env:
+        CHANGELOG_ENTRY: ${{ inputs.changelog-entry }}
       run: |
         # Validate that inputs.changelog-entry is either 'true' or 'false'
-        if ('${{ inputs.changelog-entry }}' -notin @('true', 'false')) {
-          Write-Output "::error::Invalid changelog-entry value: '${{ inputs.changelog-entry }}'. Only 'true' or 'false' are allowed."
+        if ("$env:CHANGELOG_ENTRY" -notin @('true', 'false')) {
+          Write-Output "::error::Invalid changelog-entry value: '$env:CHANGELOG_ENTRY'. Only 'true' or 'false' are allowed."
           exit 1
         }
-        Write-Output "✓ Changelog-entry value '${{ inputs.changelog-entry }}' is valid"
+        Write-Output "✓ Changelog-entry value '$env:CHANGELOG_ENTRY' is valid"
 
     - name: Validate pr-strategy
       shell: pwsh
+      env:
+        PR_STRATEGY: ${{ inputs.pr-strategy }}
       run: |
         # Validate that inputs.pr-strategy is either 'create' or 'update'
-        if ('${{ inputs.pr-strategy }}' -notin @('create', 'update')) {
-          Write-Output "::error::Invalid pr-strategy value: '${{ inputs.pr-strategy }}'. Only 'create' or 'update' are allowed."
+        if ("$env:PR_STRATEGY" -notin @('create', 'update')) {
+          Write-Output "::error::Invalid pr-strategy value: '$env:PR_STRATEGY'. Only 'create' or 'update' are allowed."
           exit 1
         }
-        Write-Output "✓ PR strategy value '${{ inputs.pr-strategy }}' is valid"
+        Write-Output "✓ PR strategy value '$env:PR_STRATEGY' is valid"
 
     - name: Validate post-update-script
       if: ${{ inputs.post-update-script != '' }}
       shell: pwsh
+      env:
+        POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
       run: |
         # Validate that inputs.post-update-script contains only safe characters
-        if ('${{ inputs.post-update-script }}' -notmatch '^[a-zA-Z0-9_\./#\s-]+$') {
-          Write-Output "::error::Invalid post-update-script path: '${{ inputs.post-update-script }}'. Only alphanumeric characters, spaces, and _-./#  are allowed."
+        if ("$env:POST_UPDATE_SCRIPT" -notmatch '^[a-zA-Z0-9_\./#\s-]+$') {
+          Write-Output "::error::Invalid post-update-script path: '$env:POST_UPDATE_SCRIPT'. Only alphanumeric characters, spaces, and _-./#  are allowed."
           exit 1
         }
-        Write-Output "✓ Post-update script path '${{ inputs.post-update-script }}' is valid"
+        Write-Output "✓ Post-update script path '$env:POST_UPDATE_SCRIPT' is valid"
 
     - name: Validate authentication inputs
       shell: pwsh
