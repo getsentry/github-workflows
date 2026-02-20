@@ -8,6 +8,12 @@
 
 ## 3.2.1
 
+### Features
+
+- Danger - Add legal boilerplate validation for external contributors ([#145](https://github.com/getsentry/github-workflows/pull/145))
+  - Verify that PRs from non-organization members include the required legal boilerplate from the PR template
+  - Show actionable markdown hints when the boilerplate is missing or doesn't match
+
 ### Fixes
 
 - Sentry-CLI integration test action - Accept chunked ProGuard uploads for compatibility with Sentry CLI 3.x ([#140](https://github.com/getsentry/github-workflows/pull/140))
