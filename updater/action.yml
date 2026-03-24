@@ -301,7 +301,7 @@ runs:
         {
             'create' { 'deps/' + $env:DEPENDENCY_PATH + '/' + $env:LATEST_TAG }
             'update' { 'deps/' + $env:DEPENDENCY_PATH }
-            default { throw ('Unkown PR strategy "' + $env:PR_STRATEGY + '".') }
+            default { throw ('Unknown PR strategy "' + $env:PR_STRATEGY + '".') }
         }
         $prBranch = $prBranchPrefix + $prBranch
         ('baseBranch=' + $mainBranch) | Tee-Object $env:GITHUB_OUTPUT -Append
