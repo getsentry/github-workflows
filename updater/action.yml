@@ -77,11 +77,11 @@ runs:
         DEPENDENCY_NAME: ${{ inputs.name }}
       run: |
         # Validate that inputs.name contains only safe characters
-        if ("$env:DEPENDENCY_NAME" -notmatch '^[a-zA-Z0-9_\./@\s-]+$') {
-          Write-Output "::error::Invalid dependency name: '$env:DEPENDENCY_NAME'. Only alphanumeric characters, spaces, and _-./@  are allowed."
+        if ($env:DEPENDENCY_NAME -notmatch '^[a-zA-Z0-9_\./@\s-]+$') {
+          Write-Output ('::error::Invalid dependency name: "' + $env:DEPENDENCY_NAME + '". Only alphanumeric characters, spaces, and _-./@  are allowed.')
           exit 1
         }
-        Write-Output "✓ Dependency name '$env:DEPENDENCY_NAME' is valid"
+        Write-Output ('Dependency name "' + $env:DEPENDENCY_NAME + '" is valid')
 
     - name: Validate dependency path
       shell: pwsh
@@ -89,11 +89,11 @@ runs:
         DEPENDENCY_PATH: ${{ inputs.path }}
       run: |
         # Validate that inputs.path contains only safe characters (including # for CMake dependencies)
-        if ("$env:DEPENDENCY_PATH" -notmatch '^[a-zA-Z0-9_\./#-]+$') {
-          Write-Output "::error::Invalid dependency path: '$env:DEPENDENCY_PATH'. Only alphanumeric characters and _-./#  are allowed."
+        if ($env:DEPENDENCY_PATH -notmatch '^[a-zA-Z0-9_\./#-]+$') {
+          Write-Output ('::error::Invalid dependency path: "' + $env:DEPENDENCY_PATH + '". Only alphanumeric characters and _-./#  are allowed.')
           exit 1
         }
-        Write-Output "✓ Dependency path '$env:DEPENDENCY_PATH' is valid"
+        Write-Output ('Dependency path "' + $env:DEPENDENCY_PATH + '" is valid')
 
     - name: Validate changelog-entry
       shell: pwsh
@@ -101,11 +101,11 @@ runs:
         CHANGELOG_ENTRY: ${{ inputs.changelog-entry }}
       run: |
         # Validate that inputs.changelog-entry is either 'true' or 'false'
-        if ("$env:CHANGELOG_ENTRY" -notin @('true', 'false')) {
-          Write-Output "::error::Invalid changelog-entry value: '$env:CHANGELOG_ENTRY'. Only 'true' or 'false' are allowed."
+        if ($env:CHANGELOG_ENTRY -notin @('true', 'false')) {
+          Write-Output ('::error::Invalid changelog-entry value: "' + $env:CHANGELOG_ENTRY + '". Only "true" or "false" are allowed.')
           exit 1
         }
-        Write-Output "✓ Changelog-entry value '$env:CHANGELOG_ENTRY' is valid"
+        Write-Output ('Changelog-entry value "' + $env:CHANGELOG_ENTRY + '" is valid')
 
     - name: Validate pr-strategy
       shell: pwsh
@@ -113,11 +113,11 @@ runs:
         PR_STRATEGY: ${{ inputs.pr-strategy }}
       run: |
         # Validate that inputs.pr-strategy is either 'create' or 'update'
-        if ("$env:PR_STRATEGY" -notin @('create', 'update')) {
-          Write-Output "::error::Invalid pr-strategy value: '$env:PR_STRATEGY'. Only 'create' or 'update' are allowed."
+        if ($env:PR_STRATEGY -notin @('create', 'update')) {
+          Write-Output ('::error::Invalid pr-strategy value: "' + $env:PR_STRATEGY + '". Only "create" or "update" are allowed.')
           exit 1
         }
-        Write-Output "✓ PR strategy value '$env:PR_STRATEGY' is valid"
+        Write-Output ('PR strategy value "' + $env:PR_STRATEGY + '" is valid')
 
     - name: Validate post-update-script
       if: ${{ inputs.post-update-script != '' }}
@@ -126,11 +126,11 @@ runs:
         POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
       run: |
         # Validate that inputs.post-update-script contains only safe characters
-        if ("$env:POST_UPDATE_SCRIPT" -notmatch '^[a-zA-Z0-9_\./#\s-]+$') {
-          Write-Output "::error::Invalid post-update-script path: '$env:POST_UPDATE_SCRIPT'. Only alphanumeric characters, spaces, and _-./#  are allowed."
+        if ($env:POST_UPDATE_SCRIPT -notmatch '^[a-zA-Z0-9_\./#\s-]+$') {
+          Write-Output ('::error::Invalid post-update-script path: "' + $env:POST_UPDATE_SCRIPT + '". Only alphanumeric characters, spaces, and _-./#  are allowed.')
           exit 1
         }
-        Write-Output "✓ Post-update script path '$env:POST_UPDATE_SCRIPT' is valid"
+        Write-Output ('Post-update script path "' + $env:POST_UPDATE_SCRIPT + '" is valid')
 
     - name: Validate authentication inputs
       shell: pwsh
@@ -288,30 +288,31 @@ runs:
         PR_STRATEGY: ${{ inputs.pr-strategy }}
         DEPENDENCY_PATH: ${{ inputs.path }}
         TARGET_BRANCH: ${{ inputs.target-branch }}
+        LATEST_TAG: ${{ steps.target.outputs.latestTag }}
       run: |
         if ([string]::IsNullOrEmpty($env:TARGET_BRANCH)) {
             $mainBranch = $(git remote show origin | Select-String "HEAD branch: (.*)").Matches[0].Groups[1].Value
             $prBranchPrefix = ''
         } else {
             $mainBranch = $env:TARGET_BRANCH
-            $prBranchPrefix = "$mainBranch-"
+            $prBranchPrefix = $mainBranch + '-'
         }
         $prBranch = switch ($env:PR_STRATEGY)
         {
-            'create' { "deps/$env:DEPENDENCY_PATH/${{ steps.target.outputs.latestTag }}" }
-            'update' { "deps/$env:DEPENDENCY_PATH" }
-            default { throw "Unkown PR strategy '$env:PR_STRATEGY'." }
+            'create' { 'deps/' + $env:DEPENDENCY_PATH + '/' + $env:LATEST_TAG }
+            'update' { 'deps/' + $env:DEPENDENCY_PATH }
+            default { throw ('Unkown PR strategy "' + $env:PR_STRATEGY + '".') }
         }
         $prBranch = $prBranchPrefix + $prBranch
-        "baseBranch=$mainBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
-        "prBranch=$prBranch" | Tee-Object $env:GITHUB_OUTPUT -Append
+        ('baseBranch=' + $mainBranch) | Tee-Object $env:GITHUB_OUTPUT -Append
+        ('prBranch=' + $prBranch) | Tee-Object $env:GITHUB_OUTPUT -Append
         $nonBotCommits = ${{ github.action_path }}/scripts/nonbot-commits.ps1 `
-          -RepoUrl "$(git config --get remote.origin.url)" -PrBranch $prBranch -MainBranch $mainBranch
+          -RepoUrl $(git config --get remote.origin.url) -PrBranch $prBranch -MainBranch $mainBranch
         $changed = $nonBotCommits.Length -gt 0 ? 'true' : 'false'
-        "changed=$changed" | Tee-Object $env:GITHUB_OUTPUT -Append
-        if ("$changed" -eq "true")
+        ('changed=' + $changed) | Tee-Object $env:GITHUB_OUTPUT -Append
+        if ($changed -eq 'true')
         {
-            Write-Output "::warning::Target branch '$prBranch' has been changed manually - skipping updater to avoid overwriting these changes."
+            Write-Output ('::warning::Target branch "' + $prBranch + '" has been changed manually - skipping updater to avoid overwriting these changes.')
         }
 
     - name: Parse the existing PR URL
@@ -321,19 +322,22 @@ runs:
       working-directory: caller-repo
       env:
         GH_TOKEN: ${{ inputs.api-token || github.token }}
+        BASE_BRANCH: ${{ steps.root.outputs.baseBranch }}
+        PR_BRANCH: ${{ steps.root.outputs.prBranch }}
       run: |
-        $urls = @(gh api 'repos/${{ github.repository }}/pulls?base=${{ steps.root.outputs.baseBranch }}&head=${{ github.repository_owner }}:${{ steps.root.outputs.prBranch }}' --jq '.[].html_url')
+        $apiUrl = 'repos/${{ github.repository }}/pulls?base=' + $env:BASE_BRANCH + '&head=${{ github.repository_owner }}:' + $env:PR_BRANCH
+        $urls = @(gh api $apiUrl --jq '.[].html_url')
         if ($urls.Length -eq 0)
         {
-            "url=" | Tee-Object $env:GITHUB_OUTPUT -Append
+            'url=' | Tee-Object $env:GITHUB_OUTPUT -Append
         }
         elseif ($urls.Length -eq 1)
         {
-            "url=$($urls[0])" | Tee-Object $env:GITHUB_OUTPUT -Append
+            ('url=' + $urls[0]) | Tee-Object $env:GITHUB_OUTPUT -Append
         }
         else
         {
-            throw "Unexpected number of PRs matched ($($urls.Length)): $urls"
+            throw ('Unexpected number of PRs matched (' + $urls.Length + '): ' + $urls)
         }
 
     - name: Show git diff
@@ -348,11 +352,14 @@ runs:
       working-directory: caller-repo
       env:
         GH_TOKEN: ${{ inputs.api-token || github.token }}
+        TARGET_REPO_URL: ${{ steps.target.outputs.url }}
+        ORIGINAL_TAG: ${{ steps.target.outputs.originalTag }}
+        LATEST_TAG: ${{ steps.target.outputs.latestTag }}
       run: |
         $changelog = ${{ github.action_path }}/scripts/get-changelog.ps1 `
-          -RepoUrl '${{ steps.target.outputs.url }}' `
-          -OldTag '${{ steps.target.outputs.originalTag }}' `
-          -NewTag '${{ steps.target.outputs.latestTag }}'
+          -RepoUrl $env:TARGET_REPO_URL `
+          -OldTag $env:ORIGINAL_TAG `
+          -NewTag $env:LATEST_TAG
         ${{ github.action_path }}/scripts/set-github-env.ps1 TARGET_CHANGELOG $changelog
 
     # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
@@ -382,14 +389,17 @@ runs:
       id: pr
       shell: pwsh
       working-directory: caller-repo
+      env:
+        CREATED_PR_URL: ${{ steps.create-pr.outputs.pull-request-url }}
+        EXISTING_PR_URL: ${{ steps.existing-pr.outputs.url }}
       run: |
-        if ('${{ steps.create-pr.outputs.pull-request-url }}' -ne '')
+        if (-not [string]::IsNullOrEmpty($env:CREATED_PR_URL))
         {
-            "url=${{ steps.create-pr.outputs.pull-request-url }}" | Tee-Object $env:GITHUB_OUTPUT -Append
+            ("url=" + $env:CREATED_PR_URL) | Tee-Object $env:GITHUB_OUTPUT -Append
         }
-        elseif ('${{ steps.existing-pr.outputs.url }}' -ne '')
+        elseif (-not [string]::IsNullOrEmpty($env:EXISTING_PR_URL))
         {
-            "url=${{ steps.existing-pr.outputs.url }}" | Tee-Object $env:GITHUB_OUTPUT -Append
+            ("url=" + $env:EXISTING_PR_URL) | Tee-Object $env:GITHUB_OUTPUT -Append
         }
         else
         {
@@ -415,7 +425,9 @@ runs:
         DEPENDENCY_PATH: ${{ inputs.path }}
         POST_UPDATE_SCRIPT: ${{ inputs.post-update-script }}
         GH_TOKEN: ${{ inputs.api-token || github.token }}
-      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag '${{ steps.target.outputs.latestTag }}' -OriginalTag '${{ steps.target.outputs.originalTag }}' -PostUpdateScript $env:POST_UPDATE_SCRIPT
+        LATEST_TAG: ${{ steps.target.outputs.latestTag }}
+        ORIGINAL_TAG: ${{ steps.target.outputs.originalTag }}
+      run: ${{ github.action_path }}/scripts/update-dependency.ps1 -Path $env:DEPENDENCY_PATH -Tag $env:LATEST_TAG -OriginalTag $env:ORIGINAL_TAG -PostUpdateScript $env:POST_UPDATE_SCRIPT
 
     - name: Update Changelog
       if: ${{ inputs.changelog-entry == 'true' && ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}
@@ -425,14 +437,19 @@ runs:
         DEPENDENCY_NAME: ${{ inputs.name }}
         CHANGELOG_SECTION: ${{ inputs.changelog-section }}
         GH_TOKEN: ${{ inputs.api-token || github.token }}
+        PR_URL: ${{ steps.pr.outputs.url }}
+        TARGET_REPO_URL: ${{ steps.target.outputs.url }}
+        TARGET_MAIN_BRANCH: ${{ steps.target.outputs.mainBranch }}
+        ORIGINAL_TAG: ${{ steps.target.outputs.originalTag }}
+        LATEST_TAG: ${{ steps.target.outputs.latestTag }}
       run: |
         ${{ github.action_path }}/scripts/update-changelog.ps1 `
           -Name $env:DEPENDENCY_NAME `
-          -PR '${{ steps.pr.outputs.url }}' `
-          -RepoUrl '${{ steps.target.outputs.url }}' `
-          -MainBranch '${{ steps.target.outputs.mainBranch }}' `
-          -OldTag '${{ steps.target.outputs.originalTag }}' `
-          -NewTag '${{ steps.target.outputs.latestTag }}' `
+          -PR $env:PR_URL `
+          -RepoUrl $env:TARGET_REPO_URL `
+          -MainBranch $env:TARGET_MAIN_BRANCH `
+          -OldTag $env:ORIGINAL_TAG `
+          -NewTag $env:LATEST_TAG `
           -Section $env:CHANGELOG_SECTION
 
     - name: Show final git diff

@@ -20,5 +20,5 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
         TEST_PATH: ${{ inputs.path }}
       run: |
-        Import-Module -Name "$env:ACTION_PATH/action.psm1" -Force
-        Invoke-Pester -Output Detailed "$env:TEST_PATH"
+        Import-Module -Name ($env:ACTION_PATH + '/action.psm1') -Force
+        Invoke-Pester -Output Detailed $env:TEST_PATH
