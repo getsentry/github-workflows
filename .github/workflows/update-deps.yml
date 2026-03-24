@@ -14,7 +14,7 @@ jobs:
   danger:
     runs-on: ubuntu-latest
     steps:
-      - uses: getsentry/github-workflows/updater@main
+      - uses: getsentry/github-workflows/updater@669decb15baad1ee9928c4704da7ea5fcc772a57 # main
         with:
           path: danger/danger.properties
           name: Danger JS
