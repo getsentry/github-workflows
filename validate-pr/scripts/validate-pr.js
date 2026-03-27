@@ -17,6 +17,21 @@ module.exports = async ({ github, context, core }) => {
   const prAuthor = pullRequest.user.login;
   const contributingUrl = `https://github.com/${repo.owner}/${repo.repo}/blob/${context.payload.repository.default_branch}/CONTRIBUTING.md`;
 
+  // --- Step 0: Skip allowed bots and service accounts ---
+  const ALLOWED_BOTS = [
+    'codecov-ai[bot]',
+    'dependabot[bot]',
+    'fix-it-felix-sentry[bot]',
+    'getsentry-bot',
+    'github-actions[bot]',
+    'javascript-sdk-gitflow[bot]',
+    'renovate[bot]',
+  ];
+  if (ALLOWED_BOTS.includes(prAuthor)) {
+    core.info(`PR author ${prAuthor} is an allowed bot. Skipping validation.`);
+    return;
+  }
+
   // --- Helper: check if a user has admin or maintain permission on a repo (cached) ---
   const maintainerCache = new Map();
   async function isMaintainer(owner, repoName, username) {
