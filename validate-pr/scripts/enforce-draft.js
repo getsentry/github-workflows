@@ -20,12 +20,13 @@ module.exports = async ({ github, context, core }) => {
   });
 
   // Check for existing bot comment to avoid duplicates on reopen
-  const comments = await github.rest.issues.listComments({
+  const comments = await github.paginate(github.rest.issues.listComments, {
     ...repo,
     issue_number: pullRequest.number,
+    per_page: 100,
   });
-  const botComment = comments.data.find(c =>
-    c.user.type === 'Bot' &&
+  const botComment = comments.find(c =>
+    c.user?.type === 'Bot' &&
     c.body.includes('automatically converted to draft')
   );
   if (botComment) {

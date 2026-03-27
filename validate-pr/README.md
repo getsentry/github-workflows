@@ -7,7 +7,7 @@ Validates non-maintainer pull requests against contribution guidelines.
 1. **Validates issue references** — Non-maintainer PRs must reference a GitHub issue where the PR author and a maintainer have discussed the approach. PRs that don't meet this requirement are automatically closed with a descriptive comment.
 2. **Enforces draft status** — All PRs must start as drafts. Non-draft PRs are automatically converted and labeled.
 
-Maintainers (users with `admin` or `maintain` role) are exempt from all checks.
+Maintainers (users with `admin` or `maintain` role) are exempt from the issue reference validation. Draft enforcement applies to everyone.
 
 ## Usage
 
