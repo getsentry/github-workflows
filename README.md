@@ -16,6 +16,12 @@ Runs DangerJS on Pull Requests with a pre-configured set of rules.
 
 **[📖 View full documentation →](danger/README.md)**
 
+### Validate PR
+
+Validates non-maintainer PRs against contribution guidelines and enforces draft status.
+
+**[📖 View full documentation →](validate-pr/README.md)**
+
 ## Legacy Reusable Workflows (v2)
 
 > ⚠️ **Deprecated**: Reusable workflows have been converted to composite actions in v3. Please migrate to the composite actions above.

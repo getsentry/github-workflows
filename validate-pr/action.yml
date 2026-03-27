@@ -1,0 +1,56 @@
+name: 'Validate PR'
+description: 'Validates non-maintainer PRs against contribution guidelines and enforces draft status'
+author: 'Sentry'
+
+inputs:
+  app-id:
+    description: 'GitHub App ID for the SDK Maintainer Bot'
+    required: true
+  private-key:
+    description: 'GitHub App private key for the SDK Maintainer Bot'
+    required: true
+
+outputs:
+  was-closed:
+    description: 'Whether the PR was closed by the validation step'
+    value: ${{ steps.validate.outputs.was-closed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate GitHub App token
+      id: app-token
+      uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v2
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
+    - name: Validate PR
+      id: validate
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const script = require('${{ github.action_path }}/scripts/validate-pr.js');
+          await script({ github, context, core });
+
+    - name: Convert PR to draft
+      if: >-
+        steps.validate.outputs.was-closed != 'true'
+        && github.event.pull_request.draft == false
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+      run: gh pr ready "$PR_URL" --undo
+
+    - name: Label and comment on draft conversion
+      if: >-
+        steps.validate.outputs.was-closed != 'true'
+        && github.event.pull_request.draft == false
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const script = require('${{ github.action_path }}/scripts/enforce-draft.js');
+          await script({ github, context, core });
