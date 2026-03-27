@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Add validate-pr composite action for validating non-maintainer PRs against contribution guidelines and enforcing draft status ([#153](https://github.com/getsentry/github-workflows/pull/153))
+
 ## 3.3.0
 
 ### Features
