@@ -28,7 +28,8 @@ module.exports = async ({ github, context, core }) => {
     'renovate[bot]',
   ];
   if (ALLOWED_BOTS.includes(prAuthor)) {
-    core.info(`PR author ${prAuthor} is an allowed bot. Skipping validation.`);
+    core.info(`PR author ${prAuthor} is an allowed bot. Skipping.`);
+    core.setOutput('skipped', 'true');
     return;
   }
 
