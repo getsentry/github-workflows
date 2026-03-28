@@ -60,6 +60,7 @@ module.exports = async ({ github, context, core }) => {
   const authorIsMaintainer = await isMaintainer(repo.owner, repo.repo, prAuthor);
   if (authorIsMaintainer) {
     core.info(`PR author ${prAuthor} has admin/maintain access. Skipping.`);
+    core.setOutput('skipped', 'true');
     return;
   }
   core.info(`PR author ${prAuthor} is not a maintainer.`);
