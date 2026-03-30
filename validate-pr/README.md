@@ -4,10 +4,9 @@ Validates non-maintainer pull requests against contribution guidelines.
 
 ## What it does
 
-1. **Validates issue references** — Non-maintainer PRs must reference a GitHub issue where the PR author and a maintainer have discussed the approach. PRs that don't meet this requirement are automatically closed with a descriptive comment.
-2. **Enforces draft status** — All PRs must start as drafts. Non-draft PRs are automatically converted and labeled.
+**Validates issue references** — Non-maintainer PRs must reference a GitHub issue where the PR author and a maintainer have discussed the approach. PRs that don't meet this requirement are automatically closed with a descriptive comment.
 
-Maintainers (users with `admin` or `maintain` role) are exempt from the issue reference validation. Draft enforcement applies to everyone.
+Maintainers (users with `admin` or `maintain` role) are exempt from validation.
 
 ## Usage
 
@@ -61,10 +60,6 @@ A PR is valid if **any** referenced issue passes all checks:
 - If the issue has assignees, the PR author must be one of them
 - Both the PR author and a maintainer have participated in the issue discussion
 
-### Draft enforcement
-
-Non-draft PRs are converted to draft and labeled `converted-to-draft` with an informational comment.
-
 ## Labels
 
 The action creates these labels automatically (they don't need to exist beforehand):
@@ -73,4 +68,3 @@ The action creates these labels automatically (they don't need to exist beforeha
 - `missing-issue-reference` — PR body has no issue references
 - `missing-maintainer-discussion` — referenced issue lacks author + maintainer discussion
 - `issue-already-assigned` — referenced issue is assigned to someone else
-- `converted-to-draft` — PR was automatically converted to draft
