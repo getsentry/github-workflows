@@ -6,7 +6,7 @@ Validates non-maintainer pull requests against contribution guidelines.
 
 **Validates issue references** — Non-maintainer PRs must reference a GitHub issue where the PR author and a maintainer have discussed the approach. PRs that don't meet this requirement are automatically closed with a descriptive comment.
 
-Maintainers (users with `admin` or `maintain` role) are exempt from validation.
+Maintainers (users with `admin` or `maintain` role) are exempt from validation. When a maintainer reopens a previously closed PR, all checks are skipped — this allows maintainers to override the action's decision.
 
 ## Usage
 

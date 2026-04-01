@@ -17,7 +17,18 @@ module.exports = async ({ github, context, core }) => {
   const prAuthor = pullRequest.user.login;
   const contributingUrl = `https://github.com/${repo.owner}/${repo.repo}/blob/${context.payload.repository.default_branch}/CONTRIBUTING.md`;
 
-  // --- Step 0: Skip allowed bots and service accounts ---
+  // --- Step 0a: Skip if a maintainer reopened the PR ---
+  if (context.payload.action === 'reopened') {
+    const sender = context.payload.sender.login;
+    const senderIsMaintainer = await isMaintainer(repo.owner, repo.repo, sender);
+    if (senderIsMaintainer) {
+      core.info(`PR reopened by maintainer ${sender}. Skipping all checks.`);
+      core.setOutput('skipped', 'true');
+      return;
+    }
+  }
+
+  // --- Step 0b: Skip allowed bots and service accounts ---
   const ALLOWED_BOTS = [
     'codecov-ai[bot]',
     'dependabot[bot]',
