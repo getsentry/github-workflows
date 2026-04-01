@@ -34,26 +34,34 @@ module.exports = async ({ github, context, core }) => {
     return;
   }
 
-  // --- Helper: check if a user has admin or maintain permission on a repo (cached) ---
-  const maintainerCache = new Map();
-  async function isMaintainer(owner, repoName, username) {
+  // --- Helpers: check user permission on a repo (cached) ---
+  const roleCache = new Map();
+  async function getRole(owner, repoName, username) {
     const key = `${owner}/${repoName}:${username}`;
-    if (maintainerCache.has(key)) return maintainerCache.get(key);
-    let result = false;
+    if (roleCache.has(key)) return roleCache.get(key);
+    let roleName = null;
     try {
       const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
         owner,
         repo: repoName,
         username,
       });
-      // permission field uses legacy values (admin/write/read/none) where
-      // maintain maps to write. Use role_name for the actual role.
-      result = ['admin', 'maintain'].includes(data.role_name);
+      roleName = data.role_name;
     } catch {
-      // noop — result stays false
+      // noop — roleName stays null
     }
-    maintainerCache.set(key, result);
-    return result;
+    roleCache.set(key, roleName);
+    return roleName;
+  }
+
+  async function hasWriteAccess(owner, repoName, username) {
+    const role = await getRole(owner, repoName, username);
+    return ['admin', 'maintain', 'write'].includes(role);
+  }
+
+  async function isMaintainer(owner, repoName, username) {
+    const role = await getRole(owner, repoName, username);
+    return ['admin', 'maintain'].includes(role);
   }
 
   // --- Step 1: Skip if a maintainer reopened the PR ---
@@ -67,14 +75,14 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
-  // --- Step 2: Check if PR author is a maintainer (admin or maintain role) ---
-  const authorIsMaintainer = await isMaintainer(repo.owner, repo.repo, prAuthor);
-  if (authorIsMaintainer) {
-    core.info(`PR author ${prAuthor} has admin/maintain access. Skipping.`);
+  // --- Step 2: Check if PR author has write access (admin, maintain, or write role) ---
+  const authorHasWriteAccess = await hasWriteAccess(repo.owner, repo.repo, prAuthor);
+  if (authorHasWriteAccess) {
+    core.info(`PR author ${prAuthor} has write+ access. Skipping.`);
     core.setOutput('skipped', 'true');
     return;
   }
-  core.info(`PR author ${prAuthor} is not a maintainer.`);
+  core.info(`PR author ${prAuthor} does not have write access.`);
 
   // --- Step 3: Parse issue references from PR body ---
   const body = pullRequest.body || '';
