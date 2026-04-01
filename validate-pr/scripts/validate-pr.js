@@ -56,7 +56,8 @@ module.exports = async ({ github, context, core }) => {
 
   async function hasWriteAccess(owner, repoName, username) {
     const role = await getRole(owner, repoName, username);
-    return ['admin', 'maintain', 'write'].includes(role);
+    // role_name values: admin, maintain, push, triage, pull (+ custom roles)
+    return ['admin', 'maintain', 'push', 'write'].includes(role);
   }
 
   async function isMaintainer(owner, repoName, username) {
