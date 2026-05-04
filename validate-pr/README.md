@@ -25,13 +25,13 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: getsentry/github-workflows/validate-pr@v4
+      - uses: getsentry/github-workflows/validate-pr@<sha>
         with:
           app-id: ${{ vars.SDK_MAINTAINER_BOT_APP_ID }}
           private-key: ${{ secrets.SDK_MAINTAINER_BOT_PRIVATE_KEY }}
 ```
 
-The `pull-requests: write` permission is needed because the action posts comments on the PR.
+Pin to a specific commit SHA (consumers in `getsentry/*` already follow this convention). The `pull-requests: write` permission is needed because the action posts comments on the PR.
 
 ## Inputs
 
@@ -83,14 +83,14 @@ The PR is considered compliant if **any** referenced issue passes all of:
 
 If no referenced issue passes, the action posts one advisory comment. The PR remains open and reviewable; no labels or status checks are applied. The comment is idempotent — workflow re-runs on the same PR will not produce duplicates.
 
-## Migrating from v3
+## Updating from earlier revisions
 
-v3 closed non-compliant PRs and applied labels (`violating-contribution-guidelines`, `missing-issue-reference`, `missing-maintainer-discussion`, `issue-already-assigned`). v4 does neither — it only posts a comment.
+Earlier revisions of this action closed non-compliant PRs and applied labels (`violating-contribution-guidelines`, `missing-issue-reference`, `missing-maintainer-discussion`, `issue-already-assigned`). The current version does neither — it only posts a comment.
 
-To upgrade, update your workflow:
+To update an existing consumer:
 
-- Change `getsentry/github-workflows/validate-pr@v3` → `@v4`
-- Change `types: [opened, reopened]` → `types: [opened]`
-- Remove any code that reads the `was-closed` output (it no longer exists)
+- Bump the pinned commit SHA to the latest on `main`.
+- Change `types: [opened, reopened]` → `types: [opened]`.
+- Remove any code that reads the `was-closed` output (it no longer exists).
 
 Existing labels on old PRs are not removed automatically. Clean them up with a one-off script if desired.
