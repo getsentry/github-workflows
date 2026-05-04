@@ -1,12 +1,12 @@
 # Validate PR
 
-Validates non-maintainer pull requests against contribution guidelines.
+Advisory validation for non-maintainer pull requests against contribution guidelines. Posts a single friendly comment when a PR doesn't reference an issue with prior maintainer discussion. **PRs are never closed, and no labels are applied.**
 
 ## What it does
 
-**Validates issue references** — Non-maintainer PRs must reference a GitHub issue where the PR author and a maintainer have discussed the approach. PRs that don't meet this requirement are automatically closed with a descriptive comment.
+For PRs from non-maintainer authors, the action checks that the PR body references a GitHub issue where the PR author and a maintainer have discussed the approach. When that's not the case, the action posts one short advisory comment inviting the contributor to start with an issue. Maintainers (`admin` or `maintain` role) and a hard-coded list of trusted bots are exempt.
 
-Maintainers (users with `admin` or `maintain` role) are exempt from validation. When a maintainer reopens a previously closed PR, all checks are skipped — this allows maintainers to override the action's decision.
+Small PRs (< 100 lines changed, excluding lock files) are skipped entirely — typo fixes and tiny bug fixes don't need to go through the issue-discussion loop.
 
 ## Usage
 
@@ -17,7 +17,7 @@ name: Validate PR
 
 on:
   pull_request_target:
-    types: [opened, reopened]
+    types: [opened]
 
 jobs:
   validate-pr:
@@ -25,11 +25,13 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: getsentry/github-workflows/validate-pr@v3
+      - uses: getsentry/github-workflows/validate-pr@<sha>
         with:
           app-id: ${{ vars.SDK_MAINTAINER_BOT_APP_ID }}
           private-key: ${{ secrets.SDK_MAINTAINER_BOT_PRIVATE_KEY }}
 ```
+
+Pin to a specific commit SHA (consumers in `getsentry/*` already follow this convention). The `pull-requests: write` permission is needed because the action posts comments on the PR.
 
 ## Inputs
 
@@ -38,33 +40,57 @@ jobs:
 | `app-id` | Yes | GitHub App ID for the SDK Maintainer Bot |
 | `private-key` | Yes | GitHub App private key for the SDK Maintainer Bot |
 
-## Outputs
-
-| Output | Description |
-|--------|-------------|
-| `was-closed` | `'true'` if the PR was closed by validation, unset otherwise |
-
 ## Validation rules
+
+### Skipped entirely
+
+- PR author is in the trusted-bot allowlist (Dependabot, Renovate, Codecov AI, etc.)
+- PR author has `admin`, `maintain`, `push`, or `write` access on the repo
+- PR has fewer than 100 lines changed (`additions + deletions`), excluding common lock files
+
+### Lock files excluded from line counts
+
+Matched by basename, case-insensitive:
+
+| Ecosystem | File |
+|-----------|------|
+| Rust | `Cargo.lock` |
+| JS | `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` |
+| Python | `Pipfile.lock`, `poetry.lock`, `uv.lock` |
+| Ruby | `Gemfile.lock` |
+| PHP | `composer.lock` |
+| Go | `go.sum` (`go.mod` is hand-edited and stays counted) |
+| Elixir | `mix.lock` |
+| Dart/Flutter | `pubspec.lock` |
+| .NET/NuGet | `packages.lock.json` |
+| CocoaPods | `Podfile.lock` |
+| Nix | `flake.lock` |
 
 ### Issue reference check
 
-The PR body is scanned for issue references in these formats:
+For PRs that reach validation, the action scans the PR body for issue references in these formats:
 
 - `#123` (same-repo)
 - `getsentry/repo#123` (cross-repo)
 - `https://github.com/getsentry/repo/issues/123` (full URL)
 - With optional keywords: `Fixes #123`, `Closes getsentry/repo#123`, etc.
 
-A PR is valid if **any** referenced issue passes all checks:
+The PR is considered compliant if **any** referenced issue passes all of:
+
 - The issue is fetchable and in a `getsentry` repository
-- If the issue has assignees, the PR author must be one of them
+- If the issue has assignees, the PR author is one of them
 - Both the PR author and a maintainer have participated in the issue discussion
 
-## Labels
+If no referenced issue passes, the action posts one advisory comment. The PR remains open and reviewable; no labels or status checks are applied. The comment is idempotent — workflow re-runs on the same PR will not produce duplicates.
 
-The action creates these labels automatically (they don't need to exist beforehand):
+## Updating from earlier revisions
 
-- `violating-contribution-guidelines` — added to all closed PRs
-- `missing-issue-reference` — PR body has no issue references
-- `missing-maintainer-discussion` — referenced issue lacks author + maintainer discussion
-- `issue-already-assigned` — referenced issue is assigned to someone else
+Earlier revisions of this action closed non-compliant PRs and applied labels (`violating-contribution-guidelines`, `missing-issue-reference`, `missing-maintainer-discussion`, `issue-already-assigned`). The current version does neither — it only posts a comment.
+
+To update an existing consumer:
+
+- Bump the pinned commit SHA to the latest on `main`.
+- Change `types: [opened, reopened]` → `types: [opened]`.
+- Remove any code that reads the `was-closed` output (it no longer exists).
+
+Existing labels on old PRs are not removed automatically. Clean them up with a one-off script if desired.

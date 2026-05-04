@@ -4,7 +4,9 @@
 
 ### Features
 
-- Add validate-pr composite action for validating non-maintainer PRs against contribution guidelines and enforcing draft status ([#153](https://github.com/getsentry/github-workflows/pull/153))
+- Validate PR - Action is advisory: it posts a single friendly comment on community PRs that don't reference an issue with maintainer discussion. PRs are not closed and no labels are applied. Recommended trigger is `types: [opened]`.
+- Validate PR - Skip validation for PRs with fewer than 100 lines changed, excluding common lock files (`Cargo.lock`, `yarn.lock`, `package-lock.json`, `Pipfile.lock`, etc.). Tiny PRs no longer go through the issue-discussion loop.
+- Add validate-pr composite action for validating non-maintainer PRs against contribution guidelines ([#153](https://github.com/getsentry/github-workflows/pull/153))
 
 ## 3.3.0
 
