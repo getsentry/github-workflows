@@ -97,25 +97,36 @@ module.exports = async ({ github, context, core }) => {
     return;
   }
 
-  // Stage 2: fetch file list and recompute excluding lock files.
-  const files = await github.paginate(github.rest.pulls.listFiles, {
-    owner: repo.owner,
-    repo: repo.repo,
-    pull_number: pullRequest.number,
-    per_page: 100,
-  });
-  function basenameLower(path) {
-    const idx = path.lastIndexOf('/');
-    return (idx >= 0 ? path.slice(idx + 1) : path).toLowerCase();
-  }
-  const nonLockLOC = files
-    .filter((f) => !LOCK_FILE_BASENAMES.has(basenameLower(f.filename)))
-    .reduce((sum, f) => sum + (f.additions || 0) + (f.deletions || 0), 0);
-  if (nonLockLOC < SMALL_PR_THRESHOLD) {
-    core.info(
-      `PR has ${nonLockLOC} non-lock-file lines changed (< ${SMALL_PR_THRESHOLD}). Skipping.`
+  // Stage 2: fetch file list and recompute excluding lock files. On API
+  // failure, fall through to validation rather than aborting — a transient
+  // GitHub error shouldn't break the action.
+  let files = null;
+  try {
+    files = await github.paginate(github.rest.pulls.listFiles, {
+      owner: repo.owner,
+      repo: repo.repo,
+      pull_number: pullRequest.number,
+      per_page: 100,
+    });
+  } catch (e) {
+    core.warning(
+      `Could not fetch PR file list (${e.message}); skipping lock-file exclusion and proceeding to validation.`
     );
-    return;
+  }
+  if (files) {
+    function basenameLower(path) {
+      const idx = path.lastIndexOf('/');
+      return (idx >= 0 ? path.slice(idx + 1) : path).toLowerCase();
+    }
+    const nonLockLOC = files
+      .filter((f) => !LOCK_FILE_BASENAMES.has(basenameLower(f.filename)))
+      .reduce((sum, f) => sum + (f.additions || 0) + (f.deletions || 0), 0);
+    if (nonLockLOC < SMALL_PR_THRESHOLD) {
+      core.info(
+        `PR has ${nonLockLOC} non-lock-file lines changed (< ${SMALL_PR_THRESHOLD}). Skipping.`
+      );
+      return;
+    }
   }
 
   // --- Step 3: Parse issue references from PR body ---
@@ -230,7 +241,9 @@ module.exports = async ({ github, context, core }) => {
     const { data: app } = await github.rest.apps.getAuthenticated();
     botLogin = `${app.slug}[bot]`;
   } catch (e) {
-    core.warning(`Could not resolve bot login: ${e.message}`);
+    core.warning(
+      `Could not resolve bot login (${e.message}); duplicate-comment guard disabled for this run.`
+    );
   }
 
   if (botLogin) {
