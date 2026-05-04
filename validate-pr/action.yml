@@ -10,11 +10,6 @@ inputs:
     description: 'GitHub App private key for the SDK Maintainer Bot'
     required: true
 
-outputs:
-  was-closed:
-    description: 'Whether the PR was closed by the validation step'
-    value: ${{ steps.validate.outputs.was-closed }}
-
 runs:
   using: 'composite'
   steps:
