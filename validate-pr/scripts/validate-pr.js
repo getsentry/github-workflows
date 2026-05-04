@@ -1,10 +1,9 @@
 // @ts-check
 
 /**
- * Validates non-maintainer PRs by checking that they reference a GitHub issue
- * with prior discussion between the author and a maintainer.
- *
- * Closes PRs that don't meet contribution guidelines.
+ * Advisory validation for community PRs. Posts a single friendly comment
+ * when the PR doesn't reference an issue with maintainer discussion.
+ * Never closes PRs, never applies labels.
  *
  * @param {object} params
  * @param {import('@actions/github').getOctokit} params.github
@@ -30,11 +29,10 @@ module.exports = async ({ github, context, core }) => {
   ];
   if (ALLOWED_BOTS.includes(prAuthor)) {
     core.info(`PR author ${prAuthor} is an allowed bot. Skipping.`);
-    core.setOutput('skipped', 'true');
     return;
   }
 
-  // --- Helpers: check user permission on a repo (cached) ---
+  // --- Helpers: cached collaborator-role lookup ---
   const roleCache = new Map();
   async function getRole(owner, repoName, username) {
     const key = `${owner}/${repoName}:${username}`;
@@ -56,7 +54,6 @@ module.exports = async ({ github, context, core }) => {
 
   async function hasWriteAccess(owner, repoName, username) {
     const role = await getRole(owner, repoName, username);
-    // role_name values: admin, maintain, push, triage, pull (+ custom roles)
     return ['admin', 'maintain', 'push', 'write'].includes(role);
   }
 
@@ -65,36 +62,68 @@ module.exports = async ({ github, context, core }) => {
     return ['admin', 'maintain'].includes(role);
   }
 
-  // --- Step 1: Skip if a maintainer reopened the PR ---
-  if (context.payload.action === 'reopened') {
-    const sender = context.payload.sender.login;
-    const senderIsMaintainer = await isMaintainer(repo.owner, repo.repo, sender);
-    if (senderIsMaintainer) {
-      core.info(`PR reopened by maintainer ${sender}. Skipping all checks.`);
-      core.setOutput('skipped', 'true');
-      return;
-    }
-  }
-
-  // --- Step 2: Check if PR author has write access (admin, maintain, or write role) ---
-  const authorHasWriteAccess = await hasWriteAccess(repo.owner, repo.repo, prAuthor);
-  if (authorHasWriteAccess) {
+  // --- Step 1: Skip if PR author has write+ access ---
+  if (await hasWriteAccess(repo.owner, repo.repo, prAuthor)) {
     core.info(`PR author ${prAuthor} has write+ access. Skipping.`);
-    core.setOutput('skipped', 'true');
     return;
   }
   core.info(`PR author ${prAuthor} does not have write access.`);
 
+  // --- Step 2: Small-PR bypass (excluding lock files) ---
+  const LOCK_FILE_BASENAMES = new Set([
+    'cargo.lock',
+    'package-lock.json',
+    'yarn.lock',
+    'pnpm-lock.yaml',
+    'pipfile.lock',
+    'poetry.lock',
+    'uv.lock',
+    'gemfile.lock',
+    'composer.lock',
+    'go.sum',
+    'mix.lock',
+    'pubspec.lock',
+    'packages.lock.json',
+    'podfile.lock',
+    'flake.lock',
+  ]);
+  const SMALL_PR_THRESHOLD = 100;
+
+  const aggregateLOC = (pullRequest.additions || 0) + (pullRequest.deletions || 0);
+  if (aggregateLOC < SMALL_PR_THRESHOLD) {
+    core.info(
+      `PR has ${aggregateLOC} lines changed (< ${SMALL_PR_THRESHOLD}). Skipping.`
+    );
+    return;
+  }
+
+  // Stage 2: fetch file list and recompute excluding lock files.
+  const files = await github.paginate(github.rest.pulls.listFiles, {
+    owner: repo.owner,
+    repo: repo.repo,
+    pull_number: pullRequest.number,
+    per_page: 100,
+  });
+  function basenameLower(path) {
+    const idx = path.lastIndexOf('/');
+    return (idx >= 0 ? path.slice(idx + 1) : path).toLowerCase();
+  }
+  const nonLockLOC = files
+    .filter((f) => !LOCK_FILE_BASENAMES.has(basenameLower(f.filename)))
+    .reduce((sum, f) => sum + (f.additions || 0) + (f.deletions || 0), 0);
+  if (nonLockLOC < SMALL_PR_THRESHOLD) {
+    core.info(
+      `PR has ${nonLockLOC} non-lock-file lines changed (< ${SMALL_PR_THRESHOLD}). Skipping.`
+    );
+    return;
+  }
+
   // --- Step 3: Parse issue references from PR body ---
   const body = pullRequest.body || '';
-
-  // Match all issue reference formats:
-  //   #123, Fixes #123, getsentry/repo#123, Fixes getsentry/repo#123
-  //   https://github.com/getsentry/repo/issues/123
   const issueRefs = [];
   const seen = new Set();
 
-  // Pattern 1: Full GitHub URLs
+  // Pattern 1: full GitHub URLs
   const urlPattern = /https?:\/\/github\.com\/(getsentry)\/([\w.-]+)\/issues\/(\d+)/gi;
   for (const match of body.matchAll(urlPattern)) {
     const key = `${match[1]}/${match[2]}#${match[3]}`;
@@ -104,7 +133,7 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
-  // Pattern 2: Cross-repo references (getsentry/repo#123)
+  // Pattern 2: cross-repo references (getsentry/repo#123)
   const crossRepoPattern = /(?:(?:fix|fixes|fixed|close|closes|closed|resolve|resolves|resolved)\s+)?(getsentry)\/([\w.-]+)#(\d+)/gi;
   for (const match of body.matchAll(crossRepoPattern)) {
     const key = `${match[1]}/${match[2]}#${match[3]}`;
@@ -114,8 +143,7 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
-  // Pattern 3: Same-repo references (#123)
-  // Negative lookbehind to avoid matching cross-repo refs or URLs already captured
+  // Pattern 3: same-repo references (#123)
   const sameRepoPattern = /(?:(?:fix|fixes|fixed|close|closes|closed|resolve|resolves|resolved)\s+)?(?<![/\w])#(\d+)/gi;
   for (const match of body.matchAll(sameRepoPattern)) {
     const key = `${repo.owner}/${repo.repo}#${match[1]}`;
@@ -127,50 +155,7 @@ module.exports = async ({ github, context, core }) => {
 
   core.info(`Found ${issueRefs.length} issue reference(s): ${[...seen].join(', ')}`);
 
-  // --- Helper: close PR with comment and labels ---
-  async function closePR(message, reasonLabel) {
-    await github.rest.issues.addLabels({
-      ...repo,
-      issue_number: pullRequest.number,
-      labels: ['violating-contribution-guidelines', reasonLabel],
-    });
-
-    await github.rest.issues.createComment({
-      ...repo,
-      issue_number: pullRequest.number,
-      body: message,
-    });
-
-    await github.rest.pulls.update({
-      ...repo,
-      pull_number: pullRequest.number,
-      state: 'closed',
-    });
-
-    core.setOutput('was-closed', 'true');
-  }
-
-  // --- Step 4: No issue references ---
-  if (issueRefs.length === 0) {
-    core.info('No issue references found. Closing PR.');
-    await closePR([
-      'This PR has been automatically closed. All non-maintainer contributions must reference an existing GitHub issue.',
-      '',
-      '**Next steps:**',
-      '1. Find or open an issue describing the problem or feature',
-      '2. Discuss the approach with a maintainer in the issue',
-      '3. Once a maintainer has acknowledged your proposed approach, open a new PR referencing the issue',
-      '',
-      `Please review our [contributing guidelines](${contributingUrl}) for more details.`,
-    ].join('\n'), 'missing-issue-reference');
-    return;
-  }
-
-  // --- Step 5: Validate each referenced issue ---
-  // A PR is valid if ANY referenced issue passes all checks.
-  let hasAssigneeConflict = false;
-  let hasNoDiscussion = false;
-
+  // --- Step 4: Validate referenced issues; succeed if any pass all checks ---
   for (const ref of issueRefs) {
     core.info(`Checking issue ${ref.owner}/${ref.repo}#${ref.number}...`);
 
@@ -187,17 +172,16 @@ module.exports = async ({ github, context, core }) => {
       continue;
     }
 
-    // Check assignee: if assigned to someone other than PR author, flag it
+    // Assignee check: skip this ref if assigned to someone other than PR author.
     if (issue.assignees && issue.assignees.length > 0) {
-      const assignedToAuthor = issue.assignees.some(a => a.login === prAuthor);
+      const assignedToAuthor = issue.assignees.some((a) => a.login === prAuthor);
       if (!assignedToAuthor) {
         core.info(`Issue ${ref.owner}/${ref.repo}#${ref.number} is assigned to someone else.`);
-        hasAssigneeConflict = true;
         continue;
       }
     }
 
-    // Check discussion: both PR author and a maintainer must have commented
+    // Discussion check: PR author and a maintainer must both have participated.
     const comments = await github.paginate(github.rest.issues.listComments, {
       owner: ref.owner,
       repo: ref.repo,
@@ -205,77 +189,74 @@ module.exports = async ({ github, context, core }) => {
       per_page: 100,
     });
 
-    // Also consider the issue author as a participant (opening the issue is a form of discussion)
-    // Guard against null user (deleted/suspended GitHub accounts)
     const prAuthorParticipated =
       issue.user?.login === prAuthor ||
-      comments.some(c => c.user?.login === prAuthor);
+      comments.some((c) => c.user?.login === prAuthor);
+
+    if (!prAuthorParticipated) {
+      core.info(`Issue ${ref.owner}/${ref.repo}#${ref.number} has no PR author participation.`);
+      continue;
+    }
+
+    const usersToCheck = new Set();
+    if (issue.user?.login && issue.user.login !== prAuthor) {
+      usersToCheck.add(issue.user.login);
+    }
+    for (const comment of comments) {
+      if (comment.user?.login && comment.user.login !== prAuthor) {
+        usersToCheck.add(comment.user.login);
+      }
+    }
 
     let maintainerParticipated = false;
-    if (prAuthorParticipated) {
-      // Check each commenter (and issue author) for admin/maintain access on the target repo
-      const usersToCheck = new Set();
-      if (issue.user?.login) usersToCheck.add(issue.user.login);
-      for (const comment of comments) {
-        if (comment.user?.login && comment.user.login !== prAuthor) {
-          usersToCheck.add(comment.user.login);
-        }
-      }
-
-      for (const user of usersToCheck) {
-        if (user === prAuthor) continue;
-        if (await isMaintainer(repo.owner, repo.repo, user)) {
-          maintainerParticipated = true;
-          core.info(`Maintainer ${user} participated in ${ref.owner}/${ref.repo}#${ref.number}.`);
-          break;
-        }
+    for (const user of usersToCheck) {
+      if (await isMaintainer(repo.owner, repo.repo, user)) {
+        maintainerParticipated = true;
+        core.info(`Maintainer ${user} participated in ${ref.owner}/${ref.repo}#${ref.number}.`);
+        break;
       }
     }
 
-    if (prAuthorParticipated && maintainerParticipated) {
+    if (maintainerParticipated) {
       core.info(`Issue ${ref.owner}/${ref.repo}#${ref.number} has valid discussion. PR is allowed.`);
-      return; // PR is valid — at least one issue passes all checks
+      return;
     }
-
-    core.info(`Issue ${ref.owner}/${ref.repo}#${ref.number} lacks discussion between author and maintainer.`);
-    hasNoDiscussion = true;
+    core.info(`Issue ${ref.owner}/${ref.repo}#${ref.number} lacks maintainer participation.`);
   }
 
-  // --- Step 6: No valid issue found — close with the most relevant reason ---
-  if (hasAssigneeConflict) {
-    core.info('Closing PR: referenced issue is assigned to someone else.');
-    await closePR([
-      'This PR has been automatically closed. The referenced issue is already assigned to someone else.',
-      '',
-      'If you believe this assignment is outdated, please comment on the issue to discuss before opening a new PR.',
-      '',
-      `Please review our [contributing guidelines](${contributingUrl}) for more details.`,
-    ].join('\n'), 'issue-already-assigned');
-    return;
+  // --- Step 5: Validation failed — post one warm comment (idempotent) ---
+  let botLogin = null;
+  try {
+    const { data: app } = await github.rest.apps.getAuthenticated();
+    botLogin = `${app.slug}[bot]`;
+  } catch (e) {
+    core.warning(`Could not resolve bot login: ${e.message}`);
   }
 
-  if (hasNoDiscussion) {
-    core.info('Closing PR: no discussion between PR author and a maintainer in the referenced issue.');
-    await closePR([
-      'This PR has been automatically closed. The referenced issue does not show a discussion between you and a maintainer.',
-      '',
-      'To avoid wasted effort on both sides, please discuss your proposed approach in the issue first and wait for a maintainer to respond before opening a PR.',
-      '',
-      `Please review our [contributing guidelines](${contributingUrl}) for more details.`,
-    ].join('\n'), 'missing-maintainer-discussion');
-    return;
+  if (botLogin) {
+    const existing = await github.paginate(github.rest.issues.listComments, {
+      ...repo,
+      issue_number: pullRequest.number,
+      per_page: 100,
+    });
+    if (existing.some((c) => c.user?.login === botLogin)) {
+      core.info(`Bot ${botLogin} already commented on this PR. Skipping.`);
+      return;
+    }
   }
 
-  // If we get here, all issue refs were unfetchable
-  core.info('Could not validate any referenced issues. Closing PR.');
-  await closePR([
-    'This PR has been automatically closed. The referenced issue(s) could not be found.',
+  const commentBody = [
+    '👋 Thanks for sending this our way! Before a maintainer reviews the code, we ask community contributors to align with us on the approach first — it keeps your time pointed at changes we can land.',
     '',
-    '**Next steps:**',
-    '1. Ensure the issue exists and is in a `getsentry` repository',
-    '2. Discuss the approach with a maintainer in the issue',
-    '3. Once a maintainer has acknowledged your proposed approach, open a new PR referencing the issue',
+    'The easiest way is to open or find a GitHub issue and discuss the approach with a maintainer there, then link that issue from this PR. If the issue is already assigned to someone else, please check in with them (or with us) before continuing — otherwise two people may end up working on the same task.',
     '',
-    `Please review our [contributing guidelines](${contributingUrl}) for more details.`,
-  ].join('\n'), 'missing-issue-reference');
+    `See our [contributing guidelines](${contributingUrl}) for the full picture.`,
+  ].join('\n');
+
+  await github.rest.issues.createComment({
+    ...repo,
+    issue_number: pullRequest.number,
+    body: commentBody,
+  });
+  core.info('Posted advisory comment. PR remains open.');
 };
