@@ -236,26 +236,28 @@ module.exports = async ({ github, context, core }) => {
   }
 
   // --- Step 5: Validation failed — post one warm comment (idempotent) ---
-  let botLogin = null;
-  try {
-    const { data: app } = await github.rest.apps.getAuthenticated();
-    botLogin = `${app.slug}[bot]`;
-  } catch (e) {
-    core.warning(
-      `Could not resolve bot login (${e.message}); duplicate-comment guard disabled for this run.`
+  // The bot's GitHub login is `${app.slug}[bot]`. We get the slug from the
+  // composite action via the APP_SLUG env var (sourced from
+  // create-github-app-token's `app-slug` output) — calling
+  // apps.getAuthenticated() here would fail because it requires JWT auth
+  // and the github client is authenticated with an installation token.
+  const appSlug = process.env.APP_SLUG;
+  if (!appSlug) {
+    core.setFailed(
+      'APP_SLUG env var is not set. The validate-pr composite action must pass app-slug from create-github-app-token to the script.'
     );
+    return;
   }
+  const botLogin = `${appSlug}[bot]`;
 
-  if (botLogin) {
-    const existing = await github.paginate(github.rest.issues.listComments, {
-      ...repo,
-      issue_number: pullRequest.number,
-      per_page: 100,
-    });
-    if (existing.some((c) => c.user?.login === botLogin)) {
-      core.info(`Bot ${botLogin} already commented on this PR. Skipping.`);
-      return;
-    }
+  const existing = await github.paginate(github.rest.issues.listComments, {
+    ...repo,
+    issue_number: pullRequest.number,
+    per_page: 100,
+  });
+  if (existing.some((c) => c.user?.login === botLogin)) {
+    core.info(`Bot ${botLogin} already commented on this PR. Skipping.`);
+    return;
   }
 
   const commentBody = [
