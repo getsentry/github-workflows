@@ -464,7 +464,7 @@ runs:
         labels: dependencies
 
     - name: Trigger PR workflows
-      if: ${{ ( steps.create-pr.outputs.pull-request-operation == 'created' ) && ( steps.update.outputs.pull-request-head-sha == '' || steps.update.outputs.pull-request-head-sha == steps.create-pr.outputs.pull-request-head-sha ) }}
+      if: ${{ (inputs.changelog-entry != 'true') && ( steps.create-pr.outputs.pull-request-operation == 'created' ) && ( steps.update.outputs.pull-request-head-sha == '' || steps.update.outputs.pull-request-head-sha == steps.create-pr.outputs.pull-request-head-sha ) }}
       shell: bash
       working-directory: caller-repo
       env:
