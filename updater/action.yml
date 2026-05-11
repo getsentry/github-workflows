@@ -325,8 +325,14 @@ runs:
         BASE_BRANCH: ${{ steps.root.outputs.baseBranch }}
         PR_BRANCH: ${{ steps.root.outputs.prBranch }}
       run: |
-        $apiUrl = 'repos/${{ github.repository }}/pulls?base=' + $env:BASE_BRANCH + '&head=${{ github.repository_owner }}:' + $env:PR_BRANCH
-        $urls = @(gh api $apiUrl --jq '.[].html_url')
+        # Use -f to let gh URL-encode query params; PR branch can contain '#' from CMake dependency paths.
+        $head = '${{ github.repository_owner }}:' + $env:PR_BRANCH
+        $base = $env:BASE_BRANCH
+        $urls = @(gh api 'repos/${{ github.repository }}/pulls' `
+          -X GET `
+          -f ('base=' + $base) `
+          -f ('head=' + $head) `
+          --jq '.[].html_url')
         if ($urls.Length -eq 0)
         {
             'url=' | Tee-Object $env:GITHUB_OUTPUT -Append
