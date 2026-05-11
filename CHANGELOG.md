@@ -11,6 +11,13 @@
 ### Fixes
 
 - Updater - Trigger CI for new PRs without changelog updates ([#166](https://github.com/getsentry/github-workflows/pull/166))
+- Updater - Select the first branch when multiple branches point at `HEAD` ([#165](https://github.com/getsentry/github-workflows/pull/165))
+
+### Dependencies
+
+- Bump Danger JS from v13.0.4 to v13.0.5 ([#160](https://github.com/getsentry/github-workflows/pull/160))
+  - [changelog](https://github.com/danger/danger-js/blob/main/CHANGELOG.md#1305)
+  - [diff](https://github.com/danger/danger-js/compare/13.0.4...13.0.5)
 
 ## 3.3.0
 
