@@ -10,6 +10,7 @@
 
 ### Fixes
 
+- Updater - Trigger CI for new PRs without changelog updates ([#166](https://github.com/getsentry/github-workflows/pull/166))
 - Updater - Select the first branch when multiple branches point at `HEAD` ([#165](https://github.com/getsentry/github-workflows/pull/165))
 
 ### Dependencies
