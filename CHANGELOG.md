@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Validate PR - Action is advisory: it posts a single friendly comment on community PRs that don't reference an issue with maintainer discussion. PRs are not closed and no labels are applied. Recommended trigger is `types: [opened]`.
+- Validate PR - Skip validation for PRs with fewer than 100 lines changed, excluding common lock files (`Cargo.lock`, `yarn.lock`, `package-lock.json`, `Pipfile.lock`, etc.). Tiny PRs no longer go through the issue-discussion loop.
+- Add validate-pr composite action for validating non-maintainer PRs against contribution guidelines ([#153](https://github.com/getsentry/github-workflows/pull/153))
+
+### Fixes
+
+- Updater - Trigger CI for new PRs without changelog updates ([#166](https://github.com/getsentry/github-workflows/pull/166))
+- Updater - Select the first branch when multiple branches point at `HEAD` ([#165](https://github.com/getsentry/github-workflows/pull/165))
+
+### Dependencies
+
+- Bump Danger JS from v13.0.4 to v13.0.5 ([#160](https://github.com/getsentry/github-workflows/pull/160))
+  - [changelog](https://github.com/danger/danger-js/blob/main/CHANGELOG.md#1305)
+  - [diff](https://github.com/danger/danger-js/compare/13.0.4...13.0.5)
+
 ## 3.3.0
 
 ### Features

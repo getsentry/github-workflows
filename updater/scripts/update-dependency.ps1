@@ -162,7 +162,7 @@ if ("$Tag" -eq '') {
         if ("$headRef" -eq '') {
             throw "Couldn't determine repository head (no ref returned by ls-remote HEAD"
         }
-        $mainBranch = (git ls-remote --heads $url | Where-Object { $_.StartsWith($headRef) }) -replace '.*\srefs/heads/', ''
+        $mainBranch = (git ls-remote --heads $url | Where-Object { $_.StartsWith($headRef) } | Select-Object -First 1) -replace '.*\srefs/heads/', ''
     }
 
     $url = $url -replace '\.git$', ''
