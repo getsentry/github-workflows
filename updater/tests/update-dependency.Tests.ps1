@@ -220,7 +220,9 @@ switch ($action)
                 $output | Should -Contain 'latestTag=0.28.0'
                 $output | Should -Contain 'latestTagNice=v0.28.0'
                 $output | Should -Contain 'url=https://github.com/getsentry/sentry-cli'
-                $output | Should -Contain 'mainBranch=main'
+                # sentry-cli has both `main` and `master`; which one is reported depends on
+                # which currently points at HEAD upstream, so accept either.
+                ($output | Where-Object { $_ -like 'mainBranch=*' }) | Should -BeIn @('mainBranch=main', 'mainBranch=master')
             }
         }
 
