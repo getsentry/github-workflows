@@ -8,6 +8,10 @@
 - Validate PR - Skip validation for PRs with fewer than 100 lines changed, excluding common lock files (`Cargo.lock`, `yarn.lock`, `package-lock.json`, `Pipfile.lock`, etc.). Tiny PRs no longer go through the issue-discussion loop.
 - Add validate-pr composite action for validating non-maintainer PRs against contribution guidelines ([#153](https://github.com/getsentry/github-workflows/pull/153))
 
+### Fixes
+
+- Updater - Select the first branch when multiple branches point at `HEAD` ([#165](https://github.com/getsentry/github-workflows/pull/165))
+
 ## 3.3.0
 
 ### Features
