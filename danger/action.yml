@@ -88,7 +88,11 @@ runs:
         EXTRA_INSTALL_PACKAGES: ${{ inputs.extra-install-packages }}
       run: |
         echo "Installing packages: $EXTRA_INSTALL_PACKAGES"
-        docker exec --user root danger sh -c "set -e && apt-get update && apt-get install -y --no-install-recommends $EXTRA_INSTALL_PACKAGES"
+        # Pass the (already-validated) package list into the container via env var and
+        # let the container's shell expand it. Single quotes prevent the host shell
+        # from interpolating the value into the command string (defense in depth).
+        docker exec --user root -e EXTRA_INSTALL_PACKAGES danger \
+          sh -c 'set -e && apt-get update && apt-get install -y --no-install-recommends $EXTRA_INSTALL_PACKAGES'
         echo "All additional packages installed successfully."
 
     - name: Run DangerJS

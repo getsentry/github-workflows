@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Danger - Harden `extra-install-packages` handling: pass the package list into the container via env var instead of host-shell string interpolation (defense in depth)
+
 ## 3.4.0
 
 ### Features
