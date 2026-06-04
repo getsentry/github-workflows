@@ -6,6 +6,12 @@
 
 - Danger - Harden `extra-install-packages` handling: pass the package list into the container via env var instead of host-shell string interpolation (defense in depth) ([#169](https://github.com/getsentry/github-workflows/pull/169))
 
+### Dependencies
+
+- Bump WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE from v2.0.0 to v2.0.4 ([#66](https://github.com/getsentry/github-workflows/pull/66))
+  - [changelog](https://github.com/getsentry/sentry-cli/blob/master/CHANGELOG.md#204)
+  - [diff](https://github.com/getsentry/sentry-cli/compare/2.0.0...2.0.4)
+
 ## 3.4.0
 
 ### Features
