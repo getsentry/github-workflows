@@ -6,6 +6,12 @@
 
 - Danger - Harden `extra-install-packages` handling: pass the package list into the container via env var instead of host-shell string interpolation (defense in depth) ([#169](https://github.com/getsentry/github-workflows/pull/169))
 
+### Dependencies
+
+- Bump Danger JS from v13.0.5 to v14.0.6 ([#172](https://github.com/getsentry/github-workflows/pull/172))
+  - [changelog](https://github.com/danger/danger-js/blob/main/CHANGELOG.md#1406)
+  - [diff](https://github.com/danger/danger-js/compare/13.0.5...14.0.6)
+
 ## 3.4.0
 
 ### Features
