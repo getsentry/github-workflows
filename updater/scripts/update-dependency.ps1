@@ -245,7 +245,7 @@ if ("$Tag" -eq '') {
             }
 
             # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
-            $refs = $(git ls-remote --tags $url)
+            [string[]]$refs = $(git ls-remote --tags $url)
             $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split '[ \t]') | Select-Object -First 1
             $refLatest = (($refs -match "refs/tags/$([regex]::Escape($latestTag))$" ) -split '[ \t]') | Select-Object -First 1
             if ($isHash -and -not (Test-HashAncestry $url $originalTag $refLatest)) {
