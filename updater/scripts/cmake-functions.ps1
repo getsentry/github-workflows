@@ -122,6 +122,10 @@ function Test-HashAncestry {
             # Check if old hash is ancestor of new hash
             git merge-base --is-ancestor $oldHash $newHash 2>$null
             $isAncestor = $LastExitCode -eq 0
+            if ($LastExitCode -eq 1) {
+                # a negative ancestry result is not a script failure
+                $global:LASTEXITCODE = 0
+            }
 
             return $isAncestor
         }

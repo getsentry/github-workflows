@@ -387,6 +387,20 @@ FetchContent_MakeAvailable(sentry-native)
             $content | Should -Not -Match 'a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2'
             $content | Should -Not -Match '# 0.9.1'
         }
+
+        It 'skips an unreleased pin' {
+            $hash = 'a92fd4a232d8010e3c8222a8406f420c61369691'
+            $hashTemplate.Replace('a64d5bd8ee130f2cda196b6fa7d9b65bfa6d32e2', $hash) | Out-File $hashTestFile
+            $original = Get-Content $hashTestFile -Raw
+
+            $output = & "$PSScriptRoot/../scripts/update-dependency.ps1" -Path $hashTestFile -Pattern '^(0\.9\.1|0\.11\.0)$' -WarningVariable warnings
+
+            $LASTEXITCODE | Should -Be 0
+            $warnings | Should -BeNullOrEmpty
+            Get-Content $hashTestFile -Raw | Should -BeExactly $original
+            $output | Should -Contain "originalTag=$hash"
+            $output | Should -Contain "latestTag=$hash"
+        }
     }
 
     Context 'Complex formatting' {

@@ -221,9 +221,11 @@ if ("$Tag" -eq '') {
 
     if (("$originalTag" -ne '') -and ("$latestTag" -ne '') -and ("$latestTag" -ne "$originalTag")) {
         do {
+            $isHash = $isCMakeFile -and $originalTag -match '^[a-f0-9]{40}$'
+
             # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
             # roll back, even though it's not the latest version matching the configured pattern.
-            if ((GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag)) {
+            if (-not $isHash -and (GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag)) {
                 Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
                 $latestTag = $originalTag
                 break
@@ -232,7 +234,13 @@ if ("$Tag" -eq '') {
             # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
             $refs = $(git ls-remote --tags $url)
             $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split '[ \t]') | Select-Object -First 1
-            $refLatest = (($refs -match "refs/tags/$latestTag" ) -split '[ \t]') | Select-Object -First 1
+            $refLatest = (($refs -match "refs/tags/$([regex]::Escape($latestTag))$" ) -split '[ \t]') | Select-Object -First 1
+            if ($isHash -and -not (Test-HashAncestry $url $originalTag $refLatest)) {
+                Write-Host "Pinned hash '$originalTag' is not in history of the latest tag '$latestTag'. Skipping update."
+                $latestTag = $originalTag
+                break
+            }
+
             if ($refOriginal -eq $refLatest) {
                 Write-Host "Latest tag '$latestTag' points to the same commit as the original tag '$originalTag'. Skipping update."
                 $latestTag = $originalTag
