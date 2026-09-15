@@ -667,4 +667,34 @@ param([string] $originalVersion, [string] $newVersion)
             Remove-Item $postUpdateScript -ErrorAction SilentlyContinue
         }
     }
+
+    It 'only updates submodules forward' {
+        git init $TestDrive | Out-Null
+        Push-Location $TestDrive
+        try {
+            git submodule add --quiet https://github.com/getsentry/sentry-native sentry-native
+            $hash = 'a92fd4a232d8010e3c8222a8406f420c61369691'
+            git -C sentry-native checkout --quiet $hash
+            git add sentry-native
+            $original = git -C sentry-native describe --tags
+
+            $output = UpdateDependency 'sentry-native' '^0\.16\.[56]$'
+
+            $LASTEXITCODE | Should -Be 0
+            git -C sentry-native rev-parse HEAD | Should -Be $hash
+            $output | Should -Contain "originalTag=$original"
+            $output | Should -Contain "latestTag=$original"
+
+            git -C sentry-native checkout --quiet 0.16.5
+            git add sentry-native
+
+            $output = UpdateDependency 'sentry-native' '^0\.16\.[56]$'
+
+            $LASTEXITCODE | Should -Be 0
+            git -C sentry-native describe --tags | Should -Be '0.16.6'
+            $output | Should -Contain 'latestTag=0.16.6'
+        } finally {
+            Pop-Location
+        }
+    }
 }

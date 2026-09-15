@@ -231,6 +231,19 @@ if ("$Tag" -eq '') {
                 break
             }
 
+            if ($isSubmodule) {
+                git -C $Path merge-base --is-ancestor HEAD $latestTag
+                if ($LASTEXITCODE -eq 1) {
+                    $global:LASTEXITCODE = 0
+                    Write-Host "Submodule '$Path' is not in history of the latest tag '$latestTag'. Skipping update."
+                    $latestTag = $originalTag
+                    break
+                }
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Could not validate submodule ancestry for $Path (git merge-base failed with exit code $LASTEXITCODE)"
+                }
+            }
+
             # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
             $refs = $(git ls-remote --tags $url)
             $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split '[ \t]') | Select-Object -First 1
