@@ -5,6 +5,7 @@
 ### Fixes
 
 - Danger - Harden `extra-install-packages` handling: pass the package list into the container via env var instead of host-shell string interpolation (defense in depth) ([#169](https://github.com/getsentry/github-workflows/pull/169))
+- Updater - Skip CMake and submodule updates to tags that do not contain the pinned commit, preventing exceptions and rollbacks ([#173](https://github.com/getsentry/github-workflows/pull/173))
 
 ## 3.4.0
 
