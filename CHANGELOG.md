@@ -4,7 +4,6 @@
 
 ### Fixes
 
-- Danger - Add `skip-checkout` to preserve a caller's prepared workspace, including generated custom Dangerfiles. Checkout remains enabled by default.
 - Updater - Preserve CMake and submodule pins ahead of the selected release, while reporting divergent histories and Git errors ([#174](https://github.com/getsentry/github-workflows/pull/174))
 - Danger - Harden `extra-install-packages` handling: pass the package list into the container via env var instead of host-shell string interpolation (defense in depth) ([#169](https://github.com/getsentry/github-workflows/pull/169))
 
