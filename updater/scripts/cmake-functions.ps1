@@ -1,4 +1,5 @@
 # CMake FetchContent helper functions for update-dependency.ps1
+. "$PSScriptRoot/git-functions.ps1"
 
 function Parse-CMakeFetchContent {
     [CmdletBinding()]
@@ -77,7 +78,7 @@ function Find-TagForHash {
         foreach ($ref in $refs) {
             $commit, $tagRef = $ref -split '\s+', 2
             if ($commit -eq $hash) {
-                return $tagRef -replace '^refs/tags/', ''
+                return $tagRef -replace '^refs/tags/', '' -replace '\^\{\}$', ''
             }
         }
         return $null
@@ -103,38 +104,8 @@ function Test-HashAncestry {
         [ValidatePattern('^[a-f0-9]{40}$')]
         [string]$newHash
     )
-    try {
-        # Create a temporary directory for git operations
-        $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
-        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-
-        try {
-            Push-Location $tempDir
-
-            # Initialize a bare repository and add the remote
-            git init --bare 2>$null | Out-Null
-            git remote add origin $repo 2>$null | Out-Null
-
-            # Fetch both commits
-            git fetch origin $oldHash 2>$null | Out-Null
-            git fetch origin $newHash 2>$null | Out-Null
-
-            # Check if old hash is ancestor of new hash
-            git merge-base --is-ancestor $oldHash $newHash 2>$null
-            $isAncestor = $LastExitCode -eq 0
-
-            return $isAncestor
-        }
-        finally {
-            Pop-Location
-            Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
-    }
-    catch {
-        Write-Host "Error: Could not validate ancestry for $oldHash -> $newHash : $_"
-        # When in doubt, fail safely to prevent incorrect updates
-        return $false
-    }
+    $relationship = Get-RemoteCommitRelationship $repo $oldHash $newHash
+    return $relationship -in @('Same', 'Behind')
 }
 
 function Update-CMakeFile {
@@ -160,14 +131,16 @@ function Update-CMakeFile {
 
     if ($wasHash) {
         # Convert tag to hash and add comment
-        $newHashRefs = git ls-remote $repo "refs/tags/$newValue"
+        $newHashRefs = git ls-remote $repo "refs/tags/$newValue" "refs/tags/$newValue^{}"
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to fetch tag $newValue from repository $repo (git ls-remote failed with exit code $LASTEXITCODE)"
         }
         if (-not $newHashRefs) {
             throw "Tag $newValue not found in repository $repo"
         }
-        $newHash = ($newHashRefs -split '\s+')[0]
+        # Annotated tags point to tag objects; pin the peeled commit instead.
+        $peeledRef = $newHashRefs | Where-Object { $_ -match '\^\{\}$' }
+        $newHash = (($peeledRef ? $peeledRef : $newHashRefs) -split '\s+')[0]
         $replacement = "$newHash # $newValue"
 
         # Validate ancestry: ensure old hash is reachable from new tag

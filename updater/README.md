@@ -131,6 +131,13 @@ jobs:
           api-token: ${{ secrets.CI_GITHUB_TOKEN }}
 ```
 
+## Pinned Git revisions
+
+Automatic updates compare CMake commit pins and submodule revisions with the selected release by Git ancestry.
+If the pin already contains that release, the updater keeps it unchanged. If the release contains the pin, the
+update proceeds, subject to the existing version checks. Divergent histories fail with an actionable error;
+Git lookup or fetch failures are also reported as errors. Annotated release tags are resolved to their commits.
+
 ## Inputs
 
 * `path`: Dependency path in the source repository. Supported formats:

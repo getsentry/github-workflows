@@ -26,6 +26,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version latest
 . "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/git-functions.ps1"
 
 # Parse CMake file with dependency name
 if ($Path -match '^(.+\.cmake)(#(.+))?$') {
@@ -221,15 +222,38 @@ if ("$Tag" -eq '') {
 
     if (("$originalTag" -ne '') -and ("$latestTag" -ne '') -and ("$latestTag" -ne "$originalTag")) {
         do {
+            $isHash = $isCMakeFile -and (Parse-CMakeFetchContent $Path $cmakeDep).GitTag -match '^[a-f0-9]{40}$'
+            $isUnreleasedPin = ($isHash -and $originalTag -match '^[a-f0-9]{40}$') -or
+                ($isSubmodule -and $originalTag -match '-[0-9]+-g[a-f0-9]+$')
+
+            if ($isSubmodule -or $isHash) {
+                $relationship = if ($isSubmodule) {
+                    Get-CommitRelationship $Path HEAD "refs/tags/$latestTag"
+                } else {
+                    $pin = (Parse-CMakeFetchContent $Path $cmakeDep).GitTag
+                    Get-RemoteCommitRelationship $url $pin "refs/tags/$latestTag"
+                }
+                if ($relationship -in @('Same', 'Ahead')) {
+                    Write-Host "Current revision '$originalTag' is equal to or ahead of tag '$latestTag'. Skipping update."
+                    $latestTag = $originalTag
+                    break
+                }
+                if ($relationship -eq 'Diverged') {
+                    throw "Cannot update '$Path': current revision '$originalTag' and tag '$latestTag' have divergent histories. Choose a release containing the pinned commit or change the pin explicitly."
+                }
+            }
+
             # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
             # roll back, even though it's not the latest version matching the configured pattern.
-            if ((GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag)) {
+            if (-not $isUnreleasedPin -and (GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag)) {
                 Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
                 $latestTag = $originalTag
                 break
             }
 
             # Verify that the latest tag actually points to a different commit. Otherwise, we don't need to update.
+            if ($isSubmodule -or $isHash) { break }
+
             $refs = $(git ls-remote --tags $url)
             $refOriginal = (($refs -match "refs/tags/$originalTag" ) -split '[ \t]') | Select-Object -First 1
             $refLatest = (($refs -match "refs/tags/$latestTag" ) -split '[ \t]') | Select-Object -First 1
