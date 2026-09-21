@@ -43,24 +43,35 @@ function Get-RemoteCommitRelationship {
     )
 
     $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid())
+    $operationFailed = $false
     try {
         git init --quiet --bare $tempDir
         if ($LASTEXITCODE -ne 0) {
             throw "Could not initialize ancestry repository '$tempDir' (git exit code $LASTEXITCODE)"
         }
-        git -C $tempDir fetch --quiet --no-tags $Repository $Current
+        # This repository is disposable; background maintenance can race its removal.
+        git -C $tempDir fetch --quiet --no-tags --no-auto-maintenance $Repository $Current
         if ($LASTEXITCODE -ne 0) {
             throw "Could not fetch current revision '$Current' from '$Repository' (git exit code $LASTEXITCODE)"
         }
         $currentCommit = git -C $tempDir rev-parse --verify 'FETCH_HEAD^{commit}'
         if ($LASTEXITCODE -ne 0) { throw "Could not resolve fetched revision '$Current' to a commit" }
 
-        git -C $tempDir fetch --quiet --no-tags $Repository $Target
+        git -C $tempDir fetch --quiet --no-tags --no-auto-maintenance $Repository $Target
         if ($LASTEXITCODE -ne 0) {
             throw "Could not fetch target revision '$Target' from '$Repository' (git exit code $LASTEXITCODE)"
         }
         return Get-CommitRelationship $tempDir $currentCommit FETCH_HEAD
+    } catch {
+        $operationFailed = $true
+        throw
     } finally {
-        if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
+        try {
+            if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force -ErrorAction Stop }
+        } catch {
+            if (-not $operationFailed) { throw }
+            # Preserve the actionable Git error while still reporting cleanup failure.
+            Write-Warning "Could not remove temporary ancestry repository '$tempDir': $($_.Exception.Message)" -WarningAction Continue
+        }
     }
 }

@@ -123,3 +123,72 @@ Describe 'Commit comparison errors' {
         { Get-RemoteCommitRelationship $remote $behind 'refs/tags/missing' } | Should -Throw '*fetch target revision*'
     }
 }
+
+Describe 'Temporary ancestry repository lifecycle' {
+    BeforeAll {
+        . "$PSScriptRoot/../scripts/git-functions.ps1"
+        $script:gitExecutable = (Get-Command git -CommandType Application | Select-Object -First 1).Source
+    }
+
+    BeforeEach {
+        $script:ancestryRepository = $null
+        $script:allowCleanup = $false
+        Mock git {
+            if ($args -contains 'init') { $script:ancestryRepository = $args[-1] }
+            & $gitExecutable @args
+        }
+    }
+
+    AfterEach {
+        # Cleanup-failure tests deliberately leave the repository behind.
+        $script:allowCleanup = $true
+        if ($ancestryRepository -and (Test-Path $ancestryRepository)) {
+            Microsoft.PowerShell.Management\Remove-Item $ancestryRepository -Recurse -Force
+        }
+    }
+
+    It 'fetches both revisions without launching maintenance in the disposable repository' {
+        $tracePath = Join-Path $TestDrive 'git-trace.json'
+        $previousTrace = $env:GIT_TRACE2_EVENT
+        try {
+            $env:GIT_TRACE2_EVENT = $tracePath
+            Mock git {
+                if ($args -contains 'init') { $script:ancestryRepository = $args[-1] }
+                # Force packing after two fetches if maintenance is allowed. Run it
+                # in the foreground so the regression test cannot itself race cleanup.
+                & $gitExecutable -c maintenance.auto=true -c gc.autoDetach=false `
+                    -c maintenance.autoDetach=false -c gc.autoPackLimit=1 -c fetch.unpackLimit=0 @args
+            }
+            Get-RemoteCommitRelationship $remote $behind $release | Should -Be 'Behind'
+            Test-Path $ancestryRepository | Should -BeFalse
+        } finally {
+            $env:GIT_TRACE2_EVENT = $previousTrace
+        }
+
+        $events = Get-Content $tracePath | ForEach-Object { $_ | ConvertFrom-Json }
+        @($events | Where-Object { $_.event -eq 'start' -and $_.argv -contains 'fetch' }).Count | Should -Be 2
+        @($events | Where-Object { $_.event -eq 'child_start' -and $_.argv -contains 'maintenance' }).Count | Should -Be 0
+    }
+
+    It 'reports cleanup failure after a successful comparison' {
+        Mock Remove-Item { throw [System.IO.IOException]::new('Simulated cleanup failure') } -ParameterFilter { -not $script:allowCleanup }
+        { Get-RemoteCommitRelationship $remote $behind $release } | Should -Throw '*Simulated cleanup failure*'
+    }
+
+    It 'preserves a fetch error when cleanup also fails' {
+        Mock Remove-Item { throw [System.IO.IOException]::new('Simulated cleanup failure') } -ParameterFilter { -not $script:allowCleanup }
+        { Get-RemoteCommitRelationship $remote $behind 'refs/tags/missing' -WarningVariable script:warnings } |
+            Should -Throw '*fetch target revision*'
+        $warnings | Should -HaveCount 1
+        "$warnings" | Should -BeLike "*Could not remove temporary ancestry repository '$ancestryRepository'*Simulated cleanup failure*"
+    }
+
+    It 'preserves a comparison error when cleanup also fails' {
+        Mock Remove-Item { throw [System.IO.IOException]::new('Simulated cleanup failure') } -ParameterFilter { -not $script:allowCleanup }
+        Mock Get-CommitRelationship { throw 'Simulated comparison failure' }
+        { Get-RemoteCommitRelationship $remote $behind $release -WarningVariable script:warnings } |
+            Should -Throw '*Simulated comparison failure*'
+        $warnings | Should -HaveCount 1
+        "$warnings" | Should -BeLike "*Could not remove temporary ancestry repository '$ancestryRepository'*Simulated cleanup failure*"
+    }
+}
