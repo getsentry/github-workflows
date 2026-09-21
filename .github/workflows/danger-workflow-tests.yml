@@ -65,6 +65,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
 
       # Create a test dangerfile that requires curl
       - name: Create test dangerfile requiring curl
@@ -79,6 +81,7 @@ jobs:
             } catch (err) {
               throw new Error('curl command not found - extra-install-packages failed');
             }
+            require('fs').writeFileSync(require('path').join(__dirname, 'curl-check-passed'), 'passed');
           };
           EOF
 
@@ -86,6 +89,8 @@ jobs:
         id: danger-packages
         uses: ./danger
         with:
+          # Preserve the generated Dangerfile by reusing the checkout above.
+          skip-checkout: 'true'
           extra-dangerfile: '.github/test-dangerfile-curl.js'
           extra-install-packages: 'curl'
 
@@ -99,5 +104,10 @@ jobs:
 
           # Validate that Danger ran successfully
           $env:DANGER_OUTCOME | Should -Be "success"
+
+          # Danger reports custom check errors as warnings, so success alone is insufficient.
+          if (-not (Test-Path '.github/curl-check-passed')) {
+            throw 'The custom Dangerfile did not complete its curl check.'
+          }
 
           Write-Host "✅ Danger with extra-install-packages completed successfully!"

@@ -7,6 +7,10 @@ inputs:
     description: 'Token for the repo. Can be passed in using {{ secrets.GITHUB_TOKEN }}'
     required: false
     default: ${{ github.token }}
+  skip-checkout:
+    description: 'Skip checkout when the caller has already checked out the repository with full history (fetch-depth: 0)'
+    required: false
+    default: 'false'
   extra-dangerfile:
     description: 'Path to additional dangerfile to run after the main checks'
     type: string
@@ -25,6 +29,7 @@ runs:
   using: 'composite'
   steps:
     - name: Checkout repository
+      if: ${{ inputs.skip-checkout != 'true' }}
       uses: actions/checkout@v4
       with:
         token: ${{ inputs.api-token }}
