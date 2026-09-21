@@ -30,6 +30,11 @@ jobs:
   * required: false
   * default: `${{ github.token }}`
 
+* `skip-checkout`: Set to `'true'` to reuse a repository checkout prepared by an earlier step. The caller must check out the repository with `fetch-depth: 0`. This preserves generated files and other workspace changes that the action's checkout would reset or remove.
+  * type: string
+  * required: false
+  * default: `'false'`
+
 * `extra-dangerfile`: Path to an additional dangerfile to run custom checks.
   * type: string
   * required: false
@@ -65,6 +70,22 @@ The Danger action runs the following checks:
 For detailed rule implementations, see [dangerfile.js](dangerfile.js).
 
 ## Extra Danger File
+
+If an earlier step generates your extra dangerfile, skip the action's checkout so it does not delete the generated file:
+
+```yaml
+steps:
+  - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+    with:
+      fetch-depth: 0
+
+  - run: node scripts/generate-dangerfile.js
+
+  - uses: getsentry/github-workflows/danger@v3
+    with:
+      skip-checkout: 'true'
+      extra-dangerfile: '.github/generated-dangerfile.js'
+```
 
 When using an extra dangerfile, the file must be inside the repository and written in CommonJS syntax. You can use the following snippet to export your dangerfile:
 
