@@ -2,6 +2,7 @@
 
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import socketserver
 import time
 from urllib.parse import urlparse
 import sys
@@ -178,11 +179,17 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.flush()
 
 
+class Server(ThreadingHTTPServer):
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+
+
 print("HTTP server listening on {}".format(uri.geturl()))
 print("To stop the server, execute a GET request to {}/STOP".format(uri.geturl()))
 
 try:
-    httpd = ThreadingHTTPServer((uri.hostname, uri.port), Handler)
+    httpd = Server((uri.hostname, uri.port), Handler)
     target = httpd.serve_forever()
 except KeyboardInterrupt:
     pass
