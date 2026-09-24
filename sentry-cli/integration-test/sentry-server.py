@@ -180,6 +180,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class Server(ThreadingHTTPServer):
+    # HTTPServer.server_bind() does a reverse DNS lookup of the host (socket.getfqdn) after
+    # bind() but before listen(). On macOS runners that lookup takes ~35 s, and while it runs,
+    # connections to the bound-but-not-listening port hang instead of being refused, which
+    # stalls the readiness probe. The handler never reads server_name, so skip the lookup.
     def server_bind(self):
         socketserver.TCPServer.server_bind(self)
         self.server_name, self.server_port = self.server_address[:2]
