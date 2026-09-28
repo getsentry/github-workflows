@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Dependencies
+
+- Bump Danger JS from v13.0.5 to v14.0.6 ([#172](https://github.com/getsentry/github-workflows/pull/172))
+  - [changelog](https://github.com/danger/danger-js/blob/main/CHANGELOG.md#1406)
+  - [diff](https://github.com/danger/danger-js/compare/13.0.5...14.0.6)
+
 ## 3.4.1
 
 ### Fixes
