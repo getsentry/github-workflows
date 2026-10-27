@@ -20,12 +20,9 @@ module.exports = async ({ github, context, core }) => {
   const ALLOWED_BOTS = [
     'codecov-ai[bot]',
     'dependabot[bot]',
-    'fix-it-felix-sentry[bot]',
     'getsentry-bot',
     'github-actions[bot]',
-    'javascript-sdk-gitflow[bot]',
     'renovate[bot]',
-    'sentry-mobile-updater[bot]',
   ];
   if (ALLOWED_BOTS.includes(prAuthor)) {
     core.info(`PR author ${prAuthor} is an allowed bot. Skipping.`);
