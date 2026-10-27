@@ -6,6 +6,12 @@
 
 - Validate PR - Skip PRs opened by bots of GitHub Apps owned by Sentry (the `getsentry` organization or the `sentry` enterprise), such as `sentry-junior[bot]`. App bot users are never repo collaborators, so the write-access check couldn't recognize them. ([#179](https://github.com/getsentry/github-workflows/pull/179))
 
+### Dependencies
+
+- Bump WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE from v2.0.0 to v2.0.4 ([#66](https://github.com/getsentry/github-workflows/pull/66))
+  - [changelog](https://github.com/getsentry/sentry-cli/blob/master/CHANGELOG.md#204)
+  - [diff](https://github.com/getsentry/sentry-cli/compare/2.0.0...2.0.4)
+
 ## 3.4.1
 
 ### Fixes
