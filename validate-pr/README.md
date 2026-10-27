@@ -4,7 +4,7 @@ Advisory validation for non-maintainer pull requests against contribution guidel
 
 ## What it does
 
-For PRs from non-maintainer authors, the action checks that the PR body references a GitHub issue where the PR author and a maintainer have discussed the approach. When that's not the case, the action posts one short advisory comment inviting the contributor to start with an issue. Maintainers (`admin` or `maintain` role) and a hard-coded list of trusted bots are exempt.
+For PRs from non-maintainer authors, the action checks that the PR body references a GitHub issue where the PR author and a maintainer have discussed the approach. When that's not the case, the action posts one short advisory comment inviting the contributor to start with an issue. Maintainers (`admin` or `maintain` role), bots of GitHub Apps owned by Sentry, and a hard-coded list of trusted bots are exempt.
 
 Small PRs (< 100 lines changed, excluding lock files) are skipped entirely — typo fixes and tiny bug fixes don't need to go through the issue-discussion loop.
 
@@ -45,6 +45,7 @@ Pin to a specific commit SHA (consumers in `getsentry/*` already follow this con
 ### Skipped entirely
 
 - PR author is in the trusted-bot allowlist (Dependabot, Renovate, Codecov AI, etc.)
+- PR author is the bot user of a GitHub App owned by the `getsentry` organization or the `sentry` enterprise (e.g. `sentry-junior[bot]`)
 - PR author has `admin`, `maintain`, `push`, or `write` access on the repo
 - PR has fewer than 100 lines changed (`additions + deletions`), excluding common lock files
 

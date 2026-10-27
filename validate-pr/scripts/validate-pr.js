@@ -20,16 +20,36 @@ module.exports = async ({ github, context, core }) => {
   const ALLOWED_BOTS = [
     'codecov-ai[bot]',
     'dependabot[bot]',
-    'fix-it-felix-sentry[bot]',
     'getsentry-bot',
     'github-actions[bot]',
-    'javascript-sdk-gitflow[bot]',
     'renovate[bot]',
-    'sentry-mobile-updater[bot]',
   ];
   if (ALLOWED_BOTS.includes(prAuthor)) {
     core.info(`PR author ${prAuthor} is an allowed bot. Skipping.`);
     return;
+  }
+
+  // --- Step 0b: Skip bots of GitHub Apps owned by Sentry ---
+  // App bot users are never repo collaborators, so the write-access check
+  // below reports `none` for them even when the app can push. Match the owner
+  // by type and immutable ID: owner logins are not unique across types (e.g.
+  // a `sentry` user account exists that is unrelated to the `sentry` enterprise).
+  const SENTRY_APP_OWNERS = [
+    { type: 'organization', id: 1396951 }, // getsentry
+    { type: 'enterprise', id: 79916 }, // sentry
+  ];
+  if (pullRequest.user.type === 'Bot' && prAuthor.endsWith('[bot]')) {
+    const authorAppSlug = prAuthor.slice(0, -'[bot]'.length);
+    try {
+      const { data: app } = await github.rest.apps.getBySlug({ app_slug: authorAppSlug });
+      const ownerType = app.owner?.type?.toLowerCase();
+      if (SENTRY_APP_OWNERS.some((o) => o.type === ownerType && o.id === app.owner?.id)) {
+        core.info(`PR author ${prAuthor} is a Sentry-owned GitHub App. Skipping.`);
+        return;
+      }
+    } catch (e) {
+      core.warning(`Could not look up GitHub App ${authorAppSlug} (${e.message}); proceeding.`);
+    }
   }
 
   // --- Helpers: cached collaborator-role lookup ---
