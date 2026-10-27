@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Validate PR - Skip PRs opened by bots of GitHub Apps owned by Sentry (the `getsentry` organization or the `sentry` enterprise), such as `sentry-junior[bot]`. App bot users are never repo collaborators, so the write-access check couldn't recognize them.
+
 ## 3.4.1
 
 ### Fixes
