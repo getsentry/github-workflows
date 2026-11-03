@@ -1,5 +1,6 @@
-minVersion: 2.20.1
-changelogPolicy: auto
+minVersion: 3.9.0
+changelog:
+  policy: auto
 preReleaseCommand: pwsh -cwa ''
 artifactProvider:
   name: none
