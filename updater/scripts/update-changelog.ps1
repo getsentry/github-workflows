@@ -143,9 +143,11 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 # What line we want to insert at - the empty line at the end of the currently unreleased section.
 $sectionEnd = $i
 
-$tagAnchor = $NewTag.Replace('.', '')
-$oldTagNice = ($OldTag -match "^[0-9]") ? "v$OldTag" : $OldTag
-$newTagNice = ($NewTag -match "^[0-9]") ? "v$NewTag" : $NewTag
+$oldVersion = $OldTag -replace '^.*@', ''
+$newVersion = $NewTag -replace '^.*@', ''
+$tagAnchor = $newVersion.Replace('.', '')
+$oldTagNice = ($oldVersion -match "^[0-9]") ? "v$oldVersion" : $oldVersion
+$newTagNice = ($newVersion -match "^[0-9]") ? "v$newVersion" : $newVersion
 
 $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
 

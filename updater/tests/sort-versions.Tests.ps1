@@ -27,4 +27,9 @@ Describe 'sort-versions' {
         $sorted = SortVersions @('1.0.0-rc.1', '1.0.0', '1.0.0-beta.11', '1.0.0-alpha.1', '1.0.0-beta', '1.0.0-alpha.beta', '1.0.0-alpha', '1.0.0-beta.2')
         $sorted | Should -Be @('1.0.0-alpha', '1.0.0-alpha.1', '1.0.0-alpha.beta', '1.0.0-beta', '1.0.0-beta.2', '1.0.0-beta.11', '1.0.0-rc.1', '1.0.0')
     }
+
+    It 'prefixed versions' {
+        $sorted = SortVersions @('cli@0.47.0', 'cli@0.9.0', 'cli@0.46.0', 'cli@0.47.0-beta.1')
+        $sorted | Should -Be @('cli@0.9.0', 'cli@0.46.0', 'cli@0.47.0-beta.1', 'cli@0.47.0')
+    }
 }

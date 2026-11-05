@@ -56,6 +56,16 @@ Describe ('update-dependency') {
             Get-Content $testFile | Should -Be @("repo=$repo", 'version=3.2.1')
         }
 
+        It 'version pattern match with prefixed tags' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/toolkit'
+            @("repo=$repo", 'version=0') | Out-File $testFile
+            $stdout = UpdateDependency $testFile '^cli@0\.46\.'
+            Get-Content $testFile | Should -Be @("repo=$repo", 'version=cli@0.46.0')
+            $stdout | Should -Contain 'latestTag=cli@0.46.0'
+            $stdout | Should -Contain 'latestTagNice=v0.46.0'
+        }
+
         It 'will not update from a later release to an earlier release' {
             $testFile = "$testDir/test.properties"
             $repo = 'https://github.com/getsentry/sentry-java'

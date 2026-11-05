@@ -265,7 +265,8 @@ if ("$Tag" -eq '') {
         } while ($false)
     }
 
-    $latestTagNice = ($latestTag -match '^[0-9]') ? "v$latestTag" : $latestTag
+    $latestVersion = $latestTag -replace '^.*@', ''
+    $latestTagNice = ($latestVersion -match '^[0-9]') ? "v$latestVersion" : $latestVersion
 
     SetOutput 'originalTag' $originalTag
     SetOutput 'latestTag' $latestTag
