@@ -1,7 +1,7 @@
 
 function GetComparableVersion([string] $value)
 {
-    $value = $value -replace '^v', ''
+    $value = $value -replace '^(.*@)?v?', ''
     try {
         [System.Management.Automation.SemanticVersion]::Parse($value)
     } catch {
