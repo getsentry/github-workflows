@@ -5,7 +5,7 @@
 ### Fixes
 
 - Validate PR - Skip PRs opened by bots of GitHub Apps owned by Sentry (the `getsentry` organization or the `sentry` enterprise), such as `sentry-junior[bot]`. App bot users are never repo collaborators, so the write-access check couldn't recognize them. ([#179](https://github.com/getsentry/github-workflows/pull/179))
-- Updater - Support release tags with a product prefix, such as `cli@0.47.0` from Craft workspaces. Select the product with `pattern`; displayed versions omit the prefix. ([#TBD](https://github.com/getsentry/github-workflows/pull/TBD))
+- Updater - Support release tags with a product prefix, such as `cli@0.47.0` from Craft workspaces. Select the product with `pattern`; displayed versions omit the prefix. ([#184](https://github.com/getsentry/github-workflows/pull/184))
 
 ## 3.4.1
 
