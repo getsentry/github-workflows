@@ -48,4 +48,22 @@ Describe 'update-changelog' {
 
         Get-Content "$testCasePath/CHANGELOG.md" | Should -Be (Get-Content "$testCasePath/CHANGELOG.md.expected")
     }
+
+    It 'should link to the changelog path' {
+        $testCasePath = "$TestDrive/changelog-path"
+        New-Item $testCasePath -ItemType Directory | Out-Null
+        @('# Changelog', '', '## Unreleased', '', '### Dependencies', '', '- Existing entry', '') | Out-File "$testCasePath/CHANGELOG.md"
+
+        pwsh -WorkingDirectory $testCasePath -File "$PSScriptRoot/../scripts/update-changelog.ps1" `
+            -Name 'Dependency' `
+            -PR 'https://github.com/getsentry/dependant/pulls/123' `
+            -RepoUrl 'https://github.com/getsentry/dependency' `
+            -MainBranch 'main' `
+            -OldTag '7.16.0' `
+            -NewTag '7.17.0' `
+            -Section 'Dependencies' `
+            -ChangelogPath 'packages/cli/CHANGELOG.md'
+
+        Get-Content "$testCasePath/CHANGELOG.md" | Should -Contain '  - [changelog](https://github.com/getsentry/dependency/blob/main/packages/cli/CHANGELOG.md#7170)'
+    }
 }

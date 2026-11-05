@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Updater - Add `changelog-path` input for dependencies whose changelog isn't in the repository root, e.g. a package in a monorepo. The commit-based fallback then only lists commits in that directory. ([#183](https://github.com/getsentry/github-workflows/pull/183))
+
 ### Fixes
 
 - Validate PR - Skip PRs opened by bots of GitHub Apps owned by Sentry (the `getsentry` organization or the `sentry` enterprise), such as `sentry-junior[bot]`. App bot users are never repo collaborators, so the write-access check couldn't recognize them. ([#179](https://github.com/getsentry/github-workflows/pull/179))
