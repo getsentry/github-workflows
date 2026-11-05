@@ -4,7 +4,7 @@
 
 ### Features
 
-- Updater - Add `changelog-path` input for dependencies whose changelog isn't in the repository root, e.g. a package in a monorepo. The commit-based fallback then only lists commits in that directory. ([#TBD](https://github.com/getsentry/github-workflows/pull/TBD))
+- Updater - Add `changelog-path` input for dependencies whose changelog isn't in the repository root, e.g. a package in a monorepo. The commit-based fallback then only lists commits in that directory. ([#183](https://github.com/getsentry/github-workflows/pull/183))
 
 ### Fixes
 
