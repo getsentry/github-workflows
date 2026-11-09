@@ -218,7 +218,7 @@ if ("$Tag" -eq '') {
     $tags = @(& "$PSScriptRoot/sort-versions.ps1" $tags -Pattern $Pattern)
 
     if ($tags.Count -eq 0) {
-        throw "Found no tags with a semantic version matching pattern '$Pattern'"
+        throw "Found no tags with a semantic version matching pattern '$Pattern'. If the tags have a prefix, mark the version with a ``version`` named group, e.g. '^cli@(?<version>[0-9.]+)$'."
     }
 
     Write-Host "Sorted tags: $tags"

@@ -17,7 +17,7 @@ function GetVersionFromTag([string] $tag, [string] $pattern = '')
 # E.g. `cli@` for both `cli@1.2.3` and `cli@v1.2.3`
 function GetTagPrefix([string] $tag, [string] $pattern)
 {
-    $match = [regex]::Match($tag, $pattern)
+    $match = [regex]::Match($tag, $pattern, 'IgnoreCase')
     if (-not $match.Success -or -not $match.Groups['version'].Success)
     {
         return ''

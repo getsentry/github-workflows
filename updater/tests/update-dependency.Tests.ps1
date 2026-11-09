@@ -76,6 +76,14 @@ Describe ('update-dependency') {
             Get-Content $testFile | Should -Be @("repo=$repo", 'version=cli@99.0.0')
         }
 
+        It 'reads the prefix of the original tag regardless of case' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/toolkit'
+            @("repo=$repo", 'version=cli@99.0.0') | Out-File $testFile
+            UpdateDependency $testFile '^CLI@(?<version>0\.46\.[0-9]+)$'
+            Get-Content $testFile | Should -Be @("repo=$repo", 'version=cli@99.0.0')
+        }
+
         It 'fails when no matching tag has a semantic version' {
             $testFile = "$testDir/test.properties"
             $repo = 'https://github.com/getsentry/toolkit'
