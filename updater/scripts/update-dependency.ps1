@@ -215,7 +215,11 @@ if ("$Tag" -eq '') {
         throw "Found no tags matching pattern '$Pattern'"
     }
 
-    $tags = & "$PSScriptRoot/sort-versions.ps1" $tags -Pattern $Pattern
+    $tags = @(& "$PSScriptRoot/sort-versions.ps1" $tags -Pattern $Pattern)
+
+    if ($tags.Count -eq 0) {
+        throw "Found no tags with a semantic version matching pattern '$Pattern'"
+    }
 
     Write-Host "Sorted tags: $tags"
     $latestTag = $tags[-1]

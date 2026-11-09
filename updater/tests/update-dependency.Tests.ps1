@@ -76,6 +76,13 @@ Describe ('update-dependency') {
             Get-Content $testFile | Should -Be @("repo=$repo", 'version=cli@99.0.0')
         }
 
+        It 'fails when no matching tag has a semantic version' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/toolkit'
+            @("repo=$repo", 'version=cli@0.45.0') | Out-File $testFile
+            { UpdateDependency $testFile '^cli@0\.46\.[0-9]+$' 3>$null } | Should -Throw '*Found no tags with a semantic version*'
+        }
+
         It 'does not read a tag without the prefix as a version' {
             $testFile = "$testDir/test.properties"
             $repo = 'https://github.com/getsentry/toolkit'
