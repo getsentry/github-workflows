@@ -59,11 +59,30 @@ Describe ('update-dependency') {
         It 'version pattern match with prefixed tags' {
             $testFile = "$testDir/test.properties"
             $repo = 'https://github.com/getsentry/toolkit'
-            @("repo=$repo", 'version=0') | Out-File $testFile
-            $stdout = UpdateDependency $testFile '^cli@0\.46\.'
+            @("repo=$repo", 'version=cli@0.45.0') | Out-File $testFile
+            $stdout = UpdateDependency $testFile '^cli@(?<version>0\.46\.[0-9]+)$'
             Get-Content $testFile | Should -Be @("repo=$repo", 'version=cli@0.46.0')
+            $stdout | Should -Contain 'originalVersion=0.45.0'
             $stdout | Should -Contain 'latestTag=cli@0.46.0'
+            $stdout | Should -Contain 'latestVersion=0.46.0'
             $stdout | Should -Contain 'latestTagNice=v0.46.0'
+        }
+
+        It 'will not update from a later prefixed release to an earlier release' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/toolkit'
+            @("repo=$repo", 'version=cli@99.0.0') | Out-File $testFile
+            UpdateDependency $testFile '^cli@(?<version>0\.46\.[0-9]+)$'
+            Get-Content $testFile | Should -Be @("repo=$repo", 'version=cli@99.0.0')
+        }
+
+        It 'does not read a tag without the prefix as a version' {
+            $testFile = "$testDir/test.properties"
+            $repo = 'https://github.com/getsentry/toolkit'
+            @("repo=$repo", 'version=99.0.0') | Out-File $testFile
+            $stdout = UpdateDependency $testFile '^cli@(?<version>0\.46\.[0-9]+)$'
+            Get-Content $testFile | Should -Be @("repo=$repo", 'version=cli@0.46.0')
+            $stdout | Should -Contain 'originalVersion='
         }
 
         It 'will not update from a later release to an earlier release' {

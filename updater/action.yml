@@ -10,7 +10,7 @@ inputs:
     description: 'Name used in the PR title and the changelog entry.'
     required: true
   pattern:
-    description: 'RegEx pattern that will be matched against available versions when picking the latest one.'
+    description: 'RegEx pattern that will be matched against available versions when picking the latest one. An optional `version` named group marks the version part of the tag, e.g. `^cli@(?<version>[0-9.]+)$`.'
     required: false
     default: ''
   gh-title-pattern:
@@ -448,6 +448,8 @@ runs:
         TARGET_MAIN_BRANCH: ${{ steps.target.outputs.mainBranch }}
         ORIGINAL_TAG: ${{ steps.target.outputs.originalTag }}
         LATEST_TAG: ${{ steps.target.outputs.latestTag }}
+        ORIGINAL_VERSION: ${{ steps.target.outputs.originalVersion }}
+        LATEST_VERSION: ${{ steps.target.outputs.latestVersion }}
       run: |
         ${{ github.action_path }}/scripts/update-changelog.ps1 `
           -Name $env:DEPENDENCY_NAME `
@@ -456,6 +458,8 @@ runs:
           -MainBranch $env:TARGET_MAIN_BRANCH `
           -OldTag $env:ORIGINAL_TAG `
           -NewTag $env:LATEST_TAG `
+          -OldVersion $env:ORIGINAL_VERSION `
+          -NewVersion $env:LATEST_VERSION `
           -Section $env:CHANGELOG_SECTION
 
     - name: Show final git diff

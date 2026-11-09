@@ -49,23 +49,69 @@ Describe 'update-changelog' {
         Get-Content "$testCasePath/CHANGELOG.md" | Should -Be (Get-Content "$testCasePath/CHANGELOG.md.expected")
     }
 
-    It 'should strip the tag prefix from displayed versions and the changelog anchor' {
-        $testCasePath = "$TestDrive/prefixed-tags"
-        New-Item $testCasePath -ItemType Directory | Out-Null
-        @('# Changelog', '', '## Unreleased', '', '### Dependencies', '', '- Existing entry', '') | Out-File "$testCasePath/CHANGELOG.md"
+    Context 'prefixed tags' {
+        BeforeEach {
+            $testCasePath = "$TestDrive/prefixed-tags"
+            New-Item $testCasePath -ItemType Directory -Force | Out-Null
+        }
 
-        pwsh -WorkingDirectory $testCasePath -File "$PSScriptRoot/../scripts/update-changelog.ps1" `
-            -Name 'Dependency' `
-            -PR 'https://github.com/getsentry/dependant/pulls/123' `
-            -RepoUrl 'https://github.com/getsentry/dependency' `
-            -MainBranch 'main' `
-            -OldTag 'cli@0.46.0' `
-            -NewTag 'cli@0.47.0' `
-            -Section 'Dependencies'
+        It 'should use the versions in displayed versions and the changelog anchor' {
+            @('# Changelog', '', '## Unreleased', '', '### Dependencies', '', '- Existing entry', '') | Out-File "$testCasePath/CHANGELOG.md"
 
-        $content = Get-Content "$testCasePath/CHANGELOG.md"
-        $content | Should -Contain '- Bump Dependency from v0.46.0 to v0.47.0 ([#123](https://github.com/getsentry/dependant/pulls/123))'
-        $content | Should -Contain '  - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#0470)'
-        $content | Should -Contain '  - [diff](https://github.com/getsentry/dependency/compare/cli@0.46.0...cli@0.47.0)'
+            pwsh -WorkingDirectory $testCasePath -File "$PSScriptRoot/../scripts/update-changelog.ps1" `
+                -Name 'Dependency' `
+                -PR 'https://github.com/getsentry/dependant/pulls/123' `
+                -RepoUrl 'https://github.com/getsentry/dependency' `
+                -MainBranch 'main' `
+                -OldTag 'cli@0.46.0' `
+                -NewTag 'cli@0.47.0' `
+                -OldVersion '0.46.0' `
+                -NewVersion '0.47.0' `
+                -Section 'Dependencies'
+
+            $content = Get-Content "$testCasePath/CHANGELOG.md"
+            $content | Should -Contain '- Bump Dependency from v0.46.0 to v0.47.0 ([#123](https://github.com/getsentry/dependant/pulls/123))'
+            $content | Should -Contain '  - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#0470)'
+            $content | Should -Contain '  - [diff](https://github.com/getsentry/dependency/compare/cli@0.46.0...cli@0.47.0)'
+        }
+
+        It 'should update an existing entry' {
+            @('# Changelog', '', '## Unreleased', '', '### Dependencies', '',
+                '- Bump Dependency from v0.45.0 to v0.46.0 ([#100](https://github.com/getsentry/dependant/pulls/100))',
+                '  - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#0460)',
+                '  - [diff](https://github.com/getsentry/dependency/compare/cli@0.45.0...cli@0.46.0)', '') | Out-File "$testCasePath/CHANGELOG.md"
+
+            pwsh -WorkingDirectory $testCasePath -File "$PSScriptRoot/../scripts/update-changelog.ps1" `
+                -Name 'Dependency' `
+                -PR 'https://github.com/getsentry/dependant/pulls/123' `
+                -RepoUrl 'https://github.com/getsentry/dependency' `
+                -MainBranch 'main' `
+                -OldTag 'cli@0.46.0' `
+                -NewTag 'cli@0.47.0' `
+                -OldVersion '0.46.0' `
+                -NewVersion '0.47.0' `
+                -Section 'Dependencies'
+
+            $content = Get-Content "$testCasePath/CHANGELOG.md"
+            $content | Should -Contain '- Bump Dependency from v0.45.0 to v0.47.0 ([#100](https://github.com/getsentry/dependant/pulls/100), [#123](https://github.com/getsentry/dependant/pulls/123))'
+            $content | Should -Contain '  - [changelog](https://github.com/getsentry/dependency/blob/main/CHANGELOG.md#0470)'
+            $content | Should -Contain '  - [diff](https://github.com/getsentry/dependency/compare/cli@0.45.0...cli@0.47.0)'
+        }
+
+        It 'should show the tag when the old version is unknown' {
+            @('# Changelog', '', '## Unreleased', '', '### Dependencies', '', '- Existing entry', '') | Out-File "$testCasePath/CHANGELOG.md"
+
+            pwsh -WorkingDirectory $testCasePath -File "$PSScriptRoot/../scripts/update-changelog.ps1" `
+                -Name 'Dependency' `
+                -PR 'https://github.com/getsentry/dependant/pulls/123' `
+                -RepoUrl 'https://github.com/getsentry/dependency' `
+                -MainBranch 'main' `
+                -OldTag 'logger@0.46.0' `
+                -NewTag 'cli@0.47.0' `
+                -NewVersion '0.47.0' `
+                -Section 'Dependencies'
+
+            Get-Content "$testCasePath/CHANGELOG.md" | Should -Contain '- Bump Dependency from logger@0.46.0 to v0.47.0 ([#123](https://github.com/getsentry/dependant/pulls/123))'
+        }
     }
 }

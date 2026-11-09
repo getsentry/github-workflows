@@ -1,8 +1,8 @@
 
 BeforeAll {
-    function SortVersions([Parameter(Mandatory = $true)][string[]] $List)
+    function SortVersions([Parameter(Mandatory = $true)][string[]] $List, [string] $Pattern = '')
     {
-        $result = & "$PSScriptRoot/../scripts/sort-versions.ps1" $List
+        $result = & "$PSScriptRoot/../scripts/sort-versions.ps1" $List -Pattern $Pattern
         if (-not $?)
         {
             throw $result
@@ -28,8 +28,18 @@ Describe 'sort-versions' {
         $sorted | Should -Be @('1.0.0-alpha', '1.0.0-alpha.1', '1.0.0-alpha.beta', '1.0.0-beta', '1.0.0-beta.2', '1.0.0-beta.11', '1.0.0-rc.1', '1.0.0')
     }
 
-    It 'prefixed versions' {
-        $sorted = SortVersions @('cli@0.47.0', 'cli@0.9.0', 'cli@0.46.0', 'cli@0.47.0-beta.1')
+    It 'prefixed versions with a version group' {
+        $sorted = SortVersions @('cli@0.47.0', 'cli@0.9.0', 'cli@0.46.0', 'cli@0.47.0-beta.1') '^cli@(?<version>.+)$'
         $sorted | Should -Be @('cli@0.9.0', 'cli@0.46.0', 'cli@0.47.0-beta.1', 'cli@0.47.0')
+    }
+
+    It 'skips prefixed versions without a version group' {
+        $sorted = SortVersions @('cli@0.47.0', '0.42.0') '^(cli@)?[0-9.]+$' 3>$null
+        $sorted | Should -Be @('0.42.0')
+    }
+
+    It 'skips tags of another product' {
+        $sorted = SortVersions @('cli@0.47.0', 'logger@9.0.0') '^cli@(?<version>.+)$' 3>$null
+        $sorted | Should -Be @('cli@0.47.0')
     }
 }
