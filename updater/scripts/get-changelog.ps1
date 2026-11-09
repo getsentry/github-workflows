@@ -201,8 +201,8 @@ function Format-ChangelogContent {
     }
 
     # Apply standard formatting
-    # Remove at-mentions
-    $changelog = $changelog -replace '@', ''
+    # Remove at-mentions, but keep prefixed tags (`cli@1.2.3`) and email addresses
+    $changelog = $changelog -replace '(?<!\w)@', ''
 
     # Make PR/issue references into links to the original repository (unless they already are links)
     $changelog = $changelog -replace '(?<!\[)#([0-9]+)(?![\]0-9])', ('[#$1](' + $repoUrl + '/issues/$1)')

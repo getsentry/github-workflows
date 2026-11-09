@@ -322,6 +322,13 @@ Features, fixes and improvements in this release have been contributed by:
         $actual | Should -Be $expected
     }
 
+    It 'git commit fallback keeps prefixed tags' {
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/getsentry/toolkit' -OldTag 'cli@0.46.0' -NewTag 'cli@0.47.0'
+
+        $actual | Should -Match '### Commits between cli@0\.46\.0 and cli@0\.47\.0'
+    }
+
     It 'git commit fallback returns empty when no commits found' {
         # Test with same tags (no commits between them)
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
