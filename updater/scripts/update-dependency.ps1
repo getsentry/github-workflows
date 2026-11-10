@@ -140,11 +140,17 @@ if ("$Tag" -eq '') {
     $OriginalTag | Should -Be ''
 
     if ($isSubmodule) {
-        git submodule update --init --no-fetch --single-branch $Path
+        git submodule update --init --single-branch $Path
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to initialize submodule '$Path' (exit code: $LASTEXITCODE)"
+        }
         Push-Location $Path
         try {
-            $originalTag = $(git describe --tags)
             git fetch --tags
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to fetch tags for submodule '$Path' (exit code: $LASTEXITCODE)"
+            }
+            $originalTag = $(git describe --tags)
             [string[]]$tags = $(git tag --list)
             $url = $(git remote get-url origin)
             $mainBranch = $(git remote show origin | Select-String 'HEAD branch: (.*)').Matches[0].Groups[1].Value
