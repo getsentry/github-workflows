@@ -6,11 +6,14 @@ param(
     [Parameter(Mandatory = $true)][string] $OldTag,
     [Parameter(Mandatory = $true)][string] $NewTag,
     [Parameter(Mandatory = $true)][string] $Section,
+    [string] $OldVersion = '',
+    [string] $NewVersion = '',
     # Path of the dependency's changelog in its repository, used for the changelog link
     [string] $ChangelogPath = ''
 )
 
 Set-StrictMode -Version latest
+. "$PSScriptRoot/common.ps1"
 
 $file = $(Get-ChildItem | Where-Object { $_.Name -match '^changelog(\.md|\.txt|)$' } )
 if ("$file" -eq "")
@@ -145,10 +148,12 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 # What line we want to insert at - the empty line at the end of the currently unreleased section.
 $sectionEnd = $i
 
-$tagAnchor = $NewTag.Replace('.', '')
+if ("$OldVersion" -eq '') { $OldVersion = GetVersionFromTag $OldTag }
+if ("$NewVersion" -eq '') { $NewVersion = GetVersionFromTag $NewTag }
+$tagAnchor = ($NewTag.EndsWith("v$NewVersion") ? "v$NewVersion" : $NewVersion).Replace('.', '')
 $changelogFile = if ($ChangelogPath) { $ChangelogPath.TrimStart('/') } else { 'CHANGELOG.md' }
-$oldTagNice = ($OldTag -match "^[0-9]") ? "v$OldTag" : $OldTag
-$newTagNice = ($NewTag -match "^[0-9]") ? "v$NewTag" : $NewTag
+$oldTagNice = ($OldVersion -match "^[0-9]") ? "v$OldVersion" : $OldTag
+$newTagNice = ($NewVersion -match "^[0-9]") ? "v$NewVersion" : $NewTag
 
 $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
 

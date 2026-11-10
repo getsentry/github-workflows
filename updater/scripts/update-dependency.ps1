@@ -205,7 +205,7 @@ if ("$Tag" -eq '') {
 
     if ("$Pattern" -eq '') {
         # Use a default pattern that excludes pre-releases
-        $Pattern = '^v?([0-9.]+)$'
+        $Pattern = '^v?(?<version>[0-9.]+)$'
     }
 
     Write-Host "Filtering tags with pattern '$Pattern'"
@@ -215,10 +215,19 @@ if ("$Tag" -eq '') {
         throw "Found no tags matching pattern '$Pattern'"
     }
 
-    $tags = & "$PSScriptRoot/sort-versions.ps1" $tags
+    $tags = @(& "$PSScriptRoot/sort-versions.ps1" $tags -Pattern $Pattern)
+
+    if ($tags.Count -eq 0) {
+        throw "Found no tags with a semantic version matching pattern '$Pattern'. If the tags have a prefix, mark the version with a ``version`` named group, e.g. '^cli@(?<version>[0-9.]+)$'."
+    }
 
     Write-Host "Sorted tags: $tags"
     $latestTag = $tags[-1]
+    $latestVersion = GetVersionFromTag $latestTag $Pattern
+
+    # Read the original tag with the latest tag's prefix, so that a tag of another product is never read as a version
+    $tagPrefix = GetTagPrefix $latestTag $Pattern
+    $originalVersion = GetVersionAfterPrefix $originalTag $tagPrefix
 
     if (("$originalTag" -ne '') -and ("$latestTag" -ne '') -and ("$latestTag" -ne "$originalTag")) {
         do {
@@ -245,7 +254,7 @@ if ("$Tag" -eq '') {
 
             # It's possible that the dependency was updated to a pre-release version manually in which case we don't want to
             # roll back, even though it's not the latest version matching the configured pattern.
-            if (-not $isUnreleasedPin -and (GetComparableVersion $originalTag) -ge (GetComparableVersion $latestTag)) {
+            if (-not $isUnreleasedPin -and $null -ne $originalVersion -and (GetComparableVersion $originalVersion) -ge (GetComparableVersion $latestVersion)) {
                 Write-Host "SemVer represented by the original tag '$originalTag' is newer than the latest tag '$latestTag'. Skipping update."
                 $latestTag = $originalTag
                 break
@@ -265,10 +274,15 @@ if ("$Tag" -eq '') {
         } while ($false)
     }
 
-    $latestTagNice = ($latestTag -match '^[0-9]') ? "v$latestTag" : $latestTag
+    if ("$originalTag" -eq "$latestTag") {
+        $latestVersion = $originalVersion
+    }
+    $latestTagNice = ($latestVersion -match '^[0-9]') ? "v$latestVersion" : $latestTag
 
     SetOutput 'originalTag' $originalTag
+    SetOutput 'originalVersion' $originalVersion
     SetOutput 'latestTag' $latestTag
+    SetOutput 'latestVersion' $latestVersion
     SetOutput 'latestTagNice' $latestTagNice
     SetOutput 'url' $url
     SetOutput 'mainBranch' $mainBranch
