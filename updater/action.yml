@@ -25,6 +25,10 @@ inputs:
     description: 'Section header to attach the changelog entry to.'
     required: false
     default: 'Dependencies'
+  changelog-path:
+    description: 'Path of the changelog in the dependency repository, e.g. "packages/cli/CHANGELOG.md" for a package in a monorepo. Defaults to a changelog in the repository root.'
+    required: false
+    default: ''
   pr-strategy:
     description: 'How to handle PRs - can be either "create" (create new PRs for each version) or "update" (keep single PR updated with latest version)'
     required: false
@@ -361,11 +365,13 @@ runs:
         TARGET_REPO_URL: ${{ steps.target.outputs.url }}
         ORIGINAL_TAG: ${{ steps.target.outputs.originalTag }}
         LATEST_TAG: ${{ steps.target.outputs.latestTag }}
+        CHANGELOG_PATH: ${{ inputs.changelog-path }}
       run: |
         $changelog = ${{ github.action_path }}/scripts/get-changelog.ps1 `
           -RepoUrl $env:TARGET_REPO_URL `
           -OldTag $env:ORIGINAL_TAG `
-          -NewTag $env:LATEST_TAG
+          -NewTag $env:LATEST_TAG `
+          -ChangelogPath "$env:CHANGELOG_PATH"
         ${{ github.action_path }}/scripts/set-github-env.ps1 TARGET_CHANGELOG $changelog
 
     # First we create a PR only if it doesn't exist. We will later overwrite the content with the same action.
@@ -450,6 +456,7 @@ runs:
         LATEST_TAG: ${{ steps.target.outputs.latestTag }}
         ORIGINAL_VERSION: ${{ steps.target.outputs.originalVersion }}
         LATEST_VERSION: ${{ steps.target.outputs.latestVersion }}
+        CHANGELOG_PATH: ${{ inputs.changelog-path }}
       run: |
         ${{ github.action_path }}/scripts/update-changelog.ps1 `
           -Name $env:DEPENDENCY_NAME `
@@ -460,7 +467,8 @@ runs:
           -NewTag $env:LATEST_TAG `
           -OldVersion $env:ORIGINAL_VERSION `
           -NewVersion $env:LATEST_VERSION `
-          -Section $env:CHANGELOG_SECTION
+          -Section $env:CHANGELOG_SECTION `
+          -ChangelogPath "$env:CHANGELOG_PATH"
 
     - name: Show final git diff
       if: ${{ ( steps.target.outputs.latestTag != steps.target.outputs.originalTag ) && ( steps.root.outputs.changed == 'false') }}

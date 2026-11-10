@@ -7,7 +7,9 @@ param(
     [Parameter(Mandatory = $true)][string] $NewTag,
     [Parameter(Mandatory = $true)][string] $Section,
     [string] $OldVersion = '',
-    [string] $NewVersion = ''
+    [string] $NewVersion = '',
+    # Path of the dependency's changelog in its repository, used for the changelog link
+    [string] $ChangelogPath = ''
 )
 
 Set-StrictMode -Version latest
@@ -149,6 +151,7 @@ $sectionEnd = $i
 if ("$OldVersion" -eq '') { $OldVersion = GetVersionFromTag $OldTag }
 if ("$NewVersion" -eq '') { $NewVersion = GetVersionFromTag $NewTag }
 $tagAnchor = ($NewTag.EndsWith("v$NewVersion") ? "v$NewVersion" : $NewVersion).Replace('.', '')
+$changelogFile = if ($ChangelogPath) { $ChangelogPath.TrimStart('/') } else { 'CHANGELOG.md' }
 $oldTagNice = ($OldVersion -match "^[0-9]") ? "v$OldVersion" : $OldTag
 $newTagNice = ($NewVersion -match "^[0-9]") ? "v$NewVersion" : $NewTag
 
@@ -187,7 +190,7 @@ if (!$updated)
     $bulletPoint = $lines | Where-Object { ($_ -match '^ *[-*] ') -and -not ($_ -match '(Bump .* to|\[changelog\]|\[diff\])') } | Select-Object -First 1
     $bulletPoint = "$("$bulletPoint".Trim())-"[0]
     $entry = @("$bulletPoint Bump $Name from $oldTagNice to $newTagNice ($PullRequestMD)",
-        "  $bulletPoint [changelog]($RepoUrl/blob/$MainBranch/CHANGELOG.md#$tagAnchor)",
+        "  $bulletPoint [changelog]($RepoUrl/blob/$MainBranch/$changelogFile#$tagAnchor)",
         "  $bulletPoint [diff]($RepoUrl/compare/$OldTag...$NewTag)")
 
     Write-Host "Adding a changelog entry at line $($sectionEnd):"

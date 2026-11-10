@@ -401,4 +401,39 @@ Features, fixes and improvements in this release have been contributed by:
         # Should return empty/null and not crash the script
         $actual | Should -BeNullOrEmpty
     }
+
+    It 'with changelog path' {
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/getsentry/github-workflows' -OldTag 'v2.0.0' -NewTag 'v2.1.0' -ChangelogPath 'CHANGELOG.md'
+        $expected = @'
+## Changelog
+
+### 2.1.0
+
+#### Features
+
+- New reusable workflow, `danger.yml`, to check Pull Requests with predefined rules ([#34](https://github-redirect.dependabot.com/getsentry/github-workflows/pull/34))
+'@
+
+        $actual | Should -Be $expected
+    }
+
+    It 'git commit fallback only lists commits in the changelog path directory' {
+        # There's no updater/CHANGELOG.md, so this falls back to commits that touched updater/
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/getsentry/github-workflows' -OldTag 'v2.4.0' -NewTag 'v2.5.0' -ChangelogPath 'updater/CHANGELOG.md'
+
+        $expected = @'
+## Changelog
+
+### Commits between v2.4.0 and v2.5.0
+
+- feat: don't update existing branches if there are manually added commits ([#50](https://github-redirect.dependabot.com/getsentry/github-workflows/issues/50))
+- test: improve test scripts & test on all supported platforms ([#49](https://github-redirect.dependabot.com/getsentry/github-workflows/issues/49))
+- chore: use pwsh tee-object to print output as well as set it to GH
+- chore: replace deprecated GH set-output
+'@
+
+        $actual | Should -Be $expected
+    }
 }

@@ -1,11 +1,14 @@
 param(
     [Parameter(Mandatory = $true)][string] $RepoUrl,
     [Parameter(Mandatory = $true)][string] $OldTag,
-    [Parameter(Mandatory = $true)][string] $NewTag
+    [Parameter(Mandatory = $true)][string] $NewTag,
+    # Path of the changelog in the repository, e.g. `packages/cli/CHANGELOG.md`. Defaults to a changelog in the repository root.
+    [string] $ChangelogPath = ''
 )
 
 Set-StrictMode -Version latest
 $PSNativeCommandErrorActionPreference = $false
+$ChangelogPath = $ChangelogPath.TrimStart('/')
 $ErrorActionPreference = 'Stop'
 
 $prefix = 'https?://(www\.)?github.com/'
@@ -26,7 +29,7 @@ New-Item -ItemType Directory $tmpDir | Out-Null
 function Get-ChangelogContent {
     param($ref, $filePath)
 
-    $changelogNames = @('CHANGELOG.md', 'changelog.md', 'CHANGELOG.txt', 'changelog.txt', 'CHANGELOG')
+    $changelogNames = if ($ChangelogPath) { @($ChangelogPath) } else { @('CHANGELOG.md', 'changelog.md', 'CHANGELOG.txt', 'changelog.txt', 'CHANGELOG') }
 
     foreach ($name in $changelogNames) {
         try {
@@ -74,7 +77,10 @@ function Get-ChangelogFromCommits {
 
         # Get commit messages between tags
         Write-Host "Getting commits between $oldTag and $newTag..."
-        $commitMessages = git log "$oldTag..$newTag" --pretty=format:'%s'
+        # Limit commits to the changelog's directory, e.g. a package in a monorepo
+        $changelogDir = if ($ChangelogPath) { Split-Path $ChangelogPath -Parent } else { '' }
+        $pathFilter = if ($changelogDir) { @('--', $changelogDir) } else { @() }
+        $commitMessages = git log "$oldTag..$newTag" --pretty=format:'%s' @pathFilter
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Could not get commits between $oldTag and $newTag (exit code: $LASTEXITCODE)"
             return $null

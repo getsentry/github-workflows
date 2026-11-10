@@ -171,6 +171,11 @@ Git lookup or fetch failures are also reported as errors. Annotated release tags
   * type: string
   * required: false
   * default: Dependencies
+* `changelog-path`: Path of the changelog in the dependency repository, e.g. `packages/cli/CHANGELOG.md` for a package in a monorepo.
+  Used for the PR description and the changelog entry link. If the changelog isn't found, the commit-based fallback only lists commits in the changelog's directory.
+  * type: string
+  * required: false
+  * default: '' (a changelog in the repository root)
 * `pr-strategy`: How to handle PRs.
   Can be either of the following:
   * `create` - create a new PR for new dependency versions as they are released - maintainers may merge or close older PRs manually
