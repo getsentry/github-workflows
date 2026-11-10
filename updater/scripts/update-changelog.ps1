@@ -5,10 +5,13 @@ param(
     [Parameter(Mandatory = $true)][string] $MainBranch,
     [Parameter(Mandatory = $true)][string] $OldTag,
     [Parameter(Mandatory = $true)][string] $NewTag,
-    [Parameter(Mandatory = $true)][string] $Section
+    [Parameter(Mandatory = $true)][string] $Section,
+    [string] $OldVersion = '',
+    [string] $NewVersion = ''
 )
 
 Set-StrictMode -Version latest
+. "$PSScriptRoot/common.ps1"
 
 $file = $(Get-ChildItem | Where-Object { $_.Name -match '^changelog(\.md|\.txt|)$' } )
 if ("$file" -eq "")
@@ -143,9 +146,11 @@ for ($i = 0; $i -lt $lines.Count; $i++)
 # What line we want to insert at - the empty line at the end of the currently unreleased section.
 $sectionEnd = $i
 
-$tagAnchor = $NewTag.Replace('.', '')
-$oldTagNice = ($OldTag -match "^[0-9]") ? "v$OldTag" : $OldTag
-$newTagNice = ($NewTag -match "^[0-9]") ? "v$NewTag" : $NewTag
+if ("$OldVersion" -eq '') { $OldVersion = GetVersionFromTag $OldTag }
+if ("$NewVersion" -eq '') { $NewVersion = GetVersionFromTag $NewTag }
+$tagAnchor = ($NewTag.EndsWith("v$NewVersion") ? "v$NewVersion" : $NewVersion).Replace('.', '')
+$oldTagNice = ($OldVersion -match "^[0-9]") ? "v$OldVersion" : $OldTag
+$newTagNice = ($NewVersion -match "^[0-9]") ? "v$NewVersion" : $NewTag
 
 $PullRequestMD = "[#$($PR | Split-Path -Leaf)]($PR)"
 

@@ -153,6 +153,9 @@ Git lookup or fetch failures are also reported as errors. Annotated release tags
   * type: string
   * required: true
 * `pattern`: RegEx pattern that will be matched against available versions when picking the latest one.
+  An optional `version` named group marks the version part of the tag, which is used to compare versions and in the PR title and changelog entry.
+  For monorepos that tag releases with a product prefix (e.g. `cli@1.2.3`), use a pattern like `'^cli@(?<version>[0-9.]+)$'`.
+  Without the group, only a leading `v` is removed from the tag.
   * type: string
   * required: false
   * default: ''

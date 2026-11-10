@@ -322,6 +322,26 @@ Features, fixes and improvements in this release have been contributed by:
         $actual | Should -Be $expected
     }
 
+    It 'git commit fallback keeps prefixed tags' {
+        $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
+            -RepoUrl 'https://github.com/getsentry/javascript-debug-ids' -OldTag '@debugids/browser@0.1.2' -NewTag '@debugids/browser@0.1.3'
+
+        $expected = @'
+## Changelog
+
+### Commits between debugids/browser@0.1.2 and debugids/browser@0.1.3
+
+- meta(changelog): Update package versions ([#50](https://github-redirect.dependabot.com/getsentry/javascript-debug-ids/issues/50))
+- chore: Update dev deps to latest versions ([#49](https://github-redirect.dependabot.com/getsentry/javascript-debug-ids/issues/49))
+- chore: Add changeset for native vite support
+- feat: Document native Vite support ([#48](https://github-redirect.dependabot.com/getsentry/javascript-debug-ids/issues/48))
+- feat: Update LICENSE date range for 2025 ([#47](https://github-redirect.dependabot.com/getsentry/javascript-debug-ids/issues/47))
+- chore: Format package.json
+'@
+
+        $actual | Should -Be $expected
+    }
+
     It 'git commit fallback returns empty when no commits found' {
         # Test with same tags (no commits between them)
         $actual = & "$PSScriptRoot/../scripts/get-changelog.ps1" `
