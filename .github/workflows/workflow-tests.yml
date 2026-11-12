@@ -157,6 +157,29 @@ jobs:
 
           Write-Host "✅ No-changes scenario validation passed!"
 
+  # A push is never a pull request update, so the action must tell the jobs to run.
+  skip-ci-push:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Run skip-ci action
+        id: skip-ci
+        uses: ./skip-ci
+
+      - name: Validate output
+        shell: pwsh
+        env:
+          SKIP: ${{ steps.skip-ci.outputs.skip }}
+        run: |
+          if ($env:SKIP -ne 'false') {
+            Write-Error "Expected skip=false on push, got '$env:SKIP'"
+            exit 1
+          }
+
   cli-integration:
     runs-on: ${{ matrix.host }}-latest
     strategy:
