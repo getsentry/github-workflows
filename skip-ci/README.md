@@ -55,9 +55,13 @@ The job needs `actions: read` to find earlier runs and `contents: read` to compa
 `skip` is `true` only when all of these hold:
 
 - The workflow runs for a `pull_request` event with the `synchronize` action, i.e. a push to an open pull request. Any other event, including `push`, `workflow_dispatch`, `merge_group` and `pull_request_target`, gives `false`.
-- The same workflow has a successful run for the previous head of the pull request, on the same branch of the same repository. A run that skipped its jobs through this action counts, because it was itself checked against a head that passed.
+- The same workflow has a successful run for the previous head of the same pull request. Runs for pull requests from forks don't name their pull request, so for those the run must be on the same branch of the same fork. A run that skipped its jobs through this action counts, because it was itself checked against a head that passed.
 - The new head is strictly ahead of the previous head. A force-push that dropped or rewrote commits gives `false`.
 - Between 1 and 299 files changed between the two heads (the compare API lists at most 300), and every changed file matches `paths`. For a renamed file, both its new and its old name must match.
+
+A successful run is all the action checks: it doesn't know whether the gated jobs ran in it. If those jobs have conditions of their own, such as skipping drafts, a run where they didn't run still lets the next push skip.
+
+A skipped run also doesn't test the pull request against a base branch that moved since the passing run. Require branches to be up to date before merging, or use a merge queue, if that matters.
 
 When any API call fails, the action logs a warning and gives `false`. It never fails the job.
 

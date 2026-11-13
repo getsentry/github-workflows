@@ -1,7 +1,7 @@
 # Decides whether a push to a pull request only changes files that don't need CI.
 # Writes `skip=true` to GITHUB_OUTPUT only when all of these hold:
 # - the event is `pull_request` with action `synchronize`;
-# - the same workflow has a successful run for the previous head on the same PR branch;
+# - the same workflow has a successful run for the previous head of the same pull request;
 # - the new head is strictly ahead of the previous head (no force-push dropped commits);
 # - between 1 and 299 files changed, and every file (and the old name of a renamed file) matches `PATHS`.
 # Any error leaves `skip=false`, so CI runs. The script always exits 0.
@@ -32,8 +32,10 @@ function Get-SkipReason
     $workflow = Split-Path -Leaf ($env:WORKFLOW_REF -replace '@.*$', '')
 
     $runs = Invoke-GhApi "repos/$env:REPOSITORY/actions/workflows/$workflow/runs?head_sha=$env:BEFORE&event=pull_request&status=success"
+    # A run lists the pull requests it ran for, except for pull requests from forks, which list none.
     $passed = @($runs.workflow_runs | Where-Object {
-            $_.head_branch -eq $env:HEAD_REF -and $_.head_repository.full_name -eq $env:HEAD_REPOSITORY
+            $_.head_branch -eq $env:HEAD_REF -and $_.head_repository.full_name -eq $env:HEAD_REPOSITORY -and
+            (@($_.pull_requests).Count -eq 0 -or @($_.pull_requests | Where-Object { "$($_.number)" -eq $env:PR_NUMBER }).Count -gt 0)
         })
     if ($passed.Count -eq 0)
     {

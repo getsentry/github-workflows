@@ -31,6 +31,7 @@ runs:
         BEFORE: ${{ github.event.before }}
         HEAD: ${{ github.event.pull_request.head.sha }}
         HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
         HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
         REPOSITORY: ${{ github.repository }}
         WORKFLOW_REF: ${{ github.workflow_ref }}
