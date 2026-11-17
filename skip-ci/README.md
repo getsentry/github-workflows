@@ -73,6 +73,7 @@ When it skips, the action writes the reason to the job summary.
 - `*` matches any characters except `/`, so `*.md` matches only Markdown files at the root.
 - `?` matches one character except `/`.
 - A pattern starting with `!` takes matching files back out. The last pattern that matches a file decides, so `!package/**` after `**/*.md` keeps Markdown files under `package/` needing CI.
+- A leading `/` is ignored, so `!/package/**` and `!package/**` are the same.
 - Blank lines and lines starting with `#` are ignored. Matching is case-sensitive.
 
 These are not GitHub's `paths` filter patterns: `?`, `+` and `[...]` mean something else there.

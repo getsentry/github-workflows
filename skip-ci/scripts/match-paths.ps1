@@ -2,6 +2,7 @@
 # A pattern starting with '!' takes matching files back out; the last pattern that matches a file decides.
 # '**' matches any characters including '/', and a leading '**/' also matches files at the root;
 # '*' matches any characters except '/'; '?' matches one character except '/'. Matching is case-sensitive.
+# A leading '/' is ignored, since file names are relative to the repository root.
 param(
     [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]] $Files,
     [Parameter(Mandatory = $true)][AllowEmptyCollection()][AllowEmptyString()][string[]] $Patterns
@@ -56,6 +57,7 @@ $rules = @(foreach ($pattern in $Patterns)
         {
             $pattern = $pattern.Substring(1)
         }
+        $pattern = $pattern.TrimStart('/')
         [pscustomobject]@{ Regex = ConvertTo-Regex $pattern; Exclude = $exclude }
     })
 

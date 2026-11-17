@@ -45,6 +45,13 @@ Describe 'match-paths' {
         MatchPaths @('package-dev/Documentation~/index.md') $patterns | Should -BeFalse
     }
 
+    It 'ignores a leading slash' {
+        $patterns = @('**/*.md', '!/package/**')
+        MatchPaths @('README.md') $patterns | Should -BeTrue
+        MatchPaths @('package/README.md') $patterns | Should -BeFalse
+        MatchPaths @('README.md') @('/README.md') | Should -BeTrue
+    }
+
     It 'the last matching pattern wins' {
         MatchPaths @('docs/keep.md') @('**/*.md', '!docs/**', 'docs/keep.md') | Should -BeTrue
     }
