@@ -35,7 +35,7 @@ jobs:
 
 Pin to a specific commit SHA. Jobs that depend on a skipped job through `needs` skip with it, so gating the jobs everything else starts from is enough. Every job that waits on another one's artifacts must be gated too, or it waits for artifacts that never come.
 
-The job needs `actions: read` to find earlier runs and `contents: read` to compare commits. Without them the API calls fail, the action logs a warning, and CI runs. The action runs `gh` and `pwsh`, which GitHub-hosted runners have. On a runner without `gh`, it logs a warning and gives `false`, so CI runs; on a runner without `pwsh`, the step fails, and so do the jobs that need it.
+The job needs `actions: read` to find earlier runs and `contents: read` to compare commits. Without them the API calls fail, the action logs a warning, and CI runs. The action runs `gh` and `pwsh`, which GitHub-hosted runners have. On a runner without `gh`, it logs a warning and gives `false`, so CI runs; on a runner without `pwsh`, the step fails, and the jobs that need it don't run.
 
 ## Inputs
 
