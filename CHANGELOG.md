@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Skip CI - Add an action that tells whether a push to a pull request only changes files that need no CI, such as Markdown, since a head whose run passed. Jobs gated on its `skip` output don't run for a CHANGELOG fix-up. ([#187](https://github.com/getsentry/github-workflows/pull/187))
+
 ## 3.5.0
 
 ### Features

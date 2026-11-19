@@ -22,6 +22,12 @@ Validates non-maintainer PRs against contribution guidelines and enforces draft 
 
 **[📖 View full documentation →](validate-pr/README.md)**
 
+### Skip CI
+
+Tells whether a push to a pull request only changes files that need no CI, such as Markdown, so expensive jobs can be skipped.
+
+**[📖 View full documentation →](skip-ci/README.md)**
+
 ## Legacy Reusable Workflows (v2)
 
 > ⚠️ **Deprecated**: Reusable workflows have been converted to composite actions in v3. Please migrate to the composite actions above.

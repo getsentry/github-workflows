@@ -1,0 +1,38 @@
+name: 'Skip CI'
+description: 'Tells whether a push to a pull request only changes files that need no CI, such as Markdown, since a head that passed'
+author: 'Sentry'
+
+inputs:
+  paths:
+    description: 'Patterns, one per line, of files whose changes alone need no CI. A pattern starting with ! takes files back out; the last matching pattern wins.'
+    required: false
+    default: '**/*.md'
+  api-token:
+    description: 'Token for the repo. Needs `actions: read` and `contents: read`.'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  skip:
+    description: "'true' when the jobs that depend on this check can be skipped; 'false' otherwise."
+    value: ${{ steps.check.outputs.skip }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check changes
+      id: check
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ inputs.api-token }}
+        PATHS: ${{ inputs.paths }}
+        EVENT_NAME: ${{ github.event_name }}
+        EVENT_ACTION: ${{ github.event.action }}
+        BEFORE: ${{ github.event.before }}
+        HEAD: ${{ github.event.pull_request.head.sha }}
+        HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        REPOSITORY: ${{ github.repository }}
+        WORKFLOW_REF: ${{ github.workflow_ref }}
+      run: ${{ github.action_path }}/scripts/skip-ci.ps1

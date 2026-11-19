@@ -28,6 +28,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+  skip-ci:
+    name: Skip CI Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - run: Invoke-Pester -CI
+        working-directory: skip-ci
+        shell: pwsh
+
   danger:
     name: Danger JS Tests
     runs-on: ubuntu-latest
