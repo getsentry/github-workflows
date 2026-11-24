@@ -1,5 +1,5 @@
 name: 'PR Classifiers'
-description: 'Classifies a pull request (today its risk) with the internal getsentry/classifiers action, without checking out or running the pull request'
+description: 'Classifies a pull request with the internal getsentry/classifiers action, without checking out or running the pull request'
 author: 'Sentry'
 
 inputs:
@@ -17,7 +17,7 @@ inputs:
     required: false
     default: '3f2158c236f47bfb7e918a7350399769a59569ec'
   publish-label:
-    description: "'true' lets the action own the pull request's three risk labels. Needs `pull-requests: write`."
+    description: "'true' lets the action own the labels it publishes on the pull request. Needs `pull-requests: write`."
     required: false
     default: 'true'
   publish-comment:
@@ -46,7 +46,7 @@ outputs:
     description: 'Base commit that was scored; empty unless the status is ok.'
     value: ${{ steps.classify.outputs.base-sha }}
   label-published:
-    description: "'true' only when the risk label was added to the unchanged pull request."
+    description: "'true' only when the label was added to the unchanged pull request."
     value: ${{ steps.classify.outputs.label-published }}
   summary:
     description: 'Markdown summary of the result. It holds text derived from the pull request (file paths): pass it through an environment variable, never inline it in a script.'

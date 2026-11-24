@@ -30,7 +30,7 @@ Tells whether a push to a pull request only changes files that need no CI, such 
 
 ### PR Classifiers
 
-Classifies a pull request (today its risk) with the internal classifiers action and labels it, without checking out or running the pull request's code.
+Classifies a pull request with the internal classifiers action and labels it, without checking out or running the pull request's code.
 
 **[📖 View full documentation →](pr-classifiers/README.md)**
 

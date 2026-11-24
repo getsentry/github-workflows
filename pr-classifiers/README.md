@@ -1,6 +1,6 @@
 # PR Classifiers
 
-Classifies a pull request with the internal [getsentry/classifiers](https://github.com/getsentry/classifiers) action and puts the result on the pull request. Today there is one classifier, risk, which adds one of the labels `risk: low`, `risk: medium` or `risk: high`.
+Classifies a pull request with the internal [getsentry/classifiers](https://github.com/getsentry/classifiers) action and puts the result on the pull request. Which classifiers run, and the labels they publish, are documented in that repository.
 
 This action wraps the steps every repository used to copy: getting a token for the internal repository, checking it out at a pinned commit, running its action and uploading the result. The label is a hint for reviewers, not an approval to merge.
 
@@ -64,7 +64,7 @@ Keep the `concurrency` block exactly as in the example. It puts runs started by 
 | `app-private-key` | Yes | | Private key of that GitHub App |
 | `ai-gateway-api-key` | Yes | | AI Gateway key for the model call. Use a dedicated key with a spend cap: anyone can start runs by opening a pull request |
 | `classifiers-ref` | No | pinned commit | Commit of `getsentry/classifiers` to run |
-| `publish-label` | No | `true` | `true` lets the action own the three risk labels |
+| `publish-label` | No | `true` | `true` lets the action own the labels it publishes |
 | `publish-comment` | No | `false` | `true` keeps one summary comment on the pull request |
 | `upload-result` | No | `true` | `true` uploads the public result JSON as the artifact `pr-classifiers-<number>` |
 
@@ -78,7 +78,7 @@ The fact sheet is read from the pull request's base commit, so a pull request th
 | `risk-label` | The final label, or empty when the status is not `ok` |
 | `model-label` | The model's label before the rules that block low |
 | `head-sha`, `base-sha` | The commits that were scored |
-| `label-published` | `true` only when the risk label was added to the unchanged pull request |
+| `label-published` | `true` only when the label was added to the unchanged pull request |
 | `summary` | Markdown summary of the result |
 
 `summary` holds text derived from the pull request, such as file paths. Pass it through an environment variable and never put `${{ }}` inside a `run:` script.
