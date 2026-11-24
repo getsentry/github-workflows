@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- Validate PR - Remove the action. Workflows that still use `getsentry/github-workflows/validate-pr` fail once they point at a ref without it, so delete the workflow from your repository. ([#PRNUM](https://github.com/getsentry/github-workflows/pull/PRNUM))
+
 ### Features
 
 - Skip CI - Add an action that tells whether a push to a pull request only changes files that need no CI, such as Markdown, since a head whose run passed. Jobs gated on its `skip` output don't run for a CHANGELOG fix-up. ([#187](https://github.com/getsentry/github-workflows/pull/187))
