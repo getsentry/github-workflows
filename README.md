@@ -28,6 +28,12 @@ Tells whether a push to a pull request only changes files that need no CI, such 
 
 **[📖 View full documentation →](skip-ci/README.md)**
 
+### PR Classifiers
+
+Classifies a pull request (today its risk) with the internal classifiers action and labels it, without checking out or running the pull request's code.
+
+**[📖 View full documentation →](pr-classifiers/README.md)**
+
 ## Legacy Reusable Workflows (v2)
 
 > ⚠️ **Deprecated**: Reusable workflows have been converted to composite actions in v3. Please migrate to the composite actions above.

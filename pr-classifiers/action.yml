@@ -1,0 +1,103 @@
+name: 'PR Classifiers'
+description: 'Classifies a pull request (today its risk) with the internal getsentry/classifiers action, without checking out or running the pull request'
+author: 'Sentry'
+
+inputs:
+  app-client-id:
+    description: 'Client ID of the GitHub App that can read getsentry/classifiers (the client ID, not the numeric App ID).'
+    required: true
+  app-private-key:
+    description: 'Private key of that GitHub App.'
+    required: true
+  ai-gateway-api-key:
+    description: 'AI Gateway key for the model call. Use a dedicated key with a spend cap.'
+    required: true
+  classifiers-ref:
+    description: 'Commit of getsentry/classifiers to run. Leave unset to use the commit this action was released with.'
+    required: false
+    default: '3f2158c236f47bfb7e918a7350399769a59569ec'
+  publish-label:
+    description: "'true' lets the action own the pull request's three risk labels. Needs `pull-requests: write`."
+    required: false
+    default: 'true'
+  publish-comment:
+    description: "'true' keeps one summary comment on the pull request. Needs `pull-requests: write`."
+    required: false
+    default: 'false'
+  upload-result:
+    description: "'true' uploads the public result JSON as a workflow artifact."
+    required: false
+    default: 'true'
+
+outputs:
+  status:
+    description: 'How the run ended; `ok` when the pull request was classified.'
+    value: ${{ steps.classify.outputs.status }}
+  risk-label:
+    description: 'The final label (low, medium or high), or empty when the status is not ok.'
+    value: ${{ steps.classify.outputs.risk-label }}
+  model-label:
+    description: "The model's label before the rules that block low; empty unless the status is ok."
+    value: ${{ steps.classify.outputs.model-label }}
+  head-sha:
+    description: 'Head commit that was scored; empty unless the status is ok.'
+    value: ${{ steps.classify.outputs.head-sha }}
+  base-sha:
+    description: 'Base commit that was scored; empty unless the status is ok.'
+    value: ${{ steps.classify.outputs.base-sha }}
+  label-published:
+    description: "'true' only when the risk label was added to the unchanged pull request."
+    value: ${{ steps.classify.outputs.label-published }}
+  summary:
+    description: 'Markdown summary of the result. It holds text derived from the pull request (file paths): pass it through an environment variable, never inline it in a script.'
+    value: ${{ steps.classify.outputs.summary }}
+
+runs:
+  using: 'composite'
+  steps:
+    # No step here checks out or runs code from the pull request. The only checkout is
+    # getsentry/classifiers at a pinned commit; the classifier reads the pull request's
+    # commits itself, into an isolated bare repository.
+    - name: Get a token for the classifiers repository
+      id: app
+      uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      with:
+        client-id: ${{ inputs.app-client-id }}
+        private-key: ${{ inputs.app-private-key }}
+        repositories: classifiers
+        # The token can read this one repository's contents and nothing else.
+        permission-contents: read
+
+    - name: Fetch the classifiers
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: getsentry/classifiers
+        ref: ${{ inputs.classifiers-ref }}
+        token: ${{ steps.app.outputs.token }}
+        path: .classifiers
+        persist-credentials: false
+
+    - name: Classify the pull request
+      id: classify
+      # A local path in a composite action resolves against the workspace, where the
+      # previous step put the checkout.
+      uses: ./.classifiers/actions/pr
+      env:
+        # On this step only.
+        AI_GATEWAY_API_KEY: ${{ inputs.ai-gateway-api-key }}
+      with:
+        repo: ${{ github.repository }}
+        pr-number: ${{ github.event.pull_request.number }}
+        expected-head-sha: ${{ github.event.pull_request.head.sha }}
+        result-path: pr-classifiers-result.json
+        publish-label: ${{ inputs.publish-label }}
+        publish-comment: ${{ inputs.publish-comment }}
+
+    - name: Upload the result
+      if: ${{ always() && inputs.upload-result == 'true' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      with:
+        name: pr-classifiers-${{ github.event.pull_request.number }}
+        path: pr-classifiers-result.json
+        if-no-files-found: warn
+        retention-days: 30
