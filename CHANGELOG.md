@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- Validate PR - Remove the action. Workflows that still use `getsentry/github-workflows/validate-pr` fail once they point at a ref without it, so delete the workflow from your repository. ([#PRNUM](https://github.com/getsentry/github-workflows/pull/PRNUM))
+- Validate PR - Remove the action. Workflows that still use `getsentry/github-workflows/validate-pr` fail once they point at a ref without it, so delete the workflow from your repository. ([#189](https://github.com/getsentry/github-workflows/pull/189))
 
 ### Features
 
