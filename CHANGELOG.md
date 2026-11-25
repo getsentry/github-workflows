@@ -7,6 +7,12 @@
 - PR Classifiers - Add an action that runs the internal `getsentry/classifiers` action on a pull request, so repositories no longer copy the token, checkout and upload steps. The fact sheet is read from the repository itself, at `.github/classifiers.toml`. ([#188](https://github.com/getsentry/github-workflows/pull/188))
 - Skip CI - Add an action that tells whether a push to a pull request only changes files that need no CI, such as Markdown, since a head whose run passed. Jobs gated on its `skip` output don't run for a CHANGELOG fix-up. ([#187](https://github.com/getsentry/github-workflows/pull/187))
 
+### Dependencies
+
+- Bump WORKFLOW-TEST-DEPENDENCY-DO-NOT-MERGE from v2.0.0 to v2.0.4 ([#66](https://github.com/getsentry/github-workflows/pull/66))
+  - [changelog](https://github.com/getsentry/sentry-cli/blob/master/CHANGELOG.md#204)
+  - [diff](https://github.com/getsentry/sentry-cli/compare/2.0.0...2.0.4)
+
 ## 3.5.0
 
 ### Features
