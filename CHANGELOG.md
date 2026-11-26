@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- Validate PR - Remove the action. Workflows that still use `getsentry/github-workflows/validate-pr` fail once they point at a ref without it, so delete the workflow from your repository. ([#189](https://github.com/getsentry/github-workflows/pull/189))
+
 ### Features
 
 - PR Classifiers - Add an action that runs the internal `getsentry/classifiers` action on a pull request, so repositories no longer copy the token, checkout and upload steps. The fact sheet is read from the repository itself, at `.github/classifiers.toml`. ([#188](https://github.com/getsentry/github-workflows/pull/188))

@@ -16,12 +16,6 @@ Runs DangerJS on Pull Requests with a pre-configured set of rules.
 
 **[📖 View full documentation →](danger/README.md)**
 
-### Validate PR
-
-Validates non-maintainer PRs against contribution guidelines and enforces draft status.
-
-**[📖 View full documentation →](validate-pr/README.md)**
-
 ### Skip CI
 
 Tells whether a push to a pull request only changes files that need no CI, such as Markdown, so expensive jobs can be skipped.
